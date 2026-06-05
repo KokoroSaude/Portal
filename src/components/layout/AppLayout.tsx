@@ -1,0 +1,171 @@
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import {
+  BarChart3,
+  Building2,
+  FileText,
+  GitBranch,
+  Layers,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  MessageCircle,
+  Settings,
+  Shield,
+  Users,
+} from "lucide-react";
+import { KokoroLogo } from "@/components/KokoroLogo";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { FEATURE_KEYS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+
+type NavItem = {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+  feature?: string;
+  adminOnly?: boolean;
+  minRole?: "viewer" | "operator" | "admin";
+};
+
+const TENANT_NAV: NavItem[] = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, feature: FEATURE_KEYS.reportsBasic },
+  { to: "/pacientes", label: "Pacientes", icon: Users },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3, feature: FEATURE_KEYS.reportsBasic },
+  { to: "/templates", label: "Templates", icon: FileText, feature: FEATURE_KEYS.templatesCustomRead },
+  { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
+  { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
+  { to: "/configuracoes", label: "Configurações", icon: Settings },
+];
+
+const PLATFORM_NAV: NavItem[] = [
+  { to: "/", label: "Visão geral", icon: Shield, end: true },
+  { to: "/admin/planos", label: "Planos", icon: Layers },
+  { to: "/admin/tenants", label: "Tenants", icon: Building2 },
+  { to: "/admin/features", label: "Features", icon: Shield },
+  { to: "/admin/usuarios", label: "Superadmins", icon: Users },
+  { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
+];
+
+function NavSection({
+  title,
+  items,
+  hasFeature,
+  isAdmin,
+}: {
+  title: string;
+  items: NavItem[];
+  hasFeature: (key: string) => boolean;
+  isAdmin: boolean;
+}) {
+  const visible = items.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.feature && !hasFeature(item.feature)) return false;
+    return true;
+  });
+  if (visible.length === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55">
+        {title}
+      </p>
+      {visible.map(({ to, label, icon: Icon, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              isActive
+                ? "bg-white/20 text-primary-foreground"
+                : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+            )
+          }
+        >
+          <Icon className="size-4" />
+          {label}
+        </NavLink>
+      ))}
+    </div>
+  );
+}
+
+export function AppLayout() {
+  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role } = useAuth();
+  const navigate = useNavigate();
+  const initials = displayName
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+
+  const email = auth?.user?.email ?? auth?.platformUser?.email;
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <aside className="relative flex h-full w-64 shrink-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground shadow-sm">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-white/10" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" aria-hidden />
+
+        <div className="relative z-10 flex flex-col items-center px-6 py-5 text-center">
+          <KokoroLogo variant="onCoral" to="/" height={64} />
+          <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>
+        </div>
+
+        <Separator className="relative z-10 bg-white/20" />
+
+        <nav className="relative z-10 flex flex-1 flex-col gap-4 p-4">
+          {isTenant && (
+            <NavSection title="Operação" items={TENANT_NAV} hasFeature={hasFeature} isAdmin={isAdmin} />
+          )}
+          {isPlatform && (
+            <NavSection title="Plataforma" items={PLATFORM_NAV} hasFeature={() => true} isAdmin />
+          )}
+        </nav>
+
+        <div className="relative z-10 border-t border-white/20 p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{displayName}</p>
+              <p className="truncate text-xs text-primary-foreground/70">{email}</p>
+              <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
+                {isPlatform ? "Superadmin" : role ?? "Tenant"}
+              </Badge>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+          >
+            <LogOut className="size-4" />
+            Sair
+          </Button>
+        </div>
+      </aside>
+
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-6xl p-8">
+          <ImpersonationBanner />
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  );
+}

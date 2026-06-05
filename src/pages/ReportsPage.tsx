@@ -1,0 +1,516 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { PageHeader, FeatureLocked } from "@/components/PageHeader";
+import {
+  AdherenceTrendChart,
+  CheckinsByHourChart,
+  EngagementBarChart,
+  PatientFunnelChart,
+  ResponseByDayChart,
+  SimpleBarChart,
+} from "@/components/reports/ReportCharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, ApiClientError } from "@/lib/api";
+import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { formatPercent, maskPhone } from "@/lib/utils";
+import type { MessageEngagement } from "@/types/api";
+
+function defaultRange() {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 30);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function ReportRangePicker({
+  range,
+  onChange,
+}: {
+  range: { from: string; to: string };
+  onChange: (r: { from: string; to: string }) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Período</CardTitle>
+        <CardDescription>Filtro aplicado aos relatórios com data</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="from">De</Label>
+          <Input
+            id="from"
+            type="date"
+            value={range.from.slice(0, 10)}
+            onChange={(e) =>
+              onChange({ ...range, from: new Date(e.target.value).toISOString() })
+            }
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="to">Até</Label>
+          <Input
+            id="to"
+            type="date"
+            value={range.to.slice(0, 10)}
+            onChange={(e) => onChange({ ...range, to: new Date(e.target.value).toISOString() })}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MetricCard({ title, value }: { title: string; value: string | number }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardDescription>{title}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="font-serif text-3xl">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ReportsPage() {
+  const { token, hasFeature } = useAuth();
+  const [range, setRange] = useState(defaultRange);
+
+  const adherence = useQuery({
+    queryKey: ["adherence-report", range],
+    queryFn: () => api.getAdherenceReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsBasic),
+  });
+
+  const trend = useQuery({
+    queryKey: ["adherence-trend", range],
+    queryFn: () => api.getAdherenceTrend(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsCharts),
+  });
+
+  const engagement = useQuery({
+    queryKey: ["engagement-report", range],
+    queryFn: () => api.getEngagementReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsAdvanced),
+  });
+
+  const funnel = useQuery({
+    queryKey: ["patient-funnel"],
+    queryFn: () => api.getPatientFunnel(token!),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
+  });
+
+  const rankingBest = useQuery({
+    queryKey: ["patient-ranking-best", range],
+    queryFn: () => api.getPatientRanking(token!, range.from, range.to, 8, false),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
+  });
+
+  const rankingWorst = useQuery({
+    queryKey: ["patient-ranking-worst", range],
+    queryFn: () => api.getPatientRanking(token!, range.from, range.to, 8, true),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
+  });
+
+  const operations = useQuery({
+    queryKey: ["operations-report", range],
+    queryFn: () => api.getOperationsReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsOperations),
+  });
+
+  const senders = useQuery({
+    queryKey: ["sender-performance", range],
+    queryFn: () => api.getSenderPerformance(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsBySender),
+  });
+
+  const comparison = useQuery({
+    queryKey: ["period-comparison", range],
+    queryFn: () => api.getPeriodComparison(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
+  });
+
+  if (!hasFeature(FEATURE_KEYS.reportsBasic)) {
+    return (
+      <>
+        <PageHeader title="Relatórios" description="Adesão e engajamento do programa" />
+        <FeatureLocked
+          title="Relatórios não disponíveis"
+          description="Seu plano atual não inclui relatórios básicos."
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Relatórios"
+        description="Adesão, engajamento e operação do programa de medicamentos"
+      />
+
+      <ReportRangePicker range={range} onChange={setRange} />
+
+      <Tabs defaultValue="adherence">
+        <TabsList className="flex h-auto flex-wrap gap-1">
+          <TabsTrigger value="adherence">Adesão</TabsTrigger>
+          <TabsTrigger value="engagement" disabled={!hasFeature(FEATURE_KEYS.reportsAdvanced)}>
+            Engajamento
+          </TabsTrigger>
+          {hasFeature(FEATURE_KEYS.reportsCohort) && (
+            <TabsTrigger value="cohort">Funil e ranking</TabsTrigger>
+          )}
+          {hasFeature(FEATURE_KEYS.reportsOperations) && (
+            <TabsTrigger value="operations">Operação</TabsTrigger>
+          )}
+          {hasFeature(FEATURE_KEYS.reportsBySender) && (
+            <TabsTrigger value="senders">Remetentes</TabsTrigger>
+          )}
+          {hasFeature(FEATURE_KEYS.reportsCohort) && (
+            <TabsTrigger value="comparison">Comparativo</TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="adherence" className="space-y-6">
+          {adherence.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : adherence.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard title="Taxa de adesão" value={formatPercent(adherence.data.adherenceRate)} />
+                <MetricCard title="Check-ins" value={adherence.data.totalCheckins} />
+                <MetricCard title="Tomados" value={adherence.data.takenCount} />
+                <MetricCard title="Pacientes ativos" value={adherence.data.activePatients} />
+              </div>
+
+              {hasFeature(FEATURE_KEYS.reportsCharts) ? (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {trend.isLoading ? (
+                    <Skeleton className="h-72" />
+                  ) : (
+                    <AdherenceTrendChart data={trend.data ?? []} />
+                  )}
+                  <CheckinsByHourChart data={adherence.data.checkinsByHour} />
+                  <ResponseByDayChart data={adherence.data.avgResponseByDay} />
+                </div>
+              ) : (
+                <FeatureLocked
+                  title="Gráficos de adesão"
+                  description="Disponível nos planos Premium e Enterprise."
+                />
+              )}
+            </>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="engagement">
+          {!hasFeature(FEATURE_KEYS.reportsAdvanced) ? (
+            <FeatureLocked
+              title="Relatório avançado"
+              description="Disponível nos planos Premium e Enterprise."
+            />
+          ) : engagement.isError && engagement.error instanceof ApiClientError ? (
+            <p className="text-destructive">{engagement.error.message}</p>
+          ) : engagement.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : engagement.data ? (
+            <div className="space-y-6">
+              {hasFeature(FEATURE_KEYS.reportsCharts) && (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <EngagementBarChart
+                    title="Por tipo de mensagem"
+                    rows={engagement.data.byMessageKind}
+                  />
+                  <EngagementBarChart title="Por template" rows={engagement.data.byTemplate} />
+                </div>
+              )}
+              <EngagementTable title="Detalhe por tipo" rows={engagement.data.byMessageKind} />
+              <EngagementTable title="Detalhe por template" rows={engagement.data.byTemplate} />
+            </div>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="cohort" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {funnel.isLoading ? (
+              <Skeleton className="h-80" />
+            ) : (
+              <PatientFunnelChart segments={funnel.data?.segments ?? []} />
+            )}
+            <RankingTable
+              title="Melhor adesão no período"
+              rows={rankingBest.data}
+              loading={rankingBest.isLoading}
+            />
+          </div>
+          <RankingTable
+            title="Menor adesão no período"
+            rows={rankingWorst.data}
+            loading={rankingWorst.isLoading}
+          />
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-6">
+          {operations.isLoading ? (
+            <Skeleton className="h-48" />
+          ) : operations.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard title="Lembretes enviados" value={operations.data.reminders.sent} />
+                <MetricCard
+                  title="Taxa de falha"
+                  value={formatPercent(operations.data.reminders.failureRate)}
+                />
+                <MetricCard title="Follow-ups" value={operations.data.reminders.followupsSent} />
+                <MetricCard
+                  title="Reativações"
+                  value={formatPercent(operations.data.reengagements.reactivationRate)}
+                />
+              </div>
+              {hasFeature(FEATURE_KEYS.reportsCharts) && (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <SimpleBarChart
+                    title="Lembretes"
+                    description="Status no período"
+                    data={[
+                      { label: "Enviados", value: operations.data.reminders.sent },
+                      { label: "Falha", value: operations.data.reminders.failed },
+                      { label: "Pendentes", value: operations.data.reminders.pending },
+                      { label: "Ignorados", value: operations.data.reminders.skipped },
+                    ]}
+                  />
+                  <SimpleBarChart
+                    title="Reengajamento"
+                    data={[
+                      { label: "Reativados", value: operations.data.reengagements.reactivated },
+                      { label: "Ignorados", value: operations.data.reengagements.ignored },
+                      { label: "Opt-out", value: operations.data.reengagements.optedOut },
+                      { label: "Pendentes", value: operations.data.reengagements.pending },
+                    ]}
+                  />
+                </div>
+              )}
+            </>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="senders">
+          {senders.isLoading ? (
+            <Skeleton className="h-48" />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
+                <CardDescription>Números WhatsApp do tenant no período</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {senders.data?.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Cadastre remetentes em Configurações → WhatsApp.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Telefone</TableHead>
+                        <TableHead>Ativos</TableHead>
+                        <TableHead>Check-ins</TableHead>
+                        <TableHead>Adesão</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {senders.data?.map((s) => (
+                        <TableRow key={s.senderId}>
+                          <TableCell className="font-medium">{s.displayName}</TableCell>
+                          <TableCell className="font-mono text-xs">{maskPhone(s.phoneNumber)}</TableCell>
+                          <TableCell>{s.activePatients}</TableCell>
+                          <TableCell>{s.checkinsTotal}</TableCell>
+                          <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="comparison">
+          {comparison.isLoading ? (
+            <Skeleton className="h-40" />
+          ) : comparison.data ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <ComparisonCard
+                label="Período atual"
+                rate={comparison.data.current.adherenceRate}
+                checkins={comparison.data.current.totalCheckins}
+              />
+              <ComparisonCard
+                label="Período anterior"
+                rate={comparison.data.previous.adherenceRate}
+                checkins={comparison.data.previous.totalCheckins}
+              />
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardDescription>Variação</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="font-serif text-2xl">
+                    {comparison.data.delta.adherenceRatePoints >= 0 ? "+" : ""}
+                    {(comparison.data.delta.adherenceRatePoints * 100).toFixed(1)} pp
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Check-ins: {comparison.data.delta.totalCheckins >= 0 ? "+" : ""}
+                    {comparison.data.delta.totalCheckins}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ComparisonCard({
+  label,
+  rate,
+  checkins,
+}: {
+  label: string;
+  rate: number;
+  checkins: number;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardDescription>{label}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="font-serif text-2xl">{formatPercent(rate)}</p>
+        <p className="text-sm text-muted-foreground">{checkins} check-ins</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RankingTable({
+  title,
+  rows,
+  loading,
+}: {
+  title: string;
+  rows?: {
+    patientId: string;
+    name: string | null;
+    status: string;
+    adherenceRate: number;
+    totalCheckins: number;
+  }[];
+  loading: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">{title}</CardTitle>
+        <CardDescription>Mínimo 3 check-ins no período</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-32" />
+        ) : !rows?.length ? (
+          <p className="text-sm text-muted-foreground">Sem dados suficientes.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Adesão</TableHead>
+                <TableHead>Check-ins</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.patientId}>
+                  <TableCell>
+                    <Link to={`/pacientes/${r.patientId}`} className="font-medium text-primary hover:underline">
+                      {r.name ?? "Sem nome"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {PATIENT_STATUS_LABELS[r.status] ?? r.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{formatPercent(r.adherenceRate)}</TableCell>
+                  <TableCell>{r.totalCheckins}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EngagementTable({ title, rows }: { title: string; rows: MessageEngagement[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Grupo</TableHead>
+                <TableHead>Enviados</TableHead>
+                <TableHead>Respondidos</TableHead>
+                <TableHead>Taxa</TableHead>
+                <TableHead>Tempo médio</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.groupLabel}>
+                  <TableCell>{r.groupLabel}</TableCell>
+                  <TableCell>{r.sent}</TableCell>
+                  <TableCell>{r.responded}</TableCell>
+                  <TableCell>{formatPercent(r.responseRate)}</TableCell>
+                  <TableCell>
+                    {r.avgResponseSeconds != null ? `${Math.round(r.avgResponseSeconds)}s` : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
