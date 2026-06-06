@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, Send, Zap } from "lucide-react";
+import { MessageCircle, Send, UserPlus, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { cn, formatDateTime, maskPhone } from "@/lib/utils";
-import type { SimulatorMessage, SimulatorSession } from "@/types/api";
+import type { SimulatorMessage, SimulatorPatient } from "@/types/api";
 
 const VOICE_TONES = [
   { value: "Acolhedor", label: "Acolhedor" },
@@ -27,20 +27,27 @@ const VOICE_TONES = [
   { value: "Direto", label: "Direto" },
 ] as const;
 
+type SimMode = "onboarding" | "active";
+
+function patientLabel(patient: SimulatorPatient | undefined, fallback: string) {
+  if (!patient) return fallback;
+  return patient.name?.trim() || "Novo paciente";
+}
+
 export function AdminSimulatorPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
-  const [session, setSession] = useState<SimulatorSession | null>(null);
+  const [mode, setMode] = useState<SimMode>("onboarding");
+  const [patientId, setPatientId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    name: "Maria Simulada",
     voiceTone: "Acolhedor",
+    name: "Maria Simulada",
     medication: "Metformina 500mg",
     dosage: "1 comprimido",
     scheduledTimes: "08:00,20:00",
-    startOnboarding: true,
   });
 
   const { data: status, isLoading: statusLoading } = useQuery({
@@ -49,11 +56,18 @@ export function AdminSimulatorPage() {
     enabled: !!token,
   });
 
+  const { data: patient } = useQuery({
+    queryKey: ["simulator-patient", patientId],
+    queryFn: () => api.simulatorPatient(token!, patientId!),
+    enabled: !!token && !!patientId && !!status?.enabled,
+    refetchInterval: patientId ? 1000 : false,
+  });
+
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
-    queryKey: ["simulator-messages", session?.patientId],
-    queryFn: () => api.simulatorMessages(token!, session!.patientId),
-    enabled: !!token && !!session?.patientId && !!status?.enabled,
-    refetchInterval: session ? 1000 : false,
+    queryKey: ["simulator-messages", patientId],
+    queryFn: () => api.simulatorMessages(token!, patientId!),
+    enabled: !!token && !!patientId && !!status?.enabled,
+    refetchInterval: patientId ? 1000 : false,
   });
 
   useEffect(() => {
@@ -63,23 +77,33 @@ export function AdminSimulatorPage() {
   }, [messages]);
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      api.simulatorCreateSession(token!, {
+    mutationFn: () => {
+      if (mode === "onboarding") {
+        return api.simulatorCreateSession(token!, {
+          voiceTone: form.voiceTone,
+          startOnboarding: true,
+        });
+      }
+      return api.simulatorCreateSession(token!, {
         name: form.name,
         voiceTone: form.voiceTone,
         medication: form.medication,
         dosage: form.dosage || undefined,
         scheduledTimes: form.scheduledTimes,
-        startOnboarding: form.startOnboarding,
-      }),
+        startOnboarding: false,
+      });
+    },
     onSuccess: async (created) => {
-      setSession(created);
+      setPatientId(created.patientId);
       setText("");
       await queryClient.refetchQueries({ queryKey: ["simulator-messages", created.patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-patient", created.patientId] });
       toast.success(
-        created.welcomeSent
-          ? "Paciente criado — boas-vindas enviadas. Responda SIM para continuar."
-          : "Paciente fictício criado — simule o WhatsApp ao lado",
+        mode === "onboarding"
+          ? created.welcomeSent
+            ? "Conversa iniciada — responda como paciente no chat."
+            : "Novo paciente criado — aguardando boas-vindas."
+          : "Paciente ativo criado — teste lembretes no chat.",
       );
     },
     onError: (err) => {
@@ -88,10 +112,11 @@ export function AdminSimulatorPage() {
   });
 
   const replyMutation = useMutation({
-    mutationFn: (body: string) => api.simulatorReply(token!, session!.patientId, body),
+    mutationFn: (body: string) => api.simulatorReply(token!, patientId!, body),
     onSuccess: async () => {
       setText("");
-      await queryClient.refetchQueries({ queryKey: ["simulator-messages", session?.patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-patient", patientId] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao simular resposta");
@@ -99,15 +124,24 @@ export function AdminSimulatorPage() {
   });
 
   const reminderMutation = useMutation({
-    mutationFn: () => api.simulatorTriggerReminder(token!, session!.patientId),
+    mutationFn: () => api.simulatorTriggerReminder(token!, patientId!),
     onSuccess: async (res) => {
       toast.success(res.action === "sent" ? "Lembrete enviado" : "Lembrete processado");
-      await queryClient.refetchQueries({ queryKey: ["simulator-messages", session?.patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", patientId] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar lembrete");
     },
   });
+
+  function startNewPatient() {
+    setPatientId(null);
+    setText("");
+    createMutation.mutate();
+  }
+
+  const patientStatus = patient?.status ?? (mode === "onboarding" ? "Onboarding" : "Active");
+  const canTriggerReminder = patientStatus === "Active";
 
   if (statusLoading) {
     return <p className="text-sm text-muted-foreground">Carregando simulador…</p>;
@@ -134,27 +168,28 @@ export function AdminSimulatorPage() {
     <div className="space-y-6">
       <PageHeader
         title="Simulador WhatsApp"
-        description="Crie um paciente fictício na hora, escolha o tom de voz e teste onboarding ou lembretes."
+        description="Teste o onboarding pela conversa ou crie um paciente já ativo para lembretes."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,340px)_1fr]">
         <Card>
-          <CardHeader>
-            <CardTitle>Novo paciente fictício</CardTitle>
-            <CardDescription>
-              Dados básicos e tom de voz. Com onboarding, a boas-vindas usa o nome e pula etapas já preenchidas.
-            </CardDescription>
+          <CardHeader className="space-y-4">
+            <div>
+              <CardTitle>Configuração</CardTitle>
+              <CardDescription>
+                {mode === "onboarding"
+                  ? "Somente o tom de voz. Nome, medicamento e horários vêm das suas respostas no chat."
+                  : "Paciente já cadastrado, sem passar pelo fluxo de onboarding."}
+              </CardDescription>
+            </div>
+            <Tabs value={mode} onValueChange={(v) => setMode(v as SimMode)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+                <TabsTrigger value="active">Paciente ativo</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="sim-name">Nome</Label>
-              <Input
-                id="sim-name"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              />
-            </div>
-
             <div className="space-y-2">
               <Label>Tom de voz</Label>
               <Select
@@ -174,54 +209,58 @@ export function AdminSimulatorPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sim-med">Medicamento</Label>
-              <Input
-                id="sim-med"
-                value={form.medication}
-                onChange={(e) => setForm((f) => ({ ...f, medication: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sim-dose">Dosagem</Label>
-              <Input
-                id="sim-dose"
-                placeholder="1 comprimido"
-                value={form.dosage}
-                onChange={(e) => setForm((f) => ({ ...f, dosage: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sim-times">Horários</Label>
-              <Input
-                id="sim-times"
-                placeholder="08:00,20:00"
-                value={form.scheduledTimes}
-                onChange={(e) => setForm((f) => ({ ...f, scheduledTimes: e.target.value }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Modo onboarding</p>
-                <p className="text-xs text-muted-foreground">
-                  Ligado: envia boas-vindas com o nome e percorre o fluxo. Desligado: paciente já ativo.
-                </p>
-              </div>
-              <Switch
-                checked={form.startOnboarding}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, startOnboarding: v }))}
-              />
-            </div>
+            {mode === "active" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="sim-name">Nome</Label>
+                  <Input
+                    id="sim-name"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sim-med">Medicamento</Label>
+                  <Input
+                    id="sim-med"
+                    value={form.medication}
+                    onChange={(e) => setForm((f) => ({ ...f, medication: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sim-dose">Dosagem</Label>
+                  <Input
+                    id="sim-dose"
+                    placeholder="1 comprimido"
+                    value={form.dosage}
+                    onChange={(e) => setForm((f) => ({ ...f, dosage: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sim-times">Horários</Label>
+                  <Input
+                    id="sim-times"
+                    placeholder="08:00,20:00"
+                    value={form.scheduledTimes}
+                    onChange={(e) => setForm((f) => ({ ...f, scheduledTimes: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
 
             <Button
               className="w-full"
               disabled={createMutation.isPending}
-              onClick={() => createMutation.mutate()}
+              onClick={() => startNewPatient()}
             >
-              {createMutation.isPending ? "Criando…" : "Criar e simular"}
+              <UserPlus className="size-4" />
+              {createMutation.isPending
+                ? "Criando…"
+                : patientId
+                  ? "Novo paciente"
+                  : mode === "onboarding"
+                    ? "Iniciar conversa"
+                    : "Criar paciente ativo"}
             </Button>
           </CardContent>
         </Card>
@@ -232,38 +271,43 @@ export function AdminSimulatorPage() {
               <MessageCircle className="size-5 text-primary" />
               <div>
                 <CardTitle className="text-base">Conversa simulada</CardTitle>
-                {session ? (
+                {patientId ? (
                   <CardDescription>
-                    {session.name} · {maskPhone(session.phone)} · {session.voiceTone}
+                    {patientLabel(patient, "Novo paciente")} · {maskPhone(patient?.phone ?? "")} ·{" "}
+                    {form.voiceTone}
                   </CardDescription>
                 ) : (
-                  <CardDescription>Crie um paciente para abrir o chat</CardDescription>
+                  <CardDescription>
+                    {mode === "onboarding"
+                      ? "Inicie uma conversa e responda como paciente"
+                      : "Crie um paciente ativo para testar lembretes"}
+                  </CardDescription>
                 )}
               </div>
             </div>
-            {session && (
-              <Badge variant="secondary">{session.patientStatus}</Badge>
-            )}
+            {patientId && <Badge variant="secondary">{patientStatus}</Badge>}
           </CardHeader>
 
           <CardContent className="flex flex-1 flex-col gap-0 p-0">
             <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-4">
-              {!session ? (
+              {!patientId ? (
                 <p className="py-12 text-center text-sm text-muted-foreground">
-                  Preencha o formulário e clique em &quot;Criar e simular&quot;.
+                  {mode === "onboarding"
+                    ? 'Clique em "Iniciar conversa" e responda SIM, seu nome, medicamento e horários como no WhatsApp real.'
+                    : 'Preencha os dados e clique em "Criar paciente ativo".'}
                 </p>
               ) : messagesLoading ? (
                 <p className="text-center text-sm text-muted-foreground">Carregando mensagens…</p>
               ) : messages.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground">
-                  Nenhuma mensagem ainda. Dispare um lembrete ou envie uma resposta como paciente.
+                  Aguardando mensagens…
                 </p>
               ) : (
                 messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
               )}
             </div>
 
-            {session && (
+            {patientId && (
               <div className="space-y-2 border-t p-4">
                 <form
                   className="flex gap-2"
@@ -289,15 +333,15 @@ export function AdminSimulatorPage() {
                   type="button"
                   variant="secondary"
                   className="w-full"
-                  disabled={reminderMutation.isPending || session.patientStatus !== "Active"}
+                  disabled={reminderMutation.isPending || !canTriggerReminder}
                   onClick={() => reminderMutation.mutate()}
                 >
                   <Zap className="size-4" />
                   Disparar lembrete agora
                 </Button>
-                {session.patientStatus !== "Active" && (
+                {!canTriggerReminder && (
                   <p className="text-center text-[11px] text-muted-foreground">
-                    Conclua o onboarding antes de disparar lembretes.
+                    Conclua o onboarding na conversa antes de disparar lembretes.
                   </p>
                 )}
               </div>

@@ -121,9 +121,9 @@ export const PLATFORM_GUIDE: PortalGuide = {
           id: "simulator",
           title: "Simulador WhatsApp",
           description:
-            "Crie paciente fictício, teste onboarding ou dispare lembrete na hora — sem depender do Worker ou da Meta.",
+            "Inicie uma conversa vazia e percorra o onboarding respondendo como paciente, ou crie um paciente ativo para testar lembretes.",
           to: "/admin/simulador",
-          tips: ["Ative modo onboarding para validar boas-vindas e coleta de dados."],
+          tips: ["Modo onboarding: só escolha o tom de voz e responda no chat."],
         },
       ],
     },

@@ -133,11 +133,11 @@ export function AdminOnboardingPage() {
         <CardContent className="pt-6 text-sm text-muted-foreground">
           <p>
             Edite cada passo na ordem em que o paciente recebe. Use as abas de <strong>tom de voz</strong>{" "}
-            para personalizar acolhedor, motivacional ou direto. Depois de salvar, valide no{" "}
+            para personalizar acolhedor, motivacional ou direto. Valide no{" "}
             <Link to="/admin/simulador" className="font-medium text-primary underline-offset-2 hover:underline">
               simulador WhatsApp
-            </Link>
-            .
+            </Link>{" "}
+            respondendo como paciente — sem formulário de dados fictícios.
           </p>
         </CardContent>
       </Card>

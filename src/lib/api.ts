@@ -23,6 +23,7 @@ import type {
   PlanFeatureUpdate,
   PublicPlan,
   SimulatorMessage,
+  SimulatorPatient,
   SimulatorSession,
   SimulatorStatus,
   TenantFeature,
@@ -337,11 +338,11 @@ export const api = {
   simulatorCreateSession: (
     token: string,
     body: {
-      name: string;
+      name?: string;
       voiceTone: string;
-      medication: string;
+      medication?: string;
       dosage?: string;
-      scheduledTimes: string;
+      scheduledTimes?: string;
       startOnboarding?: boolean;
     },
   ) =>
@@ -350,6 +351,9 @@ export const api = {
       token,
       body,
     }),
+
+  simulatorPatient: (token: string, patientId: string) =>
+    request<SimulatorPatient>(`/api/admin/simulator/patients/${patientId}`, { token }),
 
   simulatorMessages: (token: string, patientId: string) =>
     request<SimulatorMessage[]>(`/api/admin/simulator/patients/${patientId}/messages`, {

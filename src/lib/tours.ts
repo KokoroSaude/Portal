@@ -133,7 +133,7 @@ export const PLATFORM_TOUR: ProductTourDefinition = {
       title: "Simulador WhatsApp",
       subtitle: "Teste sem Meta nem Worker.",
       description:
-        "Crie paciente fictício, rode onboarding ou dispare lembrete na hora para validar mensagens antes de ir à produção.",
+        "Inicie uma conversa e responda como paciente para validar o onboarding, ou teste lembretes com paciente já ativo.",
       route: "/admin/simulador",
       openMobileNav: true,
     },

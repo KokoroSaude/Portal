@@ -65,6 +65,14 @@ export interface SimulatorSession {
   welcomeSent?: boolean;
 }
 
+export interface SimulatorPatient {
+  id: string;
+  name: string | null;
+  phone: string;
+  medication: string | null;
+  status: string;
+}
+
 export interface PagedResult<T> {
   items: T[];
   total: number;
