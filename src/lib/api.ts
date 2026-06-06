@@ -1,5 +1,6 @@
 import type {
   AdminFeature,
+  AdminMessageTemplate,
   AdminPlan,
   AdminTenant,
   AdherenceReport,
@@ -299,6 +300,32 @@ export const api = {
 
   adminImpersonateTenant: (token: string, tenantId: string) =>
     request<LoginResponse>(`/api/admin/tenants/${tenantId}/impersonate`, { method: "POST", token }),
+
+  adminListTemplates: (token: string, locale?: string) => {
+    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+    return request<AdminMessageTemplate[]>(`/api/admin/templates${qs}`, { token });
+  },
+
+  adminUpsertTemplate: (
+    token: string,
+    key: string,
+    content: string,
+    description?: string,
+    locale?: string,
+  ) =>
+    request<void>(`/api/admin/templates/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      token,
+      body: { content, description, locale },
+    }),
+
+  adminResetTemplate: (token: string, key: string, locale?: string) => {
+    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+    return request<void>(`/api/admin/templates/${encodeURIComponent(key)}${qs}`, {
+      method: "DELETE",
+      token,
+    });
+  },
 
   simulatorStatus: (token: string) =>
     request<SimulatorStatus>("/api/admin/simulator/status", { token }),

@@ -47,6 +47,7 @@ export const PLATFORM_NAV: NavItem[] = [
   { to: "/admin/tenants", label: "Tenants", icon: Building2 },
   { to: "/admin/features", label: "Features", icon: Shield },
   { to: "/admin/usuarios", label: "Superadmins", icon: Users },
+  { to: "/admin/mensagens", label: "Mensagens padrão", icon: FileText },
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
 ];

@@ -230,6 +230,17 @@ export interface MessageTemplate {
   isActive: boolean;
 }
 
+export interface AdminMessageTemplate {
+  templateKey: string;
+  baseKey: string;
+  tone: string;
+  locale: string;
+  content: string;
+  description: string | null;
+  isCustomized: boolean;
+  isActive: boolean;
+}
+
 export interface JourneyStep {
   id: string;
   type: string;
