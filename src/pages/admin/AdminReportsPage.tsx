@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { AdminReportTenantSelector } from "@/components/admin/AdminReportTenantSelector";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,7 +17,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,7 +35,7 @@ import { api } from "@/lib/api";
 import { PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
-import type { AdminTenant, MessageEngagement } from "@/types/api";
+import type { MessageEngagement } from "@/types/api";
 
 function defaultRange() {
   const to = new Date();
@@ -91,91 +91,6 @@ function MetricCard({ title, value }: { title: string; value: string | number })
       </CardHeader>
       <CardContent>
         <p className="font-serif text-3xl">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TenantSelector({
-  tenants,
-  selectedIds,
-  onChange,
-}: {
-  tenants: AdminTenant[];
-  selectedIds: Set<string>;
-  onChange: (ids: Set<string>) => void;
-}) {
-  const activeTenants = tenants.filter((t) => t.isActive);
-  const inactiveTenants = tenants.filter((t) => !t.isActive);
-
-  const toggle = (id: string, checked: boolean) => {
-    const next = new Set(selectedIds);
-    if (checked) next.add(id);
-    else next.delete(id);
-    onChange(next);
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
-        <div>
-          <CardTitle className="font-serif text-lg">Tenants no relatório</CardTitle>
-          <CardDescription>
-            {selectedIds.size === 0
-              ? "Selecione ao menos um tenant"
-              : `${selectedIds.size} tenant(s) selecionado(s)`}
-          </CardDescription>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onChange(new Set(activeTenants.map((t) => t.id)))}
-          >
-            Todos ativos
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onChange(new Set(tenants.map((t) => t.id)))}
-          >
-            Todos
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(new Set())}>
-            Limpar
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {activeTenants.map((t) => (
-          <label key={t.id} className="flex cursor-pointer items-center gap-2 text-sm">
-            <Checkbox
-              checked={selectedIds.has(t.id)}
-              onCheckedChange={(v) => toggle(t.id, v === true)}
-            />
-            <span className="font-medium">{t.name}</span>
-            <span className="text-muted-foreground">({t.planName})</span>
-          </label>
-        ))}
-        {inactiveTenants.length > 0 && (
-          <>
-            <p className="col-span-full text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Inativos
-            </p>
-            {inactiveTenants.map((t) => (
-              <label key={t.id} className="flex cursor-pointer items-center gap-2 text-sm opacity-70">
-                <Checkbox
-                  checked={selectedIds.has(t.id)}
-                  onCheckedChange={(v) => toggle(t.id, v === true)}
-                />
-                <span>{t.name}</span>
-                <Badge variant="secondary">Inativo</Badge>
-              </label>
-            ))}
-          </>
-        )}
       </CardContent>
     </Card>
   );
@@ -323,7 +238,7 @@ export function AdminReportsPage() {
       {tenantsQuery.isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : tenantsQuery.data ? (
-        <TenantSelector
+        <AdminReportTenantSelector
           tenants={tenantsQuery.data}
           selectedIds={selectedIds}
           onChange={setSelectedIds}
