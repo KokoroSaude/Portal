@@ -239,6 +239,26 @@ export interface AdminMessageTemplate {
   description: string | null;
   isCustomized: boolean;
   isActive: boolean;
+  category: string;
+  isCatalog: boolean;
+  onboardingStepId: string | null;
+}
+
+export interface AdminOnboardingFlowStep {
+  id: string;
+  type: string;
+  description: string;
+  templateKey: string;
+}
+
+export interface AdminOnboardingSystemMessage {
+  templateKey: string;
+  description: string;
+}
+
+export interface AdminOnboardingFlow {
+  steps: AdminOnboardingFlowStep[];
+  systemMessages: AdminOnboardingSystemMessage[];
 }
 
 export interface JourneyStep {

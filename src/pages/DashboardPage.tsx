@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, CheckCircle2, Users, XCircle } from "lucide-react";
 import { CheckinsByHourChart } from "@/components/reports/ReportCharts";
+import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
 import { FeatureLocked, PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,10 +49,13 @@ export function DashboardPage() {
     return (
       <>
         <PageHeader title="Dashboard" description="Visão geral de adesão e pacientes ativos" />
-        <FeatureLocked
-          title="Dashboard indisponível"
-          description="Faça upgrade do plano para acessar métricas de adesão e check-ins."
-        />
+        <div className="space-y-6">
+          <GettingStartedCard />
+          <FeatureLocked
+            title="Dashboard indisponível"
+            description="Faça upgrade do plano para acessar métricas de adesão e check-ins."
+          />
+        </div>
       </>
     );
   }
@@ -79,6 +83,8 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      <GettingStartedCard />
+
       <div>
         <h1 className="font-serif text-3xl">Dashboard</h1>
         <p className="text-muted-foreground">

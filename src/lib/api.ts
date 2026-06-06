@@ -1,6 +1,7 @@
 import type {
   AdminFeature,
   AdminMessageTemplate,
+  AdminOnboardingFlow,
   AdminPlan,
   AdminTenant,
   AdherenceReport,
@@ -305,6 +306,9 @@ export const api = {
     const qs = locale ? `?locale=${encodeURIComponent(locale)}` : "";
     return request<AdminMessageTemplate[]>(`/api/admin/templates${qs}`, { token });
   },
+
+  adminGetOnboardingFlow: (token: string) =>
+    request<AdminOnboardingFlow>("/api/admin/templates/onboarding-flow", { token }),
 
   adminUpsertTemplate: (
     token: string,

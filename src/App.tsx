@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { GuestRoute, ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { HomePage, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
+import { GuidePage } from "@/pages/GuidePage";
 import { JourneyPage } from "@/pages/JourneyPage";
 import { WhatsappPage } from "@/pages/WhatsappPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -46,6 +47,7 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route index element={<HomePage />} />
+                <Route path="guia" element={<GuidePage />} />
 
                 <Route element={<RequireTenant />}>
                   <Route path="pacientes" element={<PatientsPage />} />

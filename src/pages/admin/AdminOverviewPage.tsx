@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Layers, Users } from "lucide-react";
+import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +32,8 @@ export function AdminOverviewPage() {
         title="Superadmin"
         description="Gestão de planos, tenants e features da plataforma Kokoro"
       />
+
+      <GettingStartedCard />
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-3">

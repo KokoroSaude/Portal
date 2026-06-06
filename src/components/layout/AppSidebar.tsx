@@ -4,6 +4,7 @@ import {
   Building2,
   FileText,
   GitBranch,
+  HelpCircle,
   Layers,
   LayoutDashboard,
   LogOut,
@@ -40,6 +41,7 @@ export const TENANT_NAV: NavItem[] = [
   { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
   { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
 ];
 
 export const PLATFORM_NAV: NavItem[] = [
@@ -51,6 +53,7 @@ export const PLATFORM_NAV: NavItem[] = [
   { to: "/admin/mensagens", label: "Mensagens padrão", icon: FileText },
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
+  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
 ];
 
 function NavSection({
