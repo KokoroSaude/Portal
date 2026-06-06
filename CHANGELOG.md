@@ -6,6 +6,15 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-06-04
+
+### Added
+
+- Menu lateral recolhível no desktop, com modo compacto (somente ícones) e preferência persistida
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/KokoroSaude/Portal/compare/v1.1.1...v1.1.2
+
 ## [1.1.1] - 2026-06-04
 
 ### Added
@@ -18,7 +27,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 - Grids de relatórios, jornada, mensagens, configurações e área admin passam a filtrar resultados localmente
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.1...HEAD
 [1.1.1]: https://github.com/KokoroSaude/Portal/compare/v1.1.0...v1.1.1
 
 ## [1.1.0] - 2026-06-06

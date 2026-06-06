@@ -8,10 +8,13 @@ import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { KokoroLogo } from "@/components/KokoroLogo";
 import { Button } from "@/components/ui/button";
 import { TourProvider } from "@/contexts/TourContext";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
+import { cn } from "@/lib/utils";
 
 export function AppLayout() {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebarCollapsed();
 
   const closeMobileNav = () => setMobileNavOpen(false);
 
@@ -23,8 +26,19 @@ export function AppLayout() {
   return (
     <TourProvider onOpenMobileNav={() => setMobileNavOpen(true)}>
       <div className="flex h-[100dvh] overflow-hidden bg-background">
-        <aside className="hidden h-full w-64 shrink-0 lg:flex">
-          <AppSidebar className="w-full shadow-sm" onLogout={handleLogout} />
+        <aside
+          className={cn(
+            "hidden h-full shrink-0 transition-[width] duration-200 ease-in-out lg:flex",
+            sidebarCollapsed ? "w-16" : "w-64",
+          )}
+        >
+          <AppSidebar
+            className="w-full shadow-sm"
+            collapsed={sidebarCollapsed}
+            collapsible
+            onToggleCollapsed={toggleSidebar}
+            onLogout={handleLogout}
+          />
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">

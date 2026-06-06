@@ -10,6 +10,8 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  PanelLeft,
+  PanelLeftClose,
   Settings,
   Shield,
   Users,
@@ -63,12 +65,14 @@ function NavSection({
   hasFeature,
   isAdmin,
   onNavigate,
+  collapsed,
 }: {
   title: string;
   items: NavItem[];
   hasFeature: (key: string) => boolean;
   isAdmin: boolean;
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) {
   const visible = items.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
@@ -79,19 +83,23 @@ function NavSection({
 
   return (
     <div className="space-y-1" data-tour="sidebar-nav">
-      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55">
-        {title}
-      </p>
+      {!collapsed && (
+        <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55">
+          {title}
+        </p>
+      )}
       {visible.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
           end={end}
           onClick={onNavigate}
+          title={collapsed ? label : undefined}
           data-tour={tourNavId(to)}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+              collapsed ? "justify-center px-2" : "gap-3 px-3",
               isActive
                 ? "bg-white/20 text-primary-foreground"
                 : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
@@ -99,7 +107,7 @@ function NavSection({
           }
         >
           <Icon className="size-4 shrink-0" />
-          {label}
+          {!collapsed && label}
         </NavLink>
       ))}
     </div>
@@ -110,9 +118,19 @@ type AppSidebarProps = {
   className?: string;
   onNavigate?: () => void;
   onLogout?: () => void;
+  collapsed?: boolean;
+  collapsible?: boolean;
+  onToggleCollapsed?: () => void;
 };
 
-export function AppSidebar({ className, onNavigate, onLogout }: AppSidebarProps) {
+export function AppSidebar({
+  className,
+  onNavigate,
+  onLogout,
+  collapsed = false,
+  collapsible = false,
+  onToggleCollapsed,
+}: AppSidebarProps) {
   const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role } = useAuth();
   const initials = displayName
     .split(" ")
@@ -138,14 +156,43 @@ export function AppSidebar({ className, onNavigate, onLogout }: AppSidebarProps)
       <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-white/10" aria-hidden />
       <div className="pointer-events-none absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" aria-hidden />
 
-      <div className="relative z-10 flex flex-col items-center px-6 py-5 text-center">
-        <KokoroLogo variant="onCoral" to="/" height={56} />
-        <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>
+      <div
+        className={cn(
+          "relative z-10 flex flex-col items-center text-center",
+          collapsed ? "px-2 py-4" : "px-6 py-5",
+        )}
+      >
+        {collapsible && !collapsed && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+            aria-label="Recolher menu"
+            onClick={onToggleCollapsed}
+          >
+            <PanelLeftClose className="size-4" />
+          </Button>
+        )}
+        <KokoroLogo variant="onCoral" to="/" height={collapsed ? 32 : 56} />
+        {!collapsed && <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>}
+        {collapsible && collapsed && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="mt-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+            aria-label="Expandir menu"
+            onClick={onToggleCollapsed}
+          >
+            <PanelLeft className="size-4" />
+          </Button>
+        )}
       </div>
 
       <Separator className="relative z-10 bg-white/20" />
 
-      <nav className="relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <nav className={cn("relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
         {isTenant && (
           <NavSection
             title="Operação"
@@ -153,6 +200,7 @@ export function AppSidebar({ className, onNavigate, onLogout }: AppSidebarProps)
             hasFeature={hasFeature}
             isAdmin={isAdmin}
             onNavigate={onNavigate}
+            collapsed={collapsed}
           />
         )}
         {isPlatform && (
@@ -162,35 +210,58 @@ export function AppSidebar({ className, onNavigate, onLogout }: AppSidebarProps)
             hasFeature={() => true}
             isAdmin
             onNavigate={onNavigate}
+            collapsed={collapsed}
           />
         )}
       </nav>
 
-      <div className="relative z-10 border-t border-white/20 p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <Avatar className="size-8 shrink-0">
-            <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{displayName}</p>
-            <p className="truncate text-xs text-primary-foreground/70">{email}</p>
-            <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
-              {isPlatform ? "Superadmin" : role ?? "Tenant"}
-            </Badge>
+      <div className={cn("relative z-10 border-t border-white/20", collapsed ? "p-2" : "p-4")}>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <Avatar className="size-8 shrink-0" title={displayName}>
+              <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+              title="Sair"
+              onClick={handleLogout}
+            >
+              <LogOut className="size-4" />
+            </Button>
           </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-          onClick={handleLogout}
-        >
-          <LogOut className="size-4" />
-          Sair
-        </Button>
-        <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center gap-3">
+              <Avatar className="size-8 shrink-0">
+                <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{displayName}</p>
+                <p className="truncate text-xs text-primary-foreground/70">{email}</p>
+                <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
+                  {isPlatform ? "Superadmin" : role ?? "Tenant"}
+                </Badge>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+              onClick={handleLogout}
+            >
+              <LogOut className="size-4" />
+              Sair
+            </Button>
+            <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
+          </>
+        )}
       </div>
     </div>
   );
