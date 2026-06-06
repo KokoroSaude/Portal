@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,13 +35,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
+import { matchesGridSearch } from "@/lib/gridSearch";
 
 const VALUE_TYPES = ["Boolean", "Limit"] as const;
 
 export function AdminFeaturesPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     key: "",
@@ -64,6 +69,20 @@ export function AdminFeaturesPage() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  const filteredFeatures = useMemo(() => {
+    const all = data ?? [];
+    return all.filter((f) =>
+      matchesGridSearch(
+        query,
+        f.name,
+        f.key,
+        f.category,
+        f.valueType,
+        f.isActive ? "ativa" : "inativa",
+      ),
+    );
+  }, [data, query]);
 
   return (
     <div className="space-y-6">
@@ -125,8 +144,15 @@ export function AdminFeaturesPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-4">
           <CardTitle>Catálogo global</CardTitle>
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar por nome, key ou categoria"
+            resultCount={filteredFeatures.length}
+            totalCount={data?.length}
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -143,7 +169,17 @@ export function AdminFeaturesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.map((f) => (
+                {filteredFeatures.length === 0 && (
+                  <GridEmptyRow
+                    colSpan={5}
+                    message={
+                      query.trim()
+                        ? "Nenhuma feature corresponde à busca."
+                        : "Nenhuma feature cadastrada."
+                    }
+                  />
+                )}
+                {filteredFeatures.map((f) => (
                   <TableRow key={f.id}>
                     <TableCell>{f.name}</TableCell>
                     <TableCell className="font-mono text-xs">{f.key}</TableCell>

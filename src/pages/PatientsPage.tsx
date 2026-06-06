@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Search } from "lucide-react";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime, maskPhone } from "@/lib/utils";
@@ -34,9 +36,12 @@ export function PatientsPage() {
   const { token, hasFeature } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, status]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["patients", page, search, status],
@@ -87,56 +92,41 @@ export function PatientsPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Lista</CardTitle>
-          <div className="flex flex-wrap gap-2">
-            <form
-              className="flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSearch(searchInput);
-                setPage(1);
-              }}
-            >
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <Input
-                  className="w-56 pl-8"
-                  placeholder="Buscar nome ou telefone"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </div>
-              <Button type="submit" variant="secondary" size="sm">
-                Buscar
-              </Button>
-            </form>
-            <Select
-              value={status || "all"}
-              onValueChange={(v) => {
-                setStatus(v === "all" ? "" : v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {STATUSES.filter(Boolean).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {PATIENT_STATUS_LABELS[s] ?? s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {hasFeature(FEATURE_KEYS.reportsBasic) && (
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-                <Download className="size-4" />
-                {exporting ? "Exportando…" : "Exportar CSV"}
-              </Button>
-            )}
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>Lista</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Select
+                value={status || "all"}
+                onValueChange={(v) => setStatus(v === "all" ? "" : v)}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {STATUSES.filter(Boolean).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {PATIENT_STATUS_LABELS[s] ?? s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasFeature(FEATURE_KEYS.reportsBasic) && (
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                  <Download className="size-4" />
+                  {exporting ? "Exportando…" : "Exportar CSV"}
+                </Button>
+              )}
+            </div>
           </div>
+          <GridSearchBar
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder="Buscar por nome ou telefone"
+            resultCount={data?.items.length}
+            totalCount={data?.total}
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -159,11 +149,14 @@ export function PatientsPage() {
                 </TableHeader>
                 <TableBody>
                   {data?.items.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        Nenhum paciente encontrado.
-                      </TableCell>
-                    </TableRow>
+                    <GridEmptyRow
+                      colSpan={5}
+                      message={
+                        searchInput.trim()
+                          ? "Nenhum paciente corresponde à busca."
+                          : "Nenhum paciente encontrado."
+                      }
+                    />
                   )}
                   {data?.items.map((p) => (
                     <TableRow key={p.id}>

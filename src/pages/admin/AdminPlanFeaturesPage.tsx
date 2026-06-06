@@ -1,21 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import type { PlanFeatureUpdate, TenantFeature } from "@/types/api";
 
 export function AdminPlanFeaturesPage() {
   const { planId } = useParams<{ planId: string }>();
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const { input, setInput, query } = useGridSearch();
   const [features, setFeatures] = useState<TenantFeature[]>([]);
 
   const plans = useQuery({
@@ -58,10 +62,17 @@ export function AdminPlanFeaturesPage() {
     );
   }
 
-  const grouped = features.reduce<Record<string, TenantFeature[]>>((acc, f) => {
-    (acc[f.category] ??= []).push(f);
-    return acc;
-  }, {});
+  const filteredGrouped = useMemo(() => {
+    const result: Record<string, TenantFeature[]> = {};
+    for (const f of features) {
+      if (!matchesGridSearch(query, f.name, f.key, f.category)) continue;
+      (result[f.category] ??= []).push(f);
+    }
+    return result;
+  }, [features, query]);
+
+  const totalFeatures = features.length;
+  const visibleFeatures = Object.values(filteredGrouped).reduce((n, items) => n + items.length, 0);
 
   return (
     <div className="space-y-6">
@@ -78,7 +89,19 @@ export function AdminPlanFeaturesPage() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <>
-          {Object.entries(grouped).map(([category, items]) => (
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar features por nome ou key"
+            resultCount={visibleFeatures}
+            totalCount={totalFeatures}
+          />
+          {Object.keys(filteredGrouped).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {query.trim() ? "Nenhuma feature corresponde à busca." : "Nenhuma feature disponível."}
+            </p>
+          ) : (
+            Object.entries(filteredGrouped).map(([category, items]) => (
             <Card key={category}>
               <CardHeader>
                 <CardTitle className="capitalize">{category}</CardTitle>
@@ -95,7 +118,8 @@ export function AdminPlanFeaturesPage() {
                 ))}
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
           <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
             <Save className="size-4" />
             Salvar features

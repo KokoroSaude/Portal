@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowRight, Plus, RotateCcw, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -318,15 +319,17 @@ export function AdminTemplatesPage() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           <Card>
-            <CardHeader>
+            <CardHeader className="space-y-4">
               <CardTitle className="text-base">
                 Catálogo · {toneLabel(tone)}
                 {category !== "all" && ` · ${categoryLabel(category)}`}
               </CardTitle>
-              <Input
-                placeholder="Filtrar…"
+              <GridSearchBar
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={setFilter}
+                placeholder="Buscar por chave ou descrição"
+                resultCount={filtered.length}
+                totalCount={byTone.length}
               />
             </CardHeader>
             <CardContent className="max-h-[60vh] space-y-1 overflow-y-auto p-2">

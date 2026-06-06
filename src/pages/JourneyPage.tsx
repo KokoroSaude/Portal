@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, RotateCcw, Save } from "lucide-react";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, JOURNEY_STEP_TYPE_LABELS } from "@/lib/constants";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import type { JourneyStep } from "@/types/api";
 
 function editableSteps(journey: { tenantSteps: JourneyStep[] | null; defaultSteps: JourneyStep[] }) {
@@ -33,6 +36,7 @@ export function JourneyPage() {
   const [steps, setSteps] = useState<JourneyStep[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [newStep, setNewStep] = useState({ id: "", templateKey: "custom.beneficios", description: "" });
+  const { input, setInput, query } = useGridSearch();
 
   const { data, isLoading } = useQuery({
     queryKey: ["journey"],
@@ -63,6 +67,29 @@ export function JourneyPage() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao resetar"),
   });
+
+  const filteredSteps = useMemo(
+    () =>
+      steps.filter((step) =>
+        matchesGridSearch(
+          query,
+          step.id,
+          step.description,
+          step.type,
+          step.templateKey,
+          JOURNEY_STEP_TYPE_LABELS[step.type],
+        ),
+      ),
+    [steps, query],
+  );
+
+  const filteredEffective = useMemo(
+    () =>
+      (data?.effectiveSteps ?? []).filter((s) =>
+        matchesGridSearch(query, s.id, s.description, s.type, s.templateKey),
+      ),
+    [data?.effectiveSteps, query],
+  );
 
   if (!hasFeature(FEATURE_KEYS.journeyOnboardingRead)) {
     return (
@@ -180,14 +207,30 @@ export function JourneyPage() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <Card>
-          <CardHeader>
-            <CardTitle>Passos</CardTitle>
-            <CardDescription>
-              {data?.isCustomized ? "Jornada customizada do tenant" : "Usando fluxo padrão Kokoro"}
-            </CardDescription>
+          <CardHeader className="space-y-4">
+            <div>
+              <CardTitle>Passos</CardTitle>
+              <CardDescription>
+                {data?.isCustomized ? "Jornada customizada do tenant" : "Usando fluxo padrão Kokoro"}
+              </CardDescription>
+            </div>
+            <GridSearchBar
+              value={input}
+              onChange={setInput}
+              placeholder="Buscar passos por id, descrição ou template"
+              resultCount={filteredSteps.length}
+              totalCount={steps.length}
+            />
           </CardHeader>
           <CardContent className="space-y-3">
-            {steps.map((step, index) => (
+            {filteredSteps.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {query.trim() ? "Nenhum passo corresponde à busca." : "Nenhum passo na jornada."}
+              </p>
+            )}
+            {filteredSteps.map((step) => {
+              const index = steps.findIndex((s) => s.id === step.id);
+              return (
               <div
                 key={step.id}
                 className="flex flex-wrap items-center gap-3 rounded-lg border p-4"
@@ -224,7 +267,8 @@ export function JourneyPage() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -236,11 +280,17 @@ export function JourneyPage() {
             <CardDescription>Passos que serão executados após merge</CardDescription>
           </CardHeader>
           <CardContent>
-            <ol className="list-decimal space-y-1 pl-5 text-sm">
-              {data.effectiveSteps.map((s) => (
-                <li key={s.id}>{s.description ?? s.id}</li>
-              ))}
-            </ol>
+            {filteredEffective.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {query.trim() ? "Nenhum passo no preview corresponde à busca." : "Sem passos."}
+              </p>
+            ) : (
+              <ol className="list-decimal space-y-1 pl-5 text-sm">
+                {filteredEffective.map((s) => (
+                  <li key={s.id}>{s.description ?? s.id}</li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
       )}

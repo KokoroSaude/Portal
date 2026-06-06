@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,13 +28,16 @@ import {
 import { FeatureLocked } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 
 export function SettingsSendersTab() {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
+  const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     phoneNumber: "",
@@ -67,6 +72,20 @@ export function SettingsSendersTab() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  const filteredSenders = useMemo(() => {
+    const all = data ?? [];
+    return all.filter((s) =>
+      matchesGridSearch(
+        query,
+        s.displayName,
+        s.phoneNumber,
+        s.wabaId,
+        s.phoneId,
+        s.isActive ? "ativo" : "inativo",
+      ),
+    );
+  }, [data, query]);
 
   if (!hasFeature(FEATURE_KEYS.whatsappSendersManage)) {
     return (
@@ -136,7 +155,14 @@ export function SettingsSendersTab() {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <GridSearchBar
+          value={input}
+          onChange={setInput}
+          placeholder="Buscar por nome, telefone ou IDs Meta"
+          resultCount={filteredSenders.length}
+          totalCount={data?.length}
+        />
         {isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : (
@@ -152,14 +178,17 @@ export function SettingsSendersTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Nenhum remetente cadastrado.
-                  </TableCell>
-                </TableRow>
+              {filteredSenders.length === 0 && (
+                <GridEmptyRow
+                  colSpan={6}
+                  message={
+                    query.trim()
+                      ? "Nenhum remetente corresponde à busca."
+                      : "Nenhum remetente cadastrado."
+                  }
+                />
               )}
-              {data?.map((s) => (
+              {filteredSenders.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.displayName}</TableCell>
                   <TableCell className="font-mono text-sm">{maskPhone(s.phoneNumber)}</TableCell>

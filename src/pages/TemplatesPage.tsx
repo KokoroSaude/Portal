@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,15 +94,22 @@ export function TemplatesPage() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           <Card>
-            <CardHeader>
+            <CardHeader className="space-y-4">
               <CardTitle className="text-base">Catálogo</CardTitle>
-              <Input
-                placeholder="Filtrar…"
+              <GridSearchBar
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={setFilter}
+                placeholder="Buscar por chave ou descrição"
+                resultCount={filtered?.length}
+                totalCount={data?.length}
               />
             </CardHeader>
             <CardContent className="max-h-[60vh] space-y-1 overflow-y-auto p-2">
+              {filtered?.length === 0 && (
+                <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  {filter.trim() ? "Nenhum template corresponde à busca." : "Nenhum template."}
+                </p>
+              )}
               {filtered?.map((t) => (
                 <button
                   key={t.templateKey}

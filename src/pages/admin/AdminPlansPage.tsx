@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus } from "lucide-react";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,11 +29,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
+import { matchesGridSearch } from "@/lib/gridSearch";
 
 export function AdminPlansPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<{ id: string; name: string; sortOrder: number; isActive: boolean } | null>(null);
@@ -71,6 +76,19 @@ export function AdminPlansPage() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  const filteredPlans = useMemo(() => {
+    const all = data ?? [];
+    return all.filter((p) =>
+      matchesGridSearch(
+        query,
+        p.name,
+        p.key,
+        p.tenantCount,
+        p.isActive ? "ativo" : "inativo",
+      ),
+    );
+  }, [data, query]);
 
   return (
     <div className="space-y-6">
@@ -115,8 +133,15 @@ export function AdminPlansPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-4">
           <CardTitle>Catálogo</CardTitle>
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar por nome ou key"
+            resultCount={filteredPlans.length}
+            totalCount={data?.length}
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -133,7 +158,15 @@ export function AdminPlansPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.map((p) => (
+                {filteredPlans.length === 0 && (
+                  <GridEmptyRow
+                    colSpan={5}
+                    message={
+                      query.trim() ? "Nenhum plano corresponde à busca." : "Nenhum plano cadastrado."
+                    }
+                  />
+                )}
+                {filteredPlans.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="font-mono text-xs">{p.key}</TableCell>

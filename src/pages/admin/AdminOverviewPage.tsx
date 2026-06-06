@@ -1,14 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { Building2, Layers, Users } from "lucide-react";
 import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api } from "@/lib/api";
+import { matchesGridSearch } from "@/lib/gridSearch";
 
 export function AdminOverviewPage() {
   const { token } = useAuth();
+  const { input, setInput, query } = useGridSearch();
 
   const plans = useQuery({
     queryKey: ["admin-plans"],
@@ -25,6 +30,13 @@ export function AdminOverviewPage() {
   const loading = plans.isLoading || tenants.isLoading;
   const activePlans = plans.data?.filter((p) => p.isActive).length ?? 0;
   const activeTenants = tenants.data?.filter((t) => t.isActive).length ?? 0;
+
+  const filteredRecentTenants = useMemo(() => {
+    const all = tenants.data ?? [];
+    return all
+      .filter((t) => matchesGridSearch(query, t.name, t.slug, t.planName))
+      .slice(0, 8);
+  }, [tenants.data, query]);
 
   return (
     <div className="space-y-6">
@@ -55,13 +67,27 @@ export function AdminOverviewPage() {
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Tenants recentes</CardTitle>
-          <CardDescription>Organizações cadastradas na plataforma</CardDescription>
+        <CardHeader className="space-y-4">
+          <div>
+            <CardTitle>Tenants recentes</CardTitle>
+            <CardDescription>Organizações cadastradas na plataforma</CardDescription>
+          </div>
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar tenants por nome, slug ou plano"
+            resultCount={filteredRecentTenants.length}
+            totalCount={tenants.data?.length}
+          />
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm">
-            {tenants.data?.slice(0, 8).map((t) => (
+            {filteredRecentTenants.length === 0 && (
+              <li className="py-6 text-center text-muted-foreground">
+                {query.trim() ? "Nenhum tenant corresponde à busca." : "Nenhum tenant cadastrado."}
+              </li>
+            )}
+            {filteredRecentTenants.map((t) => (
               <li key={t.id} className="flex justify-between rounded-lg border px-3 py-2">
                 <span>
                   {t.name} <span className="text-muted-foreground">({t.slug})</span>

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,13 +34,16 @@ import {
 } from "@/components/ui/table";
 import { FeatureLocked } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, ROLE_LABELS } from "@/lib/constants";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatDateTime } from "@/lib/utils";
 
 export function SettingsUsersTab() {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
+  const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "Operator" });
 
@@ -68,6 +73,21 @@ export function SettingsUsersTab() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  const filteredUsers = useMemo(
+    () =>
+      (data ?? []).filter((u) =>
+        matchesGridSearch(
+          query,
+          u.name,
+          u.email,
+          u.role,
+          ROLE_LABELS[u.role],
+          u.isActive ? "ativo" : "inativo",
+        ),
+      ),
+    [data, query],
+  );
 
   if (!hasFeature(FEATURE_KEYS.usersManage)) {
     return (
@@ -138,6 +158,14 @@ export function SettingsUsersTab() {
         </Dialog>
       </div>
 
+      <GridSearchBar
+        value={input}
+        onChange={setInput}
+        placeholder="Buscar por nome, e-mail ou papel"
+        resultCount={filteredUsers.length}
+        totalCount={data?.length}
+      />
+
       {isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : (
@@ -153,7 +181,15 @@ export function SettingsUsersTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.map((u) => (
+            {filteredUsers.length === 0 && (
+              <GridEmptyRow
+                colSpan={6}
+                message={
+                  query.trim() ? "Nenhum usuário corresponde à busca." : "Nenhum usuário cadastrado."
+                }
+              />
+            )}
+            {filteredUsers.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.name}</TableCell>
                 <TableCell>{u.email}</TableCell>

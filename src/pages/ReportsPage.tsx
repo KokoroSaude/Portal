@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
+import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import {
   AdherenceTrendChart,
@@ -25,8 +27,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
 import type { MessageEngagement } from "@/types/api";
 
@@ -312,46 +316,7 @@ export function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="senders">
-          {senders.isLoading ? (
-            <Skeleton className="h-48" />
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
-                <CardDescription>Números WhatsApp do tenant no período</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {senders.data?.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Cadastre remetentes em Configurações → WhatsApp.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Ativos</TableHead>
-                        <TableHead>Check-ins</TableHead>
-                        <TableHead>Adesão</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {senders.data?.map((s) => (
-                        <TableRow key={s.senderId}>
-                          <TableCell className="font-medium">{s.displayName}</TableCell>
-                          <TableCell className="font-mono text-xs">{maskPhone(s.phoneNumber)}</TableCell>
-                          <TableCell>{s.activePatients}</TableCell>
-                          <TableCell>{s.checkinsTotal}</TableCell>
-                          <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <SendersPerformanceTable rows={senders.data ?? []} loading={senders.isLoading} />
         </TabsContent>
 
         <TabsContent value="comparison">
@@ -429,11 +394,38 @@ function RankingTable({
   }[];
   loading: boolean;
 }) {
+  const { input, setInput, query } = useGridSearch();
+  const filtered = useMemo(
+    () =>
+      (rows ?? []).filter((r) =>
+        matchesGridSearch(
+          query,
+          r.name,
+          r.status,
+          PATIENT_STATUS_LABELS[r.status],
+          r.totalCheckins,
+          formatPercent(r.adherenceRate),
+        ),
+      ),
+    [query, rows],
+  );
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-serif text-lg">{title}</CardTitle>
-        <CardDescription>Mínimo 3 check-ins no período</CardDescription>
+      <CardHeader className="space-y-4">
+        <div>
+          <CardTitle className="font-serif text-lg">{title}</CardTitle>
+          <CardDescription>Mínimo 3 check-ins no período</CardDescription>
+        </div>
+        {!loading && (rows?.length ?? 0) > 0 && (
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar paciente ou status"
+            resultCount={filtered.length}
+            totalCount={rows?.length}
+          />
+        )}
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -451,7 +443,10 @@ function RankingTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {filtered.length === 0 && (
+                <GridEmptyRow colSpan={4} message="Nenhum paciente corresponde à busca." />
+              )}
+              {filtered.map((r) => (
                 <TableRow key={r.patientId}>
                   <TableCell>
                     <Link to={`/pacientes/${r.patientId}`} className="font-medium text-primary hover:underline">
@@ -476,10 +471,35 @@ function RankingTable({
 }
 
 function EngagementTable({ title, rows }: { title: string; rows: MessageEngagement[] }) {
+  const { input, setInput, query } = useGridSearch();
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) =>
+        matchesGridSearch(
+          query,
+          r.groupLabel,
+          r.sent,
+          r.responded,
+          formatPercent(r.responseRate),
+          r.avgResponseSeconds,
+        ),
+      ),
+    [query, rows],
+  );
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-4">
         <CardTitle className="font-serif text-lg">{title}</CardTitle>
+        {rows.length > 0 && (
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar por grupo ou métrica"
+            resultCount={filtered.length}
+            totalCount={rows.length}
+          />
+        )}
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
@@ -496,7 +516,10 @@ function EngagementTable({ title, rows }: { title: string; rows: MessageEngageme
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {filtered.length === 0 && (
+                <GridEmptyRow colSpan={5} message="Nenhum registro corresponde à busca." />
+              )}
+              {filtered.map((r) => (
                 <TableRow key={r.groupLabel}>
                   <TableCell>{r.groupLabel}</TableCell>
                   <TableCell>{r.sent}</TableCell>
@@ -505,6 +528,93 @@ function EngagementTable({ title, rows }: { title: string; rows: MessageEngageme
                   <TableCell>
                     {r.avgResponseSeconds != null ? `${Math.round(r.avgResponseSeconds)}s` : "—"}
                   </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SendersPerformanceTable({
+  rows,
+  loading,
+}: {
+  rows: {
+    senderId: string;
+    displayName: string;
+    phoneNumber: string;
+    activePatients: number;
+    checkinsTotal: number;
+    adherenceRate: number;
+  }[];
+  loading: boolean;
+}) {
+  const { input, setInput, query } = useGridSearch();
+  const filtered = useMemo(
+    () =>
+      rows.filter((s) =>
+        matchesGridSearch(
+          query,
+          s.displayName,
+          s.phoneNumber,
+          maskPhone(s.phoneNumber),
+          s.activePatients,
+          s.checkinsTotal,
+          formatPercent(s.adherenceRate),
+        ),
+      ),
+    [query, rows],
+  );
+
+  if (loading) return <Skeleton className="h-48" />;
+
+  return (
+    <Card>
+      <CardHeader className="space-y-4">
+        <div>
+          <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
+          <CardDescription>Números WhatsApp do tenant no período</CardDescription>
+        </div>
+        {rows.length > 0 && (
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar por nome ou telefone"
+            resultCount={filtered.length}
+            totalCount={rows.length}
+          />
+        )}
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Cadastre remetentes em Configurações → WhatsApp.
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Ativos</TableHead>
+                <TableHead>Check-ins</TableHead>
+                <TableHead>Adesão</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <GridEmptyRow colSpan={5} message="Nenhum remetente corresponde à busca." />
+              )}
+              {filtered.map((s) => (
+                <TableRow key={s.senderId}>
+                  <TableCell className="font-medium">{s.displayName}</TableCell>
+                  <TableCell className="font-mono text-xs">{maskPhone(s.phoneNumber)}</TableCell>
+                  <TableCell>{s.activePatients}</TableCell>
+                  <TableCell>{s.checkinsTotal}</TableCell>
+                  <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

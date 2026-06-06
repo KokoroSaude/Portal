@@ -6,6 +6,21 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-04
+
+### Added
+
+- Barra de pesquisa funcional no topo de todos os grids do portal
+- Componentes reutilizáveis `GridSearchBar`, `GridEmptyRow` e hook `useGridSearch`
+- Filtro com debounce na listagem de pacientes (busca na API)
+
+### Changed
+
+- Grids de relatórios, jornada, mensagens, configurações e área admin passam a filtrar resultados localmente
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/KokoroSaude/Portal/compare/v1.1.0...v1.1.1
+
 ## [1.1.0] - 2026-06-06
 
 ### Added
@@ -21,7 +36,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Menu lateral com atributos `data-tour` para destacar itens no tour
 - Página de guia com botão para reiniciar o tour interativo
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/KokoroSaude/Portal/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/KokoroSaude/Portal/releases/tag/v1.0.0
 
