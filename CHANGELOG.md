@@ -6,6 +6,25 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-06
+
+### Added
+
+- Tour interativo com spotlight (estilo passo a passo) para tenant e superadmin
+- Guia escrito em `/guia` com timeline e links para cada área do portal
+- Card “Guia passo a passo” na home (tenant e superadmin)
+- Mensagens padrão admin: fluxo de onboarding, categorias, criação de novas chaves
+- Auto-início do tour na primeira visita à home (com opção de pular e reiniciar)
+
+### Changed
+
+- Menu lateral com atributos `data-tour` para destacar itens no tour
+- Página de guia com botão para reiniciar o tour interativo
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/KokoroSaude/Portal/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/KokoroSaude/Portal/releases/tag/v1.0.0
+
 ## [1.0.0] - 2026-06-04
 
 Primeira versão versionada (SemVer) do portal em produção.
@@ -23,6 +42,3 @@ Primeira versão versionada (SemVer) do portal em produção.
 - Assinatura de e-mail (export JPG)
 - Mensagens padrão globais da plataforma (`/admin/mensagens`)
 - Versão SemVer exibida no portal e injetada no build
-
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/KokoroSaude/Portal/releases/tag/v1.0.0

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version";
+import { tourNavId } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 
 export type NavItem = {
@@ -77,7 +78,7 @@ function NavSection({
   if (visible.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" data-tour="sidebar-nav">
       <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55">
         {title}
       </p>
@@ -87,6 +88,7 @@ function NavSection({
           to={to}
           end={end}
           onClick={onNavigate}
+          data-tour={tourNavId(to)}
           className={({ isActive }) =>
             cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",

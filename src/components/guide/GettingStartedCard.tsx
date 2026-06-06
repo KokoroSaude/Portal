@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,6 +9,7 @@ import {
   type GuideStep,
 } from "@/lib/guides";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTour } from "@/contexts/TourContext";
 
 function previewSteps(steps: GuideStep[], limit = 3): GuideStep[] {
   return steps.slice(0, limit);
@@ -16,6 +17,7 @@ function previewSteps(steps: GuideStep[], limit = 3): GuideStep[] {
 
 export function GettingStartedCard() {
   const { isPlatform, hasFeature } = useAuth();
+  const { startTour, isCompleted } = useTour();
   const guide = getGuideForAudience(isPlatform);
   const sections = filterGuideSections(guide, hasFeature);
   const totalSteps = countGuideSteps(sections);
@@ -51,12 +53,18 @@ export function GettingStartedCard() {
             <li className="text-xs text-muted-foreground">+ {totalSteps - preview.length} etapas no guia completo</li>
           )}
         </ol>
-        <Button asChild>
-          <Link to="/guia">
-            Abrir guia completo
-            <ChevronRight className="size-4" />
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={() => void startTour({ force: true })}>
+            <Sparkles className="size-4" />
+            {isCompleted ? "Reiniciar tour" : "Iniciar tour interativo"}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/guia">
+              Guia completo
+              <ChevronRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
