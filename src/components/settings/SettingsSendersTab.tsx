@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -32,6 +32,7 @@ import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
+import type { WhatsappSender } from "@/types/api";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 
 export function SettingsSendersTab() {
@@ -39,12 +40,27 @@ export function SettingsSendersTab() {
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<WhatsappSender | null>(null);
   const [form, setForm] = useState({
     phoneNumber: "",
     displayName: "",
     wabaId: "",
     phoneId: "",
   });
+
+  function openEdit(sender: WhatsappSender) {
+    setEditing(sender);
+    setForm({
+      phoneNumber: sender.phoneNumber,
+      displayName: sender.displayName,
+      wabaId: sender.wabaId,
+      phoneId: sender.phoneId,
+    });
+  }
+
+  function resetForm() {
+    setForm({ phoneNumber: "", displayName: "", wabaId: "", phoneId: "" });
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["senders"],
@@ -57,13 +73,30 @@ export function SettingsSendersTab() {
     onSuccess: () => {
       toast.success("Número cadastrado");
       setOpen(false);
-      setForm({ phoneNumber: "", displayName: "", wabaId: "", phoneId: "" });
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["senders"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
 
-  const updateMutation = useMutation({
+  const editMutation = useMutation({
+    mutationFn: () =>
+      api.updateSender(token!, editing!.id, {
+        phoneNumber: form.phoneNumber,
+        displayName: form.displayName,
+        wabaId: form.wabaId,
+        phoneId: form.phoneId,
+      }),
+    onSuccess: () => {
+      toast.success("Remetente atualizado");
+      setEditing(null);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["senders"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       api.updateSender(token!, id, { isActive }),
     onSuccess: () => {
@@ -204,13 +237,19 @@ export function SettingsSendersTab() {
                     {formatDateTime(s.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateMutation.mutate({ id: s.id, isActive: !s.isActive })}
-                    >
-                      {s.isActive ? "Desativar" : "Ativar"}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(s)}>
+                        <Pencil className="size-4" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleActiveMutation.mutate({ id: s.id, isActive: !s.isActive })}
+                      >
+                        {s.isActive ? "Desativar" : "Ativar"}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -218,6 +257,50 @@ export function SettingsSendersTab() {
           </Table>
         )}
       </CardContent>
+
+      <Dialog open={editing !== null} onOpenChange={(v) => !v && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar remetente WhatsApp</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Telefone (E.164)</Label>
+              <Input
+                placeholder="+5511999999999"
+                value={form.phoneNumber}
+                onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nome de exibição</Label>
+              <Input
+                value={form.displayName}
+                onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>WABA ID</Label>
+              <Input
+                value={form.wabaId}
+                onChange={(e) => setForm((f) => ({ ...f, wabaId: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone ID</Label>
+              <Input
+                value={form.phoneId}
+                onChange={(e) => setForm((f) => ({ ...f, phoneId: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

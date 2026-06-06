@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye } from "lucide-react";
+import { Eye, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AdminTenantUsersDialog } from "@/components/admin/AdminTenantUsersDialog";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -29,12 +30,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
+import type { AdminTenant } from "@/types/api";
 
 export function AdminTenantsPage() {
   const { token, impersonateTenant } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
+  const [usersTenant, setUsersTenant] = useState<AdminTenant | null>(null);
 
   const tenants = useQuery({
     queryKey: ["admin-tenants"],
@@ -53,6 +56,16 @@ export function AdminTenantsPage() {
       api.adminAssignTenantPlan(token!, tenantId, planId),
     onSuccess: () => {
       toast.success("Plano atribuído");
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ tenantId, isActive }: { tenantId: string; isActive: boolean }) =>
+      api.adminUpdateTenantStatus(token!, tenantId, isActive),
+    onSuccess: () => {
+      toast.success("Status do tenant atualizado");
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -102,12 +115,14 @@ export function AdminTenantsPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Alterar plano</TableHead>
                   <TableHead />
+                  <TableHead />
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={6}
+                    colSpan={8}
                     message={
                       query.trim()
                         ? "Nenhum tenant corresponde à busca."
@@ -147,6 +162,28 @@ export function AdminTenantsPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={statusMutation.isPending}
+                        onClick={() =>
+                          statusMutation.mutate({ tenantId: t.id, isActive: !t.isActive })
+                        }
+                      >
+                        {t.isActive ? "Desativar" : "Ativar"}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUsersTenant(t)}
+                      >
+                        <Users className="size-4" />
+                        Usuários
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={!t.isActive || impersonateMutation.isPending}
                         onClick={() => impersonateMutation.mutate(t.id)}
                       >
@@ -161,6 +198,12 @@ export function AdminTenantsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AdminTenantUsersDialog
+        tenant={usersTenant}
+        open={usersTenant !== null}
+        onOpenChange={(open) => !open && setUsersTenant(null)}
+      />
     </div>
   );
 }

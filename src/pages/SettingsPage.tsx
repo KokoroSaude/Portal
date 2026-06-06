@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +21,27 @@ import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { LOCALE_LABELS, VOICE_TONES } from "@/lib/constants";
-import type { TenantSettings } from "@/types/api";
+import type { BillingPlan, TenantSettings } from "@/types/api";
+
+function formatPlanPrice(plan: BillingPlan): string {
+  if (plan.priceMonthly == null) return "Sob consulta";
+  if (plan.priceMonthly === 0) return "Grátis";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: plan.currency || "BRL",
+  }).format(plan.priceMonthly);
+}
 
 export function SettingsPage() {
   const { token, isAdmin, hasFeature } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
+  const tabParam = searchParams.get("tab");
+  const defaultTab =
+    tabParam === "plano" || tabParam === "usuarios" || tabParam === "senha" || tabParam === "operacional"
+      ? tabParam
+      : "operacional";
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -39,6 +55,11 @@ export function SettingsPage() {
     enabled: !!token,
   });
 
+  const { data: billingPlans } = useQuery({
+    queryKey: ["billing-plans"],
+    queryFn: () => api.getBillingPlans(),
+  });
+
   const { data: locales } = useQuery({
     queryKey: ["locales"],
     queryFn: () => api.getLocales(),
@@ -47,6 +68,35 @@ export function SettingsPage() {
   useEffect(() => {
     if (settings) setForm(settings);
   }, [settings]);
+
+  useEffect(() => {
+    const billing = searchParams.get("billing");
+    if (!billing) return;
+
+    if (billing === "success") {
+      const plan = searchParams.get("plan");
+      toast.success(plan ? `Upgrade para ${plan} concluído!` : "Pagamento concluído!");
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    } else if (billing === "cancel") {
+      toast.info("Checkout cancelado.");
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("billing");
+    next.delete("plan");
+    next.delete("session_id");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, queryClient]);
+
+  const checkoutMutation = useMutation({
+    mutationFn: (planKey: string) => api.createBillingCheckout(token!, planKey),
+    onSuccess: (result) => {
+      window.location.href = result.url;
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao iniciar checkout");
+    },
+  });
 
   const saveMutation = useMutation({
     mutationFn: (payload: Partial<TenantSettings>) => api.updateSettings(token!, payload),
@@ -77,6 +127,17 @@ export function SettingsPage() {
         </div>
         <Card>
           <CardHeader>
+            <CardTitle>Foto de perfil</CardTitle>
+            <CardDescription>Personalize como você aparece no portal</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link to="/perfil">Editar foto de perfil</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle>Alterar senha</CardTitle>
             <CardDescription>Atualize a senha da sua conta</CardDescription>
           </CardHeader>
@@ -99,7 +160,7 @@ export function SettingsPage() {
         <p className="text-muted-foreground">Preferências operacionais e plano do tenant</p>
       </div>
 
-      <Tabs defaultValue="operacional">
+      <Tabs defaultValue={defaultTab} key={defaultTab}>
         <TabsList>
           <TabsTrigger value="operacional">Operacional</TabsTrigger>
           <TabsTrigger value="plano">Plano</TabsTrigger>
@@ -209,9 +270,9 @@ export function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Assinatura</CardTitle>
-              <CardDescription>Plano atual e features habilitadas</CardDescription>
+              <CardDescription>Plano atual e opções de upgrade</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {subscription ? (
                 <>
                   <div className="flex items-center gap-3">
@@ -234,6 +295,34 @@ export function SettingsPage() {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">Carregando plano…</p>
+              )}
+
+              {subscription?.planKey === "freemium" && billingPlans && (
+                <div className="space-y-3 border-t pt-6">
+                  <h3 className="font-medium">Fazer upgrade</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {billingPlans
+                      .filter((p) => p.key === "premium" || p.key === "enterprise")
+                      .map((plan) => (
+                        <div
+                          key={plan.id}
+                          className="flex flex-col justify-between rounded-lg border p-4"
+                        >
+                          <div className="space-y-1">
+                            <p className="font-serif text-lg">{plan.name}</p>
+                            <p className="text-sm text-muted-foreground">{formatPlanPrice(plan)}/mês</p>
+                          </div>
+                          <Button
+                            className="mt-4"
+                            onClick={() => checkoutMutation.mutate(plan.key)}
+                            disabled={checkoutMutation.isPending}
+                          >
+                            {checkoutMutation.isPending ? "Redirecionando…" : `Upgrade para ${plan.name}`}
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

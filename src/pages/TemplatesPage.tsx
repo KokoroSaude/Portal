@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw, Save } from "lucide-react";
+import { WhatsAppMessagePreview } from "@/components/messages/WhatsAppMessagePreview";
 import { PageHeader } from "@/components/PageHeader";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
@@ -135,7 +136,7 @@ export function TemplatesPage() {
             <CardHeader>
               <CardTitle className="font-mono text-base">{selectedKey ?? "Selecione um template"}</CardTitle>
               <CardDescription>
-                Use variáveis como {"{{nome}}"}, {"{{medicamento}}"}, {"{{horarios}}"}.
+                Use variáveis como {"{nome}"}, {"{medicamento}"}, {"{horario}"}, {"{saudacao}"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -160,6 +161,7 @@ export function TemplatesPage() {
                       disabled={!canWrite}
                     />
                   </div>
+                  <WhatsAppMessagePreview content={content} />
                   <div className="flex gap-2">
                     {canWrite && (
                       <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>

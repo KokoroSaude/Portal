@@ -48,9 +48,9 @@ export function DashboardPage() {
   if (!hasFeature(FEATURE_KEYS.reportsBasic)) {
     return (
       <>
-        <PageHeader title="Dashboard" description="Visão geral de adesão e pacientes ativos" />
         <div className="space-y-6">
           <GettingStartedCard />
+          <PageHeader title="Dashboard" description="Visão geral de adesão e pacientes ativos" />
           <FeatureLocked
             title="Dashboard indisponível"
             description="Faça upgrade do plano para acessar métricas de adesão e check-ins."

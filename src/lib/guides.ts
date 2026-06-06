@@ -183,16 +183,20 @@ export const TENANT_GUIDE: PortalGuide = {
         {
           id: "patients-list",
           title: "Lista de pacientes",
-          description: "Busque por nome ou telefone, filtre por status e abra o detalhe de cada paciente.",
+          description:
+            "Cadastre manualmente ou aguarde a primeira mensagem no WhatsApp — o sistema cria o paciente automaticamente.",
           to: "/pacientes",
         },
         {
           id: "patient-detail",
           title: "Ficha do paciente",
           description:
-            "Veja timeline de mensagens, plano de medicamentos, adesão e ações como pausar ou retomar lembretes.",
+            "Veja timeline, plano de medicamentos e ações como pausar ou corrigir o telefone WhatsApp.",
           to: "/pacientes",
-          tips: ["Novos pacientes entram em onboarding até concluir o fluxo no WhatsApp."],
+          tips: [
+            "Novos pacientes entram em onboarding até concluir o fluxo no WhatsApp.",
+            "Se o paciente trocou de número, atualize o telefone na ficha.",
+          ],
         },
       ],
     },

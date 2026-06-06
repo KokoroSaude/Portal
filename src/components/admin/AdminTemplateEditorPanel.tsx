@@ -1,4 +1,5 @@
 import { RotateCcw, Save } from "lucide-react";
+import { WhatsAppMessagePreview } from "@/components/messages/WhatsAppMessagePreview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,13 +46,32 @@ export function AdminTemplateEditorPanel({
           {selected ? selected.description ?? selected.baseKey : emptyTitle}
         </CardTitle>
         <CardDescription>
-          Tom: {adminTemplateToneLabel(tone)}. Variáveis: {"{nome}"}, {"{medicamento}"}, {"{horario}"},{" "}
-          {"{saudacao}"}.
+          Tom: {adminTemplateToneLabel(tone)}. Use chaves no texto enviado no WhatsApp:
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {selected ? (
           <>
+            <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Variáveis disponíveis</p>
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                <li>
+                  <code className="text-[11px]">{"{nome}"}</code> — nome do paciente
+                </li>
+                <li>
+                  <code className="text-[11px]">{"{medicamento}"}</code> — medicamento do plano de cuidado
+                </li>
+                <li>
+                  <code className="text-[11px]">{"{horario}"}</code> — próximo horário
+                </li>
+                <li>
+                  <code className="text-[11px]">{"{horarios}"}</code> — lista de horários
+                </li>
+                <li>
+                  <code className="text-[11px]">{"{saudacao}"}</code> — saudação contextual (Bom dia, etc.)
+                </li>
+              </ul>
+            </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <Badge variant="outline">{categoryLabel(selected.category)}</Badge>
               {selected.isCustomized && <Badge variant="secondary">Editado</Badge>}
@@ -73,6 +93,7 @@ export function AdminTemplateEditorPanel({
                 onChange={(e) => onContentChange(e.target.value)}
               />
             </div>
+            <WhatsAppMessagePreview content={content} />
             <div className="flex flex-wrap gap-2">
               <Button onClick={onSave} disabled={savePending}>
                 <Save className="size-4" />

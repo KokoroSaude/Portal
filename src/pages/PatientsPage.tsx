@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, MessageCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -33,11 +45,15 @@ import { formatDateTime, maskPhone } from "@/lib/utils";
 const STATUSES = ["", "Active", "Onboarding", "Paused", "Inactive", "OptedOut", "Reengagement"];
 
 export function PatientsPage() {
-  const { token, hasFeature } = useAuth();
+  const { token, hasFeature, canWrite } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
   const [status, setStatus] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState({ phone: "", name: "", sendWelcome: true });
 
   useEffect(() => {
     setPage(1);
@@ -53,6 +69,44 @@ export function PatientsPage() {
         status: status || undefined,
       }),
     enabled: !!token,
+  });
+
+  const { data: senders = [] } = useQuery({
+    queryKey: ["senders", "patients-page"],
+    queryFn: () => api.listSenders(token!),
+    enabled: !!token && hasFeature(FEATURE_KEYS.whatsappSendersManage),
+  });
+
+  const activeSender = senders.find((s) => s.isActive) ?? senders[0];
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.createPatient(token!, {
+        phone: form.phone,
+        name: form.name.trim() || undefined,
+        sendWelcome: form.sendWelcome,
+      }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      setCreateOpen(false);
+      setForm({ phone: "", name: "", sendWelcome: true });
+
+      if (!result.created) {
+        toast.info("Este telefone já está cadastrado.");
+        navigate(`/pacientes/${result.id}`);
+        return;
+      }
+
+      if (result.welcomeSent) {
+        toast.success("Paciente cadastrado — boas-vindas enviadas no WhatsApp.");
+      } else if (form.sendWelcome) {
+        toast.success("Paciente cadastrado. Conecte um remetente WhatsApp ativo para enviar boas-vindas.");
+      } else {
+        toast.success("Paciente cadastrado.");
+      }
+      navigate(`/pacientes/${result.id}`);
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao cadastrar"),
   });
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
@@ -86,10 +140,101 @@ export function PatientsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl">Pacientes</h1>
-        <p className="text-muted-foreground">Gerencie e acompanhe pacientes do programa</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl">Pacientes</h1>
+          <p className="text-muted-foreground">Gerencie e acompanhe pacientes do programa</p>
+        </div>
+        {canWrite && (
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="size-4" />
+                Novo paciente
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cadastrar paciente</DialogTitle>
+                <DialogDescription>
+                  Informe o WhatsApp do paciente. Se já existir, abriremos a ficha existente.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patient-phone">WhatsApp (E.164)</Label>
+                  <Input
+                    id="patient-phone"
+                    placeholder="+5511999999999"
+                    value={form.phone}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="patient-name">Nome (opcional)</Label>
+                  <Input
+                    id="patient-name"
+                    placeholder="Nome do paciente"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border px-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Enviar boas-vindas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Inicia o onboarding pelo WhatsApp (requer remetente ativo).
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.sendWelcome}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, sendWelcome: v }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => createMutation.mutate()}
+                  disabled={!form.phone.trim() || createMutation.isPending}
+                >
+                  {createMutation.isPending ? "Cadastrando…" : "Cadastrar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      <Card className="border-primary/20 bg-primary/[0.03]">
+        <CardHeader className="pb-2">
+          <div className="flex items-start gap-3">
+            <MessageCircle className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div>
+              <CardTitle className="text-base">Como entram novos pacientes</CardTitle>
+              <CardDescription className="mt-1">
+                Duas formas equivalentes — o sistema verifica se o telefone já existe antes de criar.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Pelo WhatsApp:</strong> o paciente envia qualquer mensagem para{" "}
+            {activeSender ? (
+              <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
+            ) : (
+              <Link to="/whatsapp" className="text-primary underline">
+                seu número conectado
+              </Link>
+            )}
+            . Criamos o cadastro e iniciamos o onboarding automaticamente.
+          </p>
+          <p>
+            <strong className="text-foreground">Pelo portal:</strong> use &quot;Novo paciente&quot; para pré-cadastrar
+            e opcionalmente disparar as boas-vindas.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="space-y-4">
@@ -154,7 +299,7 @@ export function PatientsPage() {
                       message={
                         searchInput.trim()
                           ? "Nenhum paciente corresponde à busca."
-                          : "Nenhum paciente encontrado."
+                          : "Nenhum paciente ainda. Cadastre acima ou aguarde a primeira mensagem no WhatsApp."
                       }
                     />
                   )}

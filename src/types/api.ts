@@ -12,6 +12,7 @@ export interface UserInfo {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
 }
 
 export interface PlatformUserInfo {
@@ -19,6 +20,17 @@ export interface PlatformUserInfo {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
+}
+
+export interface UserProfile {
+  userId: string;
+  scope: "tenant" | "platform";
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl: string | null;
+  tenantId?: string | null;
 }
 
 export interface LoginResponse {
@@ -38,6 +50,15 @@ export interface Patient {
   medication: string | null;
   lastCheckinAt: string | null;
   createdAt: string;
+}
+
+export interface CreatePatientResponse {
+  id: string;
+  name: string | null;
+  phone: string;
+  status: string;
+  created: boolean;
+  welcomeSent: boolean;
 }
 
 export interface SimulatorMessage {
@@ -208,6 +229,92 @@ export interface PeriodComparison {
   };
 }
 
+export interface AdminTenantMetricSlice {
+  tenantId: string;
+  tenantName: string;
+  tenantSlug: string;
+  totalCheckins: number;
+  takenCount: number;
+  missedCount: number;
+  adherenceRate: number;
+  activePatients: number;
+}
+
+export interface AdminAdherenceReport {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  totalCheckins: number;
+  takenCount: number;
+  missedCount: number;
+  unknownCount: number;
+  adherenceRate: number;
+  activePatients: number;
+  checkinsByHour: AdherenceReport["checkinsByHour"];
+  avgResponseByDay: AdherenceReport["avgResponseByDay"];
+  byTenant: AdminTenantMetricSlice[];
+}
+
+export interface AdminEngagementReport {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  byMessageKind: MessageEngagement[];
+  byTemplate: MessageEngagement[];
+  bestByResponseRate: MessageEngagement | null;
+  fastestAvgResponse: MessageEngagement | null;
+}
+
+export interface AdminTenantFunnelSlice {
+  tenantId: string;
+  tenantName: string;
+  total: number;
+  segments: PatientFunnelSegment[];
+}
+
+export interface AdminPatientFunnel {
+  total: number;
+  segments: PatientFunnelSegment[];
+  byTenant: AdminTenantFunnelSlice[];
+}
+
+export interface AdminPatientAdherenceRank extends PatientAdherenceRank {
+  tenantId: string;
+  tenantName: string;
+}
+
+export interface AdminTenantOpsSlice {
+  tenantId: string;
+  tenantName: string;
+  remindersSent: number;
+  remindersFailed: number;
+  reengagementsSent: number;
+  reactivated: number;
+}
+
+export interface AdminOperationsReport {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  reminders: OperationsReport["reminders"];
+  reengagements: OperationsReport["reengagements"];
+  byTenant: AdminTenantOpsSlice[];
+}
+
+export interface AdminSenderPerformance extends SenderPerformance {
+  tenantId: string;
+  tenantName: string;
+}
+
+export interface AdminPeriodComparison {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  current: PeriodMetrics;
+  previous: PeriodMetrics;
+  delta: PeriodComparison["delta"];
+}
+
 export interface TenantSettings {
   sendWindowStart: string;
   sendWindowEnd: string;
@@ -318,6 +425,31 @@ export interface AdminTenant {
   isActive: boolean;
   planKey: string;
   planName: string;
+  createdAt: string;
+}
+
+export interface AdminProductMetrics {
+  activeTenants: number;
+  activePatients: number;
+  onboardingsThisWeek: number;
+}
+
+export interface AdminPlatformUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface SimulatorSessionListItem {
+  patientId: string;
+  phone: string;
+  name: string | null;
+  patientStatus: string;
+  createdAt: string;
 }
 
 export interface PublicPlan {
@@ -325,6 +457,21 @@ export interface PublicPlan {
   key: string;
   name: string;
   sortOrder: number;
+}
+
+export interface BillingPlan {
+  id: string;
+  key: string;
+  name: string;
+  sortOrder: number;
+  priceMonthly: number | null;
+  currency: string;
+}
+
+export interface BillingCheckoutResponse {
+  url: string;
+  sessionId: string | null;
+  stub: boolean;
 }
 
 export interface PlanFeatureUpdate {

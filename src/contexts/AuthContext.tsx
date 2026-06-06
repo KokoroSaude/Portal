@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import {
   api,
   AUTH_STORAGE_KEY,
@@ -36,6 +37,8 @@ interface AuthContextValue {
   exitImpersonation: () => void;
   hasFeature: (key: string) => boolean;
   token: string | null;
+  avatarUrl: string | null;
+  updateAvatarUrl: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -104,6 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(null);
   }, []);
 
+  useEffect(() => {
+    const onTenantInactive = () => {
+      toast.error("Sua organização foi desativada. Você foi desconectado.");
+      logout();
+    };
+
+    window.addEventListener("kokoro:tenant-inactive", onTenantInactive);
+    return () => window.removeEventListener("kokoro:tenant-inactive", onTenantInactive);
+  }, [logout]);
+
   const impersonateTenant = useCallback(async (tenantId: string) => {
     const current = loadAuth();
     if (!current?.token || current.scope !== "platform") {
@@ -140,6 +153,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const canWrite = isAdmin || role === "Operator";
 
   const displayName = auth?.user?.name ?? auth?.platformUser?.name ?? "Usuário";
+  const avatarUrl = auth?.user?.avatarUrl ?? auth?.platformUser?.avatarUrl ?? null;
+
+  const updateAvatarUrl = useCallback((url: string | null) => {
+    setAuth((prev) => {
+      if (!prev) return prev;
+      const next: StoredAuth = {
+        ...prev,
+        user: prev.user ? { ...prev.user, avatarUrl: url } : null,
+        platformUser: prev.platformUser ? { ...prev.platformUser, avatarUrl: url } : null,
+      };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -160,9 +187,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       exitImpersonation,
       hasFeature,
       token: auth?.token ?? null,
+      avatarUrl,
+      updateAvatarUrl,
     }),
     [
       auth,
+      avatarUrl,
       canWrite,
       displayName,
       exitImpersonation,
@@ -174,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshSession,
       role,
+      updateAvatarUrl,
     ],
   );
 

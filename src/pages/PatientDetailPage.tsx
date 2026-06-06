@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Play, Save } from "lucide-react";
+import { ArrowLeft, Pause, Pencil, Play, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,9 @@ export function PatientDetailPage() {
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [nameInput, setNameInput] = useState("");
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
   const timelinePageSize = 20;
@@ -117,6 +120,30 @@ export function PatientDetailPage() {
     },
   });
 
+  const updatePatientMutation = useMutation({
+    mutationFn: () =>
+      api.updatePatient(token!, id!, {
+        phone: phoneInput.trim() || undefined,
+        name: nameInput,
+      }),
+    onSuccess: () => {
+      toast.success("Dados do paciente atualizados");
+      setPhoneOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["patient", id] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar");
+    },
+  });
+
+  useEffect(() => {
+    if (patient) {
+      setPhoneInput(patient.phone);
+      setNameInput(patient.name ?? "");
+    }
+  }, [patient]);
+
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
@@ -148,6 +175,51 @@ export function PatientDetailPage() {
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <PatientStatusBadge status={patient.status} />
             <span className="font-mono text-sm text-muted-foreground">{maskPhone(patient.phone)}</span>
+            {canWrite && (
+              <Dialog open={phoneOpen} onOpenChange={setPhoneOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                    <Pencil className="size-3" />
+                    Editar WhatsApp
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>WhatsApp do paciente</DialogTitle>
+                    <DialogDescription>
+                      Atualize se o paciente trocou de número. Deve ser o mesmo usado no WhatsApp.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phone">Telefone (E.164)</Label>
+                      <Input
+                        id="edit-phone"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="+5511999999999"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">Nome</Label>
+                      <Input
+                        id="edit-name"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={() => updatePatientMutation.mutate()}
+                      disabled={!phoneInput.trim() || updatePatientMutation.isPending}
+                    >
+                      Salvar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

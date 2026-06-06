@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -46,6 +46,13 @@ export function AdminFeaturesPage() {
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingFeature, setEditingFeature] = useState<{
+    id: string;
+    name: string;
+    category: string;
+    isActive: boolean;
+  } | null>(null);
   const [form, setForm] = useState({
     key: "",
     name: "",
@@ -65,6 +72,22 @@ export function AdminFeaturesPage() {
     onSuccess: () => {
       toast.success("Feature criada");
       setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-features"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      api.adminUpdateFeature(token!, editingFeature!.id, {
+        name: editingFeature!.name,
+        category: editingFeature!.category,
+        isActive: editingFeature!.isActive,
+      }),
+    onSuccess: () => {
+      toast.success("Feature atualizada");
+      setEditOpen(false);
+      setEditingFeature(null);
       queryClient.invalidateQueries({ queryKey: ["admin-features"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -166,12 +189,13 @@ export function AdminFeaturesPage() {
                   <TableHead>Categoria</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredFeatures.length === 0 && (
                   <GridEmptyRow
-                    colSpan={5}
+                    colSpan={6}
                     message={
                       query.trim()
                         ? "Nenhuma feature corresponde à busca."
@@ -190,6 +214,24 @@ export function AdminFeaturesPage() {
                         {f.isActive ? "Ativa" : "Inativa"}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingFeature({
+                            id: f.id,
+                            name: f.name,
+                            category: f.category,
+                            isActive: f.isActive,
+                          });
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                        Editar
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -197,6 +239,52 @@ export function AdminFeaturesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar feature</DialogTitle>
+          </DialogHeader>
+          {editingFeature && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input
+                  value={editingFeature.name}
+                  onChange={(e) =>
+                    setEditingFeature((f) => f && { ...f, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Input
+                  value={editingFeature.category}
+                  onChange={(e) =>
+                    setEditingFeature((f) => f && { ...f, category: e.target.value })
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="feature-active"
+                  type="checkbox"
+                  checked={editingFeature.isActive}
+                  onChange={(e) =>
+                    setEditingFeature((f) => f && { ...f, isActive: e.target.checked })
+                  }
+                />
+                <Label htmlFor="feature-active">Feature ativa</Label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, Send, UserPlus, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +30,16 @@ const VOICE_TONES = [
 
 type SimMode = "onboarding" | "active";
 
+function voiceToneFromQuery(tone: string | null): string {
+  if (!tone) return "Acolhedor";
+  const match = VOICE_TONES.find((t) => t.value.toLowerCase() === tone.toLowerCase());
+  return match?.value ?? tone;
+}
+
+function modeFromQuery(mode: string | null): SimMode {
+  return mode === "active" ? "active" : "onboarding";
+}
+
 function patientLabel(patient: SimulatorPatient | undefined, fallback: string) {
   if (!patient) return fallback;
   return patient.name?.trim() || "Novo paciente";
@@ -37,18 +48,26 @@ function patientLabel(patient: SimulatorPatient | undefined, fallback: string) {
 export function AdminSimulatorPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
-  const [mode, setMode] = useState<SimMode>("onboarding");
+  const [mode, setMode] = useState<SimMode>(() => modeFromQuery(searchParams.get("mode")));
   const [patientId, setPatientId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    voiceTone: "Acolhedor",
+  const [form, setForm] = useState(() => ({
+    voiceTone: voiceToneFromQuery(searchParams.get("tone")),
     name: "Maria Simulada",
     medication: "Metformina 500mg",
     dosage: "1 comprimido",
     scheduledTimes: "08:00,20:00",
-  });
+  }));
+
+  useEffect(() => {
+    const nextMode = modeFromQuery(searchParams.get("mode"));
+    const nextTone = voiceToneFromQuery(searchParams.get("tone"));
+    setMode(nextMode);
+    setForm((f) => ({ ...f, voiceTone: nextTone }));
+  }, [searchParams]);
 
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ["simulator-status"],

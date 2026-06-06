@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 
 export function SettingsPasswordTab() {
-  const { token, isPlatform } = useAuth();
+  const { token } = useAuth();
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
 
   const mutation = useMutation({
@@ -19,14 +19,6 @@ export function SettingsPasswordTab() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
-
-  if (isPlatform) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Superadmins devem alterar a senha por canal interno da plataforma.
-      </p>
-    );
-  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { Building2, Layers, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Building2, ChevronRight, Layers, TrendingUp, UserCheck, Users } from "lucide-react";
 import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
+import { formatDateTime } from "@/lib/utils";
 
 export function AdminOverviewPage() {
   const { token } = useAuth();
@@ -27,25 +29,73 @@ export function AdminOverviewPage() {
     enabled: !!token,
   });
 
+  const productMetrics = useQuery({
+    queryKey: ["admin-product-metrics"],
+    queryFn: () => api.adminGetProductMetrics(token!),
+    enabled: !!token,
+  });
+
   const loading = plans.isLoading || tenants.isLoading;
   const activePlans = plans.data?.filter((p) => p.isActive).length ?? 0;
   const activeTenants = tenants.data?.filter((t) => t.isActive).length ?? 0;
 
   const filteredRecentTenants = useMemo(() => {
     const all = tenants.data ?? [];
-    return all
+    return [...all]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .filter((t) => matchesGridSearch(query, t.name, t.slug, t.planName))
       .slice(0, 8);
   }, [tenants.data, query]);
 
   return (
     <div className="space-y-6">
+      <GettingStartedCard />
+
       <PageHeader
         title="Superadmin"
         description="Gestão de planos, tenants e features da plataforma Kokoro"
       />
 
-      <GettingStartedCard />
+      <Card>
+        <CardHeader>
+          <CardTitle>Métricas de produto</CardTitle>
+          <CardDescription>Contagens agregadas da plataforma</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {productMetrics.isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-20" />
+              ))}
+            </div>
+          ) : productMetrics.isError ? (
+            <p className="text-sm text-muted-foreground">
+              Não foi possível carregar as métricas de produto.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Stat
+                icon={Building2}
+                label="Tenants ativos"
+                value={productMetrics.data?.activeTenants ?? 0}
+                sub="organizações ativas"
+              />
+              <Stat
+                icon={UserCheck}
+                label="Pacientes ativos"
+                value={productMetrics.data?.activePatients ?? 0}
+                sub="em rotina de cuidado"
+              />
+              <Stat
+                icon={TrendingUp}
+                label="Onboardings esta semana"
+                value={productMetrics.data?.onboardingsThisWeek ?? 0}
+                sub="novos tenants"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-3">
@@ -88,11 +138,23 @@ export function AdminOverviewPage() {
               </li>
             )}
             {filteredRecentTenants.map((t) => (
-              <li key={t.id} className="flex justify-between rounded-lg border px-3 py-2">
-                <span>
-                  {t.name} <span className="text-muted-foreground">({t.slug})</span>
-                </span>
-                <span className="text-muted-foreground">{t.planName}</span>
+              <li key={t.id}>
+                <Link
+                  to="/admin/tenants"
+                  className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 transition-colors hover:bg-muted/60"
+                >
+                  <span>
+                    {t.name}{" "}
+                    <span className="text-muted-foreground">({t.slug})</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3 text-muted-foreground">
+                    <span className="hidden text-xs sm:inline">
+                      {formatDateTime(t.createdAt)}
+                    </span>
+                    <span>{t.planName}</span>
+                    <ChevronRight className="size-4" />
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

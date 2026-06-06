@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FileDown } from "lucide-react";
+import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
@@ -26,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
@@ -96,6 +99,7 @@ function MetricCard({ title, value }: { title: string; value: string | number })
 export function ReportsPage() {
   const { token, hasFeature } = useAuth();
   const [range, setRange] = useState(defaultRange);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const adherence = useQuery({
     queryKey: ["adherence-report", range],
@@ -151,6 +155,46 @@ export function ReportsPage() {
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
+  const handleExportPdf = async () => {
+    if (!adherence.data) {
+      toast.error("Aguarde o carregamento dos dados de adesão.");
+      return;
+    }
+
+    setExportingPdf(true);
+    try {
+      const [{ buildTenantReportPdf }, { downloadReportPdf }] = await Promise.all([
+        import("@/lib/buildReportPdfDocument"),
+        import("@/lib/reportPdf"),
+      ]);
+      const doc = buildTenantReportPdf({
+        range,
+        features: {
+          charts: hasFeature(FEATURE_KEYS.reportsCharts),
+          advanced: hasFeature(FEATURE_KEYS.reportsAdvanced),
+          cohort: hasFeature(FEATURE_KEYS.reportsCohort),
+          operations: hasFeature(FEATURE_KEYS.reportsOperations),
+          bySender: hasFeature(FEATURE_KEYS.reportsBySender),
+        },
+        adherence: adherence.data,
+        trend: trend.data,
+        engagement: engagement.data,
+        funnel: funnel.data,
+        rankingBest: rankingBest.data,
+        rankingWorst: rankingWorst.data,
+        operations: operations.data,
+        senders: senders.data,
+        comparison: comparison.data,
+      });
+      downloadReportPdf(doc);
+      toast.success("PDF exportado com sucesso.");
+    } catch {
+      toast.error("Não foi possível gerar o PDF.");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   if (!hasFeature(FEATURE_KEYS.reportsBasic)) {
     return (
       <>
@@ -168,6 +212,16 @@ export function ReportsPage() {
       <PageHeader
         title="Relatórios"
         description="Adesão, engajamento e operação do programa de medicamentos"
+        actions={
+          <Button
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={exportingPdf || adherence.isLoading || !adherence.data}
+          >
+            <FileDown className="size-4" />
+            {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
+          </Button>
+        }
       />
 
       <ReportRangePicker range={range} onChange={setRange} />

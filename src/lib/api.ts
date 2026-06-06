@@ -3,11 +3,21 @@ import type {
   AdminMessageTemplate,
   AdminOnboardingFlow,
   AdminPlan,
+  AdminPlatformUser,
+  AdminProductMetrics,
+  AdminAdherenceReport,
+  AdminEngagementReport,
+  AdminOperationsReport,
+  AdminPatientAdherenceRank,
+  AdminPatientFunnel,
+  AdminPeriodComparison,
+  AdminSenderPerformance,
   AdminTenant,
   AdherenceReport,
   AdherenceTrendPoint,
   CarePlanUpdate,
   CreateTenantResponse,
+  CreatePatientResponse,
   EngagementReport,
   OperationsReport,
   PatientAdherenceRank,
@@ -22,9 +32,12 @@ import type {
   PagedResult,
   PlanFeatureUpdate,
   PublicPlan,
+  BillingPlan,
+  BillingCheckoutResponse,
   SimulatorMessage,
   SimulatorPatient,
   SimulatorSession,
+  SimulatorSessionListItem,
   SimulatorStatus,
   TenantFeature,
   TenantSettings,
@@ -32,6 +45,7 @@ import type {
   TenantUser,
   TimelineEvent,
   UserInfo,
+  UserProfile,
   PlatformUserInfo,
   WhatsappSender,
 } from "@/types/api";
@@ -53,6 +67,7 @@ type RequestOptions = {
   method?: string;
   body?: unknown;
   token?: string | null;
+  headers?: Record<string, string>;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -64,6 +79,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (options.token) {
     headers.Authorization = `Bearer ${options.token}`;
+  }
+
+  if (options.headers) {
+    Object.assign(headers, options.headers);
   }
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -80,7 +99,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = text ? (JSON.parse(text) as unknown) : undefined;
 
   if (!res.ok) {
-    const err = data as { error?: string; title?: string } | undefined;
+    const err = data as { error?: string; title?: string; code?: string } | undefined;
+    if (res.status === 403 && err?.code === "tenant_inactive") {
+      window.dispatchEvent(new CustomEvent("kokoro:tenant-inactive"));
+    }
     throw new ApiClientError(
       err?.error ?? err?.title ?? `Erro ${res.status}`,
       res.status,
@@ -100,6 +122,20 @@ function qs(params: Record<string, string | number | undefined>) {
   return s ? `?${s}` : "";
 }
 
+function adminReportQs(
+  params: { from?: string; to?: string; limit?: number; worst?: boolean },
+  tenantIds?: string[],
+) {
+  const q = new URLSearchParams();
+  if (params.from) q.set("from", params.from);
+  if (params.to) q.set("to", params.to);
+  if (params.limit !== undefined) q.set("limit", String(params.limit));
+  if (params.worst) q.set("worst", "true");
+  tenantIds?.forEach((id) => q.append("tenantIds", id));
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
@@ -114,8 +150,37 @@ export const api = {
       body: { currentPassword, newPassword },
     }),
 
+  getProfile: (token: string) => request<UserProfile>("/api/auth/me", { token }),
+
+  uploadAvatar: async (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/auth/me/avatar`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : undefined;
+    if (!res.ok) {
+      const err = data as { error?: string; title?: string } | undefined;
+      throw new ApiClientError(
+        err?.error ?? err?.title ?? `Erro ${res.status}`,
+        res.status,
+        data,
+      );
+    }
+    return data as UserProfile;
+  },
+
+  deleteAvatar: (token: string) =>
+    request<UserProfile>("/api/auth/me/avatar", { method: "DELETE", token }),
+
   forgotPassword: (email: string) =>
     request<{ message: string }>("/api/auth/forgot-password", { method: "POST", body: { email } }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<void>("/api/auth/reset-password", { method: "POST", body: { token, newPassword } }),
 
   createTenant: (payload: {
     tenantName: string;
@@ -123,10 +188,26 @@ export const api = {
     adminName: string;
     adminEmail: string;
     adminPassword: string;
-  }) => request<CreateTenantResponse>("/api/tenants", { method: "POST", body: payload }),
+  }) => {
+    const signupKey = import.meta.env.VITE_TENANT_SIGNUP_KEY?.trim();
+    return request<CreateTenantResponse>("/api/tenants", {
+      method: "POST",
+      body: payload,
+      headers: signupKey ? { "X-Tenant-Signup-Key": signupKey } : undefined,
+    });
+  },
 
   getPatients: (token: string, params: { page?: number; pageSize?: number; status?: string; search?: string }) =>
     request<PagedResult<Patient>>(`/api/patients${qs(params)}`, { token }),
+
+  createPatient: (
+    token: string,
+    payload: { phone: string; name?: string; sendWelcome?: boolean },
+  ) =>
+    request<CreatePatientResponse>("/api/patients", { method: "POST", token, body: payload }),
+
+  updatePatient: (token: string, id: string, payload: { phone?: string; name?: string }) =>
+    request<void>(`/api/patients/${id}`, { method: "PUT", token, body: payload }),
 
   getPatient: (token: string, id: string) =>
     request<Patient>(`/api/patients/${id}`, { token }),
@@ -218,7 +299,13 @@ export const api = {
   updateSender: (
     token: string,
     senderId: string,
-    payload: { displayName?: string; isActive?: boolean },
+    payload: {
+      displayName?: string;
+      phoneNumber?: string;
+      wabaId?: string;
+      phoneId?: string;
+      isActive?: boolean;
+    },
   ) => request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body: payload }),
 
   getSettings: (token: string) => request<TenantSettings>("/api/settings", { token }),
@@ -232,6 +319,15 @@ export const api = {
   getLocales: () => request<string[]>("/api/subscription/locales"),
 
   getPublicPlans: () => request<PublicPlan[]>("/api/subscription/plans"),
+
+  getBillingPlans: () => request<BillingPlan[]>("/api/billing/plans"),
+
+  createBillingCheckout: (token: string, planKey: string) =>
+    request<BillingCheckoutResponse>("/api/billing/checkout", {
+      method: "POST",
+      token,
+      body: { planKey },
+    }),
 
   getTemplates: (token: string) => request<MessageTemplate[]>("/api/templates", { token }),
 
@@ -288,16 +384,128 @@ export const api = {
       body: { key, name, category, valueType },
     }),
 
+  adminUpdateFeature: (
+    token: string,
+    featureId: string,
+    payload: { name: string; category: string; isActive: boolean },
+  ) =>
+    request<void>(`/api/admin/features/${featureId}`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
   adminListTenants: (token: string) => request<AdminTenant[]>("/api/admin/tenants", { token }),
+
+  adminGetAdherenceReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminAdherenceReport>(
+      `/api/admin/reports/adherence${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetAdherenceTrend: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdherenceTrendPoint[]>(
+      `/api/admin/reports/adherence/trend${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetEngagementReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminEngagementReport>(
+      `/api/admin/reports/engagement${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetPatientFunnel: (token: string, tenantIds?: string[]) =>
+    request<AdminPatientFunnel>(
+      `/api/admin/reports/funnel${adminReportQs({}, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetPatientRanking: (
+    token: string,
+    from?: string,
+    to?: string,
+    limit = 10,
+    worst = false,
+    tenantIds?: string[],
+  ) =>
+    request<AdminPatientAdherenceRank[]>(
+      `/api/admin/reports/ranking${adminReportQs({ from, to, limit, worst }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetOperationsReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminOperationsReport>(
+      `/api/admin/reports/operations${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetSenderPerformance: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminSenderPerformance[]>(
+      `/api/admin/reports/senders${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetPeriodComparison: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminPeriodComparison>(
+      `/api/admin/reports/comparison${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetProductMetrics: (token: string) =>
+    request<AdminProductMetrics>("/api/admin/metrics/product", { token }),
+
+  adminUpdateTenantStatus: (token: string, tenantId: string, isActive: boolean) =>
+    request<void>(`/api/admin/tenants/${tenantId}/status`, {
+      method: "PUT",
+      token,
+      body: { isActive },
+    }),
 
   adminAssignTenantPlan: (token: string, tenantId: string, planId: string) =>
     request<void>(`/api/admin/tenants/${tenantId}/plan`, { method: "PUT", token, body: { planId } }),
+
+  adminListTenantUsers: (token: string, tenantId: string) =>
+    request<TenantUser[]>(`/api/admin/tenants/${tenantId}/users`, { token }),
+
+  adminUpdateTenantUser: (token: string, tenantId: string, userId: string, isActive: boolean) =>
+    request<void>(`/api/admin/tenants/${tenantId}/users/${userId}`, {
+      method: "PUT",
+      token,
+      body: { isActive },
+    }),
+
+  adminSetTenantUserPassword: (
+    token: string,
+    tenantId: string,
+    userId: string,
+    newPassword: string,
+  ) =>
+    request<void>(`/api/admin/tenants/${tenantId}/users/${userId}/password`, {
+      method: "PUT",
+      token,
+      body: { newPassword },
+    }),
+
+  adminListPlatformUsers: (token: string) =>
+    request<AdminPlatformUser[]>("/api/admin/platform-users", { token }),
 
   adminCreatePlatformUser: (token: string, name: string, email: string, password: string) =>
     request<{ id: string }>("/api/admin/platform-users", {
       method: "POST",
       token,
       body: { name, email, password },
+    }),
+
+  adminUpdatePlatformUser: (
+    token: string,
+    userId: string,
+    payload: { name?: string; email?: string; isActive?: boolean },
+  ) =>
+    request<void>(`/api/admin/platform-users/${userId}`, {
+      method: "PUT",
+      token,
+      body: payload,
     }),
 
   adminImpersonateTenant: (token: string, tenantId: string) =>
@@ -334,6 +542,9 @@ export const api = {
 
   simulatorStatus: (token: string) =>
     request<SimulatorStatus>("/api/admin/simulator/status", { token }),
+
+  simulatorListSessions: (token: string, limit = 50) =>
+    request<SimulatorSessionListItem[]>(`/api/admin/simulator/sessions${qs({ limit })}`, { token }),
 
   simulatorCreateSession: (
     token: string,

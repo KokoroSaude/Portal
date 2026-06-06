@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   BarChart3,
   Building2,
@@ -14,12 +14,13 @@ import {
   PanelLeftClose,
   Settings,
   Shield,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
+import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -38,6 +39,7 @@ export type NavItem = {
 };
 
 export const TENANT_NAV: NavItem[] = [
+  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, feature: FEATURE_KEYS.reportsBasic },
   { to: "/pacientes", label: "Pacientes", icon: Users },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, feature: FEATURE_KEYS.reportsBasic },
@@ -45,21 +47,66 @@ export const TENANT_NAV: NavItem[] = [
   { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
   { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
-  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
 ];
 
 export const PLATFORM_NAV: NavItem[] = [
+  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
   { to: "/", label: "Visão geral", icon: Shield, end: true },
   { to: "/admin/planos", label: "Planos", icon: Layers },
   { to: "/admin/tenants", label: "Tenants", icon: Building2 },
+  { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/admin/features", label: "Features", icon: Shield },
   { to: "/admin/usuarios", label: "Superadmins", icon: Users },
   { to: "/admin/onboarding", label: "Onboarding WhatsApp", icon: GitBranch },
   { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
-  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
 ];
+
+function countVisibleNavItems(
+  items: NavItem[],
+  hasFeature: (key: string) => boolean,
+  isAdmin: boolean,
+): number {
+  return items.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.feature && !hasFeature(item.feature)) return false;
+    return true;
+  }).length;
+}
+
+function FreemiumUpgradeHint({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) {
+    return (
+      <SidebarCollapsedFlyout collapsed label="Upgrade de plano" description="Desbloqueie mais recursos">
+        <Link
+          to="/configuracoes?tab=plano"
+          className="flex size-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:bg-white/10 hover:text-primary-foreground"
+          aria-label="Upgrade de plano"
+        >
+          <Sparkles className="size-4" />
+        </Link>
+      </SidebarCollapsedFlyout>
+    );
+  }
+
+  return (
+    <Link
+      to="/configuracoes?tab=plano"
+      className="block rounded-xl border border-white/25 bg-white/10 p-3 text-primary-foreground transition-colors hover:bg-white/15"
+    >
+      <div className="flex items-start gap-2">
+        <Sparkles className="mt-0.5 size-4 shrink-0" />
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-semibold leading-snug">Desbloqueie mais recursos</p>
+          <p className="text-xs text-primary-foreground/75">
+            Relatórios, templates, jornada e mais números WhatsApp no plano superior.
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 function NavSection({
   title,
@@ -138,14 +185,15 @@ export function AppSidebar({
   collapsible = false,
   onToggleCollapsed,
 }: AppSidebarProps) {
-  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role } = useAuth();
-  const initials = displayName
-    .split(" ")
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
+  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl } =
+    useAuth();
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
+
+  const visibleTenantNavCount = isTenant
+    ? countVisibleNavItems(TENANT_NAV, hasFeature, isAdmin)
+    : TENANT_NAV.length;
+  const showFreemiumHint = isTenant && visibleTenantNavCount <= 5;
 
   const handleLogout = () => {
     onNavigate?.();
@@ -203,14 +251,17 @@ export function AppSidebar({
 
       <nav className={cn("relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
         {isTenant && (
-          <NavSection
-            title="Operação"
-            items={TENANT_NAV}
-            hasFeature={hasFeature}
-            isAdmin={isAdmin}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-          />
+          <>
+            <NavSection
+              title="Operação"
+              items={TENANT_NAV}
+              hasFeature={hasFeature}
+              isAdmin={isAdmin}
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+            />
+            {showFreemiumHint && <FreemiumUpgradeHint collapsed={collapsed} />}
+          </>
         )}
         {isPlatform && (
           <NavSection
@@ -238,11 +289,14 @@ export function AppSidebar({
                     : (role ?? "Tenant")
               }
             >
-              <Avatar className="size-8 shrink-0">
-                <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <NavLink to="/perfil" onClick={onNavigate} aria-label="Meu perfil">
+                <UserAvatar
+                  name={displayName}
+                  avatarUrl={avatarUrl}
+                  className="size-8 shrink-0"
+                  fallbackClassName="bg-white/20 text-xs text-primary-foreground"
+                />
+              </NavLink>
             </SidebarCollapsedFlyout>
             <SidebarCollapsedFlyout collapsed label="Sair">
               <Button
@@ -259,12 +313,17 @@ export function AppSidebar({
           </div>
         ) : (
           <>
-            <div className="mb-3 flex items-center gap-3">
-              <Avatar className="size-8 shrink-0">
-                <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+            <NavLink
+              to="/perfil"
+              onClick={onNavigate}
+              className="mb-3 flex items-center gap-3 rounded-lg transition-colors hover:bg-white/10"
+            >
+              <UserAvatar
+                name={displayName}
+                avatarUrl={avatarUrl}
+                className="size-8 shrink-0"
+                fallbackClassName="bg-white/20 text-xs text-primary-foreground"
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{displayName}</p>
                 <p className="truncate text-xs text-primary-foreground/70">{email}</p>
@@ -272,7 +331,7 @@ export function AppSidebar({
                   {isPlatform ? "Superadmin" : role ?? "Tenant"}
                 </Badge>
               </div>
-            </div>
+            </NavLink>
             <Button
               variant="ghost"
               size="sm"

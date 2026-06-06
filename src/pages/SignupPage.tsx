@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 
 function slugify(value: string) {
@@ -19,6 +20,7 @@ function slugify(value: string) {
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     tenantName: "",
@@ -44,8 +46,9 @@ export function SignupPage() {
     setLoading(true);
     try {
       await api.createTenant(form);
-      toast.success("Tenant criado! Faça login com seu e-mail.");
-      navigate("/login");
+      const scope = await login(form.adminEmail, form.adminPassword);
+      toast.success("Conta criada com sucesso!");
+      navigate(scope === "platform" ? "/admin/planos" : "/");
     } catch (err) {
       const msg = err instanceof ApiClientError ? err.message : "Erro ao criar tenant";
       toast.error(msg);
