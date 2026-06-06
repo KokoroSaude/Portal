@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
 export type NavItem = {
@@ -184,6 +185,7 @@ export function AppSidebar({ className, onNavigate, onLogout }: AppSidebarProps)
           <LogOut className="size-4" />
           Sair
         </Button>
+        <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
       </div>
     </div>
   );

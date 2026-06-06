@@ -87,6 +87,9 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | `/admin/tenants` | Tenants |
 | `/admin/features` | Features |
 | `/admin/usuarios` | Superadmins |
+| `/admin/mensagens` | Mensagens padrão globais |
+| `/admin/simulador` | Simulador WhatsApp |
+| `/admin/assinatura` | Assinatura de e-mail |
 
 ### Público
 
@@ -100,3 +103,22 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | Variável | Local | Produção |
 |----------|-------|----------|
 | `VITE_API_URL` | `http://localhost:5000` | `https://api.kokorosaude.com.br` |
+
+## Versionamento (SemVer)
+
+A versão oficial fica em `package.json` e aparece no rodapé do menu (`v1.0.0`).
+
+| Tipo | Quando usar | Comando |
+|------|-------------|---------|
+| **PATCH** | Correções compatíveis | `npm run release:patch` |
+| **MINOR** | Novas funcionalidades compatíveis | `npm run release:minor` |
+| **MAJOR** | Mudanças incompatíveis | `npm run release:major` |
+
+Fluxo de release:
+
+1. Documente as mudanças em `CHANGELOG.md` (seção `[Unreleased]`)
+2. Rode o script adequado (atualiza `package.json`, `package-lock.json` e cria tag `vX.Y.Z`)
+3. `git push origin main --tags`
+4. O GitHub Actions publica a release e o Vercel faz deploy da tag
+
+Formato das tags: `v1.0.0`, `v1.1.0`, etc.
