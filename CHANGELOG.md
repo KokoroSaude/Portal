@@ -6,13 +6,28 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-06-04
+
+### Added
+
+- Página dedicada **Onboarding WhatsApp** separada das mensagens operacionais
+- Simulador com modo onboarding 100% pela conversa (sem paciente fictício pré-preenchido)
+- Modo **Paciente ativo** no simulador para testar lembretes
+
+### Changed
+
+- Mensagens operacionais admin focadas em lembretes, follow-up e textos custom.*
+- Guia e tour atualizados para refletir a nova estrutura
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.4...HEAD
+[1.1.4]: https://github.com/KokoroSaude/Portal/compare/v1.1.3...v1.1.4
+
 ## [1.1.3] - 2026-06-04
 
 ### Added
 
 - Flyout estilizado ao passar o mouse nos itens do menu lateral recolhido (nome, seção e dados do usuário)
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.3...HEAD
 [1.1.3]: https://github.com/KokoroSaude/Portal/compare/v1.1.2...v1.1.3
 
 ## [1.1.2] - 2026-06-04
