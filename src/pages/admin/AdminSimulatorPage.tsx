@@ -122,8 +122,8 @@ export function AdminSimulatorPage() {
         />
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            Simulador desabilitado na API. Ative{" "}
-            <code className="text-xs">Meta:SimulatorMode</code> no ambiente.
+            Simulador desabilitado na API (
+            <code className="text-xs">Meta:DisableSimulatorEndpoints</code>).
           </CardContent>
         </Card>
       </div>
