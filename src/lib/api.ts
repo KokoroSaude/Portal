@@ -290,6 +290,9 @@ export const api = {
     payload: { name?: string; role?: string; isActive?: boolean },
   ) => request<void>(`/api/users/${userId}`, { method: "PUT", token, body: payload }),
 
+  deleteUser: (token: string, userId: string) =>
+    request<void>(`/api/users/${userId}`, { method: "DELETE", token }),
+
   listSenders: (token: string) => request<WhatsappSender[]>("/api/senders", { token }),
 
   createSender: (
@@ -490,6 +493,9 @@ export const api = {
       body: { newPassword },
     }),
 
+  adminDeleteTenantUser: (token: string, tenantId: string, userId: string) =>
+    request<void>(`/api/admin/tenants/${tenantId}/users/${userId}`, { method: "DELETE", token }),
+
   adminListPlatformUsers: (token: string) =>
     request<AdminPlatformUser[]>("/api/admin/platform-users", { token }),
 
@@ -510,6 +516,9 @@ export const api = {
       token,
       body: payload,
     }),
+
+  adminDeletePlatformUser: (token: string, userId: string) =>
+    request<void>(`/api/admin/platform-users/${userId}`, { method: "DELETE", token }),
 
   adminImpersonateTenant: (token: string, tenantId: string) =>
     request<LoginResponse>(`/api/admin/tenants/${tenantId}/impersonate`, { method: "POST", token }),

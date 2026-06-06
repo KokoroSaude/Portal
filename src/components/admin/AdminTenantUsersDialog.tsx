@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -45,6 +45,7 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
   const { input, setInput, query } = useGridSearch();
   const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; email: string } | null>(null);
 
   const tenantId = tenant?.id ?? "";
 
@@ -74,6 +75,16 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) => api.adminDeleteTenantUser(token!, tenantId, userId),
+    onSuccess: () => {
+      toast.success("Usuário excluído");
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-tenant-users", tenantId] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
   const filteredUsers = useMemo(
     () =>
       (users.data ?? []).filter((u) =>
@@ -93,6 +104,7 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
     if (!next) {
       setPasswordUserId(null);
       setNewPassword("");
+      setDeleteTarget(null);
       setInput("");
     }
     onOpenChange(next);
@@ -184,6 +196,15 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
                         >
                           {u.isActive ? "Desativar" : "Ativar"}
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget({ id: u.id, name: u.name, email: u.email })}
+                        >
+                          <Trash2 className="size-4" />
+                          Excluir
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -226,6 +247,29 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
               disabled={newPassword.length < 8 || passwordMutation.isPending}
             >
               {passwordMutation.isPending ? "Salvando…" : "Salvar senha"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir usuário do tenant</DialogTitle>
+            <DialogDescription>
+              Remover permanentemente <strong>{deleteTarget?.name}</strong> ({deleteTarget?.email})?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              {deleteMutation.isPending ? "Excluindo…" : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -46,13 +46,16 @@ function toEditForm(user: AdminPlatformUser): EditForm {
 }
 
 export function AdminPlatformUsersPage() {
-  const { token } = useAuth();
+  const { token, auth } = useAuth();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateForm>(emptyCreate);
   const [editUser, setEditUser] = useState<AdminPlatformUser | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [deleteUser, setDeleteUser] = useState<AdminPlatformUser | null>(null);
+
+  const currentUserId = auth?.platformUser?.userId;
 
   const users = useQuery({
     queryKey: ["admin-platform-users"],
@@ -83,6 +86,16 @@ export function AdminPlatformUsersPage() {
       toast.success("Superadmin atualizado");
       setEditUser(null);
       setEditForm(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-users"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.adminDeletePlatformUser(token!, id),
+    onSuccess: () => {
+      toast.success("Superadmin excluído");
+      setDeleteUser(null);
       queryClient.invalidateQueries({ queryKey: ["admin-platform-users"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -230,10 +243,22 @@ export function AdminPlatformUsersPage() {
                       {formatDateTime(u.lastLoginAt)}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
-                        <Pencil className="size-4" />
-                        Editar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
+                          <Pencil className="size-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={u.id === currentUserId}
+                          onClick={() => setDeleteUser(u)}
+                        >
+                          <Trash2 className="size-4" />
+                          Excluir
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -304,6 +329,30 @@ export function AdminPlatformUsersPage() {
               disabled={!canSaveEdit || updateMutation.isPending}
             >
               {updateMutation.isPending ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir superadmin</DialogTitle>
+            <DialogDescription>
+              Esta ação remove permanentemente <strong>{deleteUser?.name}</strong> ({deleteUser?.email}).
+              Não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteUser(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteUser && deleteMutation.mutate(deleteUser.id)}
+            >
+              {deleteMutation.isPending ? "Excluindo…" : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>

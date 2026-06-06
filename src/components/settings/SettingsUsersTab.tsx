@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -41,11 +41,14 @@ import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatDateTime } from "@/lib/utils";
 
 export function SettingsUsersTab() {
-  const { token, hasFeature } = useAuth();
+  const { token, hasFeature, auth } = useAuth();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; email: string } | null>(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "Operator" });
+
+  const currentUserId = auth?.user?.userId;
 
   const { data, isLoading } = useQuery({
     queryKey: ["users"],
@@ -69,6 +72,16 @@ export function SettingsUsersTab() {
       api.updateUser(token!, id, payload),
     onSuccess: () => {
       toast.success("Usuário atualizado");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteUser(token!, id),
+    onSuccess: () => {
+      toast.success("Usuário excluído");
+      setDeleteTarget(null);
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -226,6 +239,16 @@ export function SettingsUsersTab() {
                     >
                       {u.isActive ? "Desativar" : "Ativar"}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      disabled={u.id === currentUserId}
+                      onClick={() => setDeleteTarget({ id: u.id, name: u.name, email: u.email })}
+                    >
+                      <Trash2 className="size-4" />
+                      Excluir
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -233,6 +256,30 @@ export function SettingsUsersTab() {
           </TableBody>
         </Table>
       )}
+
+      <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Remover permanentemente <strong>{deleteTarget?.name}</strong> ({deleteTarget?.email})? Esta ação não
+            pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              {deleteMutation.isPending ? "Excluindo…" : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
