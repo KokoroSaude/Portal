@@ -72,7 +72,8 @@ export function SignupPage() {
             <span className="italic opacity-90">Sem fricção.</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-primary-foreground/85">
-            Cadastre sua farmácia ou clínica e acompanhe a adesão dos pacientes pelo WhatsApp.
+            Cadastre sua farmácia ou clínica no plano Freemium e acompanhe a adesão dos pacientes pelo WhatsApp.
+            Upgrade pago via Mercado Pago em breve.
           </p>
         </div>
 
@@ -93,7 +94,8 @@ export function SignupPage() {
           <CardHeader>
             <CardTitle className="font-serif text-2xl">Criar tenant</CardTitle>
             <CardDescription>
-              Cadastre sua organização e o usuário administrador.
+              Cadastre sua organização e o usuário administrador. Plano inicial:{" "}
+              <strong>Freemium</strong> (gratuito).
             </CardDescription>
           </CardHeader>
           <CardContent>

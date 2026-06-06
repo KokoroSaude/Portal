@@ -34,6 +34,7 @@ import type {
   PublicPlan,
   BillingPlan,
   BillingCheckoutResponse,
+  BillingStatus,
   SimulatorMessage,
   SimulatorPatient,
   SimulatorSession,
@@ -321,6 +322,8 @@ export const api = {
   getPublicPlans: () => request<PublicPlan[]>("/api/subscription/plans"),
 
   getBillingPlans: () => request<BillingPlan[]>("/api/billing/plans"),
+
+  getBillingStatus: () => request<BillingStatus>("/api/billing/status"),
 
   createBillingCheckout: (token: string, planKey: string) =>
     request<BillingCheckoutResponse>("/api/billing/checkout", {

@@ -471,7 +471,12 @@ export interface BillingPlan {
 export interface BillingCheckoutResponse {
   url: string;
   sessionId: string | null;
-  stub: boolean;
+}
+
+export interface BillingStatus {
+  checkoutEnabled: boolean;
+  provider: string;
+  message: string;
 }
 
 export interface PlanFeatureUpdate {

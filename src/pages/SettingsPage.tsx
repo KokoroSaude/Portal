@@ -60,6 +60,11 @@ export function SettingsPage() {
     queryFn: () => api.getBillingPlans(),
   });
 
+  const { data: billingStatus } = useQuery({
+    queryKey: ["billing-status"],
+    queryFn: () => api.getBillingStatus(),
+  });
+
   const { data: locales } = useQuery({
     queryKey: ["locales"],
     queryFn: () => api.getLocales(),
@@ -300,6 +305,12 @@ export function SettingsPage() {
               {subscription?.planKey === "freemium" && billingPlans && (
                 <div className="space-y-3 border-t pt-6">
                   <h3 className="font-medium">Fazer upgrade</h3>
+                  {!billingStatus?.checkoutEnabled && (
+                    <p className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                      {billingStatus?.message ??
+                        "Pagamentos online em breve via Mercado Pago. Por enquanto todos os cadastros iniciam no Freemium. Para upgrade imediato, fale com a equipe Kokoro."}
+                    </p>
+                  )}
                   <div className="grid gap-4 sm:grid-cols-2">
                     {billingPlans
                       .filter((p) => p.key === "premium" || p.key === "enterprise")
@@ -315,9 +326,13 @@ export function SettingsPage() {
                           <Button
                             className="mt-4"
                             onClick={() => checkoutMutation.mutate(plan.key)}
-                            disabled={checkoutMutation.isPending}
+                            disabled={checkoutMutation.isPending || !billingStatus?.checkoutEnabled}
                           >
-                            {checkoutMutation.isPending ? "Redirecionando…" : `Upgrade para ${plan.name}`}
+                            {checkoutMutation.isPending
+                              ? "Redirecionando…"
+                              : billingStatus?.checkoutEnabled
+                                ? `Upgrade para ${plan.name}`
+                                : "Em breve"}
                           </Button>
                         </div>
                       ))}
