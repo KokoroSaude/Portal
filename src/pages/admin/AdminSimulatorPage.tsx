@@ -53,7 +53,7 @@ export function AdminSimulatorPage() {
     queryKey: ["simulator-messages", session?.patientId],
     queryFn: () => api.simulatorMessages(token!, session!.patientId),
     enabled: !!token && !!session?.patientId && !!status?.enabled,
-    refetchInterval: session ? 3000 : false,
+    refetchInterval: session ? 1000 : false,
   });
 
   useEffect(() => {
@@ -72,10 +72,10 @@ export function AdminSimulatorPage() {
         scheduledTimes: form.scheduledTimes,
         startOnboarding: form.startOnboarding,
       }),
-    onSuccess: (created) => {
+    onSuccess: async (created) => {
       setSession(created);
       setText("");
-      queryClient.invalidateQueries({ queryKey: ["simulator-messages", created.patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", created.patientId] });
       toast.success(
         created.welcomeSent
           ? "Paciente criado — boas-vindas enviadas. Responda SIM para continuar."
@@ -89,9 +89,9 @@ export function AdminSimulatorPage() {
 
   const replyMutation = useMutation({
     mutationFn: (body: string) => api.simulatorReply(token!, session!.patientId, body),
-    onSuccess: () => {
+    onSuccess: async () => {
       setText("");
-      queryClient.invalidateQueries({ queryKey: ["simulator-messages", session?.patientId] });
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", session?.patientId] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao simular resposta");
@@ -100,13 +100,9 @@ export function AdminSimulatorPage() {
 
   const reminderMutation = useMutation({
     mutationFn: () => api.simulatorTriggerReminder(token!, session!.patientId),
-    onSuccess: (res) => {
-      toast.success(
-        res.action === "already_due"
-          ? "Lembrete já vencido — aguarde o Worker"
-          : "Lembrete enfileirado — aguarde o Worker",
-      );
-      queryClient.invalidateQueries({ queryKey: ["simulator-messages", session?.patientId] });
+    onSuccess: async (res) => {
+      toast.success(res.action === "sent" ? "Lembrete enviado" : "Lembrete processado");
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", session?.patientId] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar lembrete");
@@ -138,7 +134,7 @@ export function AdminSimulatorPage() {
     <div className="space-y-6">
       <PageHeader
         title="Simulador WhatsApp"
-        description="Crie um paciente fictício na hora, escolha o tom de voz e converse pelo fluxo real (Worker + Redis)."
+        description="Crie um paciente fictício na hora, escolha o tom de voz e teste onboarding ou lembretes."
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,360px)_1fr]">
