@@ -108,12 +108,22 @@ export const PLATFORM_TOUR: ProductTourDefinition = {
       openMobileNav: true,
     },
     {
+      id: "onboarding",
+      target: '[data-tour="nav-admin-onboarding"]',
+      title: "Onboarding WhatsApp",
+      subtitle: "Cadastro do paciente novo.",
+      description:
+        "Edite o fluxo passo a passo que o paciente percorre no WhatsApp ao entrar no programa — separado dos lembretes do dia a dia.",
+      route: "/admin/onboarding",
+      openMobileNav: true,
+    },
+    {
       id: "messages",
       target: '[data-tour="nav-admin-mensagens"]',
-      title: "Mensagens padrão",
-      subtitle: "Textos globais do WhatsApp.",
+      title: "Mensagens operacionais",
+      subtitle: "Lembretes e follow-up.",
       description:
-        "Edite mensagens por tom de voz, inclua o fluxo de onboarding e crie chaves custom.* para novos textos.",
+        "Edite lembretes, reengajamento e textos custom.* por tom de voz. O onboarding tem área própria no menu.",
       route: "/admin/mensagens",
       openMobileNav: true,
     },

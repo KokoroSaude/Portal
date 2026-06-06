@@ -96,16 +96,24 @@ export const PLATFORM_GUIDE: PortalGuide = {
     {
       id: "messages",
       title: "4. Mensagens e simulador",
-      description: "Textos globais do WhatsApp e ambiente seguro para testar fluxos.",
+      description: "Onboarding de pacientes, textos do dia a dia e ambiente seguro para testar fluxos.",
       steps: [
         {
-          id: "default-messages",
-          title: "Mensagens padrão",
+          id: "onboarding-messages",
+          title: "Onboarding WhatsApp",
           description:
-            "Edite os textos globais por tom de voz (acolhedor, motivacional, direto). Inclui fluxo de onboarding e mensagens auxiliares.",
+            "Edite o fluxo de cadastro do paciente novo: boas-vindas, perguntas e confirmação — passo a passo, por tom de voz.",
+          to: "/admin/onboarding",
+          tips: ["Valide no simulador após salvar cada passo."],
+        },
+        {
+          id: "default-messages",
+          title: "Mensagens operacionais",
+          description:
+            "Lembretes, follow-up, reengajamento e mensagens custom.* fora do cadastro inicial.",
           to: "/admin/mensagens",
           tips: [
-            "Use Nova mensagem para chaves custom.* usadas na jornada.",
+            "Use Nova mensagem para chaves custom.* usadas na jornada do tenant.",
             "Restaurar padrão remove overrides salvos no banco.",
           ],
         },

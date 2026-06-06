@@ -21,6 +21,7 @@ import { AdminFeaturesPage } from "@/pages/admin/AdminFeaturesPage";
 import { AdminPlanFeaturesPage } from "@/pages/admin/AdminPlanFeaturesPage";
 import { AdminPlansPage } from "@/pages/admin/AdminPlansPage";
 import { AdminPlatformUsersPage } from "@/pages/admin/AdminPlatformUsersPage";
+import { AdminOnboardingPage } from "@/pages/admin/AdminOnboardingPage";
 import { AdminTemplatesPage } from "@/pages/admin/AdminTemplatesPage";
 import { AdminTenantsPage } from "@/pages/admin/AdminTenantsPage";
 
@@ -68,6 +69,7 @@ export default function App() {
                   <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                   <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />
                   <Route path="admin/simulador" element={<AdminSimulatorPage />} />
+                  <Route path="admin/onboarding" element={<AdminOnboardingPage />} />
                   <Route path="admin/mensagens" element={<AdminTemplatesPage />} />
                 </Route>
               </Route>

@@ -42,12 +42,12 @@ export function AppLayout() {
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <header className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
+          <header className="relative flex h-14 shrink-0 items-center border-b border-border/60 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="shrink-0"
+              className="relative z-10 shrink-0"
               aria-label="Abrir menu"
               aria-expanded={mobileNavOpen}
               data-tour="mobile-menu-btn"
@@ -55,7 +55,12 @@ export function AppLayout() {
             >
               <Menu className="size-5" />
             </Button>
-            <KokoroLogo variant="mark" to="/" height={36} />
+
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-14">
+              <KokoroLogo variant="mark" to="/" height={32} className="pointer-events-auto" />
+            </div>
+
+            <div className="relative z-10 size-10 shrink-0" aria-hidden />
           </header>
 
           <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-tour="main-content">
