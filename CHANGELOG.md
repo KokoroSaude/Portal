@@ -6,13 +6,21 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-06-04
+
+### Added
+
+- Flyout estilizado ao passar o mouse nos itens do menu lateral recolhido (nome, seção e dados do usuário)
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/KokoroSaude/Portal/compare/v1.1.2...v1.1.3
+
 ## [1.1.2] - 2026-06-04
 
 ### Added
 
 - Menu lateral recolhível no desktop, com modo compacto (somente ícones) e preferência persistida
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.2...HEAD
 [1.1.2]: https://github.com/KokoroSaude/Portal/compare/v1.1.1...v1.1.2
 
 ## [1.1.1] - 2026-06-04

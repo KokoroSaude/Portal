@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
+import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -89,26 +90,31 @@ function NavSection({
         </p>
       )}
       {visible.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
+        <SidebarCollapsedFlyout
           key={to}
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          title={collapsed ? label : undefined}
-          data-tour={tourNavId(to)}
-          className={({ isActive }) =>
-            cn(
-              "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-              collapsed ? "justify-center px-2" : "gap-3 px-3",
-              isActive
-                ? "bg-white/20 text-primary-foreground"
-                : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
-            )
-          }
+          collapsed={collapsed}
+          label={label}
+          description={collapsed ? title : undefined}
         >
-          <Icon className="size-4 shrink-0" />
-          {!collapsed && label}
-        </NavLink>
+          <NavLink
+            to={to}
+            end={end}
+            onClick={onNavigate}
+            data-tour={tourNavId(to)}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                collapsed ? "justify-center px-2" : "gap-3 px-3",
+                isActive
+                  ? "bg-white/20 text-primary-foreground"
+                  : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+              )
+            }
+          >
+            <Icon className="size-4 shrink-0" />
+            {!collapsed && label}
+          </NavLink>
+        </SidebarCollapsedFlyout>
       ))}
     </div>
   );
@@ -177,16 +183,18 @@ export function AppSidebar({
         <KokoroLogo variant="onCoral" to="/" height={collapsed ? 32 : 56} />
         {!collapsed && <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>}
         {collapsible && collapsed && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="mt-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-            aria-label="Expandir menu"
-            onClick={onToggleCollapsed}
-          >
-            <PanelLeft className="size-4" />
-          </Button>
+          <SidebarCollapsedFlyout collapsed label="Expandir menu">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mt-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+              aria-label="Expandir menu"
+              onClick={onToggleCollapsed}
+            >
+              <PanelLeft className="size-4" />
+            </Button>
+          </SidebarCollapsedFlyout>
         )}
       </div>
 
@@ -218,21 +226,35 @@ export function AppSidebar({
       <div className={cn("relative z-10 border-t border-white/20", collapsed ? "p-2" : "p-4")}>
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
-            <Avatar className="size-8 shrink-0" title={displayName}>
-              <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-              title="Sair"
-              onClick={handleLogout}
+            <SidebarCollapsedFlyout
+              collapsed
+              label={displayName}
+              description={
+                email
+                  ? `${email} · ${isPlatform ? "Superadmin" : role ?? "Tenant"}`
+                  : isPlatform
+                    ? "Superadmin"
+                    : (role ?? "Tenant")
+              }
             >
-              <LogOut className="size-4" />
-            </Button>
+              <Avatar className="size-8 shrink-0">
+                <AvatarFallback className="bg-white/20 text-xs text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </SidebarCollapsedFlyout>
+            <SidebarCollapsedFlyout collapsed label="Sair">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                aria-label="Sair"
+                onClick={handleLogout}
+              >
+                <LogOut className="size-4" />
+              </Button>
+            </SidebarCollapsedFlyout>
           </div>
         ) : (
           <>
