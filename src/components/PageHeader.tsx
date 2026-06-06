@@ -6,9 +6,11 @@ import { Link } from "react-router-dom";
 
 export function PageHeader({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="mb-8 border-b border-border/60 pb-6">
-      <h1 className="font-serif text-3xl tracking-tight text-foreground">{title}</h1>
-      {description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
+    <div className="mb-6 border-b border-border/60 pb-4 sm:mb-8 sm:pb-6">
+      <h1 className="font-serif text-2xl tracking-tight text-foreground sm:text-3xl">{title}</h1>
+      {description && (
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      )}
     </div>
   );
 }

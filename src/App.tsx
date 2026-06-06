@@ -15,6 +15,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { TemplatesPage } from "@/pages/TemplatesPage";
 import { AdminEmailSignaturePage } from "@/pages/admin/AdminEmailSignaturePage";
+import { AdminSimulatorPage } from "@/pages/admin/AdminSimulatorPage";
 import { AdminFeaturesPage } from "@/pages/admin/AdminFeaturesPage";
 import { AdminPlanFeaturesPage } from "@/pages/admin/AdminPlanFeaturesPage";
 import { AdminPlansPage } from "@/pages/admin/AdminPlansPage";
@@ -63,6 +64,7 @@ export default function App() {
                   <Route path="admin/features" element={<AdminFeaturesPage />} />
                   <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                   <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />
+                  <Route path="admin/simulador" element={<AdminSimulatorPage />} />
                 </Route>
               </Route>
             </Route>

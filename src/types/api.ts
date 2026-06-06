@@ -40,6 +40,30 @@ export interface Patient {
   createdAt: string;
 }
 
+export interface SimulatorMessage {
+  id: string;
+  direction: "inbound" | "outbound";
+  content: string;
+  messageType: string | null;
+  createdAt: string;
+}
+
+export interface SimulatorStatus {
+  enabled: boolean;
+  stubOutbound: boolean;
+}
+
+export interface SimulatorSession {
+  patientId: string;
+  tenantId: string;
+  phone: string;
+  name: string;
+  voiceTone: string;
+  medication: string;
+  scheduledTimes: string;
+  patientStatus: string;
+}
+
 export interface PagedResult<T> {
   items: T[];
   total: number;

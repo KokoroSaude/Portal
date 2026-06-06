@@ -20,6 +20,9 @@ import type {
   PagedResult,
   PlanFeatureUpdate,
   PublicPlan,
+  SimulatorMessage,
+  SimulatorSession,
+  SimulatorStatus,
   TenantFeature,
   TenantSettings,
   TenantSubscription,
@@ -296,7 +299,61 @@ export const api = {
 
   adminImpersonateTenant: (token: string, tenantId: string) =>
     request<LoginResponse>(`/api/admin/tenants/${tenantId}/impersonate`, { method: "POST", token }),
+
+  simulatorStatus: (token: string) =>
+    request<SimulatorStatus>("/api/admin/simulator/status", { token }),
+
+  simulatorCreateSession: (
+    token: string,
+    body: {
+      name: string;
+      voiceTone: string;
+      medication: string;
+      dosage?: string;
+      scheduledTimes: string;
+      startOnboarding?: boolean;
+    },
+  ) =>
+    request<SimulatorSession>("/api/admin/simulator/sessions", {
+      method: "POST",
+      token,
+      body,
+    }),
+
+  simulatorMessages: (token: string, patientId: string) =>
+    request<SimulatorMessage[]>(`/api/admin/simulator/patients/${patientId}/messages`, {
+      token,
+    }),
+
+  simulatorReply: (token: string, patientId: string, text: string) =>
+    request<{ processed: boolean; responseSent: string | null; eventType: string | null }>(
+      `/api/admin/simulator/patients/${patientId}/reply`,
+      { method: "POST", token, body: { text } },
+    ),
+
+  simulatorTriggerReminder: (token: string, patientId: string) =>
+    request<{ reminderId?: string; action: string }>(
+      `/api/admin/simulator/patients/${patientId}/trigger-reminder`,
+      { method: "POST", token },
+    ),
 };
+
+export function getSimulatorToken(): string | null {
+  const auth = loadAuth();
+  if (auth?.scope === "platform" && auth.token) return auth.token;
+  try {
+    const raw = localStorage.getItem(IMPERSONATION_STORAGE_KEY);
+    if (!raw) return null;
+    return (JSON.parse(raw) as StoredAuth).token;
+  } catch {
+    return null;
+  }
+}
+
+/** @deprecated Use getSimulatorToken or auth.token from useAuth */
+export function getPlatformTokenForSimulator(): string | null {
+  return getSimulatorToken();
+}
 
 export const IMPERSONATION_STORAGE_KEY = "kokoro.impersonation";
 
