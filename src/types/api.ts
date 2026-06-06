@@ -62,6 +62,7 @@ export interface SimulatorSession {
   medication: string;
   scheduledTimes: string;
   patientStatus: string;
+  welcomeSent?: boolean;
 }
 
 export interface PagedResult<T> {

@@ -40,7 +40,7 @@ export function AdminSimulatorPage() {
     medication: "Metformina 500mg",
     dosage: "1 comprimido",
     scheduledTimes: "08:00,20:00",
-    startOnboarding: false,
+    startOnboarding: true,
   });
 
   const { data: status, isLoading: statusLoading } = useQuery({
@@ -76,7 +76,11 @@ export function AdminSimulatorPage() {
       setSession(created);
       setText("");
       queryClient.invalidateQueries({ queryKey: ["simulator-messages", created.patientId] });
-      toast.success("Paciente fictício criado — simule o WhatsApp ao lado");
+      toast.success(
+        created.welcomeSent
+          ? "Paciente criado — boas-vindas enviadas. Responda SIM para continuar."
+          : "Paciente fictício criado — simule o WhatsApp ao lado",
+      );
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao criar sessão");
@@ -142,7 +146,7 @@ export function AdminSimulatorPage() {
           <CardHeader>
             <CardTitle>Novo paciente fictício</CardTitle>
             <CardDescription>
-              Dados básicos e tom de voz. Por padrão entra já ativo, pronto para lembretes.
+              Dados básicos e tom de voz. Com onboarding, a boas-vindas usa o nome e pula etapas já preenchidas.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -205,9 +209,9 @@ export function AdminSimulatorPage() {
 
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
-                <p className="text-sm font-medium">Testar onboarding</p>
+                <p className="text-sm font-medium">Modo onboarding</p>
                 <p className="text-xs text-muted-foreground">
-                  Se desligado, paciente já fica ativo com care plan.
+                  Ligado: envia boas-vindas com o nome e percorre o fluxo. Desligado: paciente já ativo.
                 </p>
               </div>
               <Switch
