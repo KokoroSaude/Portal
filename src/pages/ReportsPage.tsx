@@ -14,6 +14,7 @@ import {
   ResponseByDayChart,
   SimpleBarChart,
 } from "@/components/reports/ReportCharts";
+import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -251,6 +252,8 @@ export function ReportsPage() {
             <Skeleton className="h-48 w-full" />
           ) : adherence.data ? (
             <>
+              {token && <ReportAiInsightCard token={token} from={range.from} to={range.to} />}
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard title="Taxa de adesão" value={formatPercent(adherence.data.adherenceRate)} />
                 <MetricCard title="Check-ins" value={adherence.data.totalCheckins} />
@@ -290,6 +293,14 @@ export function ReportsPage() {
             <Skeleton className="h-48 w-full" />
           ) : engagement.data ? (
             <div className="space-y-6">
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="engagement"
+                />
+              )}
               {hasFeature(FEATURE_KEYS.reportsCharts) && (
                 <div className="grid gap-6 lg:grid-cols-2">
                   <EngagementBarChart

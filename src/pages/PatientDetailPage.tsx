@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Pause, Pencil, Play, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
+import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -297,6 +298,8 @@ export function PatientDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {token && id && <PatientAiInsightCard token={token} patientId={id} />}
 
       <Tabs defaultValue="timeline">
         <TabsList>

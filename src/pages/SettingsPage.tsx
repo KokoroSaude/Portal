@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsPasswordTab } from "@/components/settings/SettingsPasswordTab";
 import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
@@ -71,7 +72,7 @@ export function SettingsPage() {
   });
 
   useEffect(() => {
-    if (settings) setForm(settings);
+    if (settings) setForm({ ...settings, aiEnabled: settings.aiEnabled ?? false });
   }, [settings]);
 
   useEffect(() => {
@@ -264,6 +265,23 @@ export function SettingsPage() {
                   </Select>
                 </div>
               </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="aiEnabled">Inteligência artificial</Label>
+                  <p className="text-sm text-muted-foreground">
+                    NLU no WhatsApp, insights nos relatórios e personalização de marcos. Desligado usa
+                    apenas regras determinísticas.
+                  </p>
+                </div>
+                <Switch
+                  id="aiEnabled"
+                  checked={form.aiEnabled}
+                  onCheckedChange={(checked) => update("aiEnabled", checked)}
+                  disabled={!isAdmin}
+                />
+              </div>
+
               <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? "Salvando…" : "Salvar alterações"}
               </Button>

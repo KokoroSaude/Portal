@@ -123,6 +123,14 @@ export interface AdherenceReport {
   avgResponseByDay: { dayOfWeek: string; avgResponseSeconds: number }[];
 }
 
+export interface ReportInsight {
+  summary: string;
+  highlights: string[];
+  actions: string[];
+  source: "rules" | "ai";
+  generatedAt: string;
+}
+
 export interface MessageEngagement {
   groupKey: string;
   groupLabel: string;
@@ -323,6 +331,7 @@ export interface TenantSettings {
   inactiveDaysBeforeReengagement: number;
   voiceTone: string;
   locale: string;
+  aiEnabled: boolean;
 }
 
 export interface TenantSubscription {
@@ -423,6 +432,7 @@ export interface AdminTenant {
   name: string;
   slug: string;
   isActive: boolean;
+  aiEnabled: boolean;
   planKey: string;
   planName: string;
   createdAt: string;

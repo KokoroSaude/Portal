@@ -23,6 +23,7 @@ import type {
   PatientAdherenceRank,
   PatientFunnel,
   PeriodComparison,
+  ReportInsight,
   SenderPerformance,
   JourneyStep,
   LoginResponse,
@@ -231,6 +232,21 @@ export const api = {
 
   getAdherenceReport: (token: string, from?: string, to?: string) =>
     request<AdherenceReport>(`/api/reports/adherence${qs({ from, to })}`, { token }),
+
+  getAdherenceInsights: (token: string, from?: string, to?: string) =>
+    request<ReportInsight>(`/api/reports/adherence/insights${qs({ from, to })}`, {
+      method: "POST",
+      token,
+    }),
+
+  getEngagementInsights: (token: string, from?: string, to?: string) =>
+    request<ReportInsight>(`/api/reports/engagement/insights${qs({ from, to })}`, {
+      method: "POST",
+      token,
+    }),
+
+  getPatientInsight: (token: string, patientId: string) =>
+    request<ReportInsight>(`/api/patients/${patientId}/insight`, { method: "POST", token }),
 
   getEngagementReport: (token: string, from?: string, to?: string, patientId?: string) =>
     request<EngagementReport>(`/api/reports/engagement${qs({ from, to, patientId })}`, { token }),
@@ -468,6 +484,13 @@ export const api = {
       body: { isActive },
     }),
 
+  adminUpdateTenantAi: (token: string, tenantId: string, aiEnabled: boolean) =>
+    request<void>(`/api/admin/tenants/${tenantId}/ai`, {
+      method: "PUT",
+      token,
+      body: { aiEnabled },
+    }),
+
   adminAssignTenantPlan: (token: string, tenantId: string, planId: string) =>
     request<void>(`/api/admin/tenants/${tenantId}/plan`, { method: "PUT", token, body: { planId } }),
 
@@ -593,6 +616,12 @@ export const api = {
     request<{ reminderId?: string; action: string }>(
       `/api/admin/simulator/patients/${patientId}/trigger-reminder`,
       { method: "POST", token },
+    ),
+
+  simulatorTriggerMilestone: (token: string, patientId: string, days = 7) =>
+    request<{ text: string; personalizationSource: string; wamId?: string }>(
+      `/api/admin/simulator/patients/${patientId}/trigger-milestone`,
+      { method: "POST", token, body: { days } },
     ),
 };
 

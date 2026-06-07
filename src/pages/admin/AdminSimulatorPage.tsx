@@ -153,6 +153,19 @@ export function AdminSimulatorPage() {
     },
   });
 
+  const [milestoneDays, setMilestoneDays] = useState("7");
+
+  const milestoneMutation = useMutation({
+    mutationFn: () => api.simulatorTriggerMilestone(token!, patientId!, Number(milestoneDays)),
+    onSuccess: async (res) => {
+      toast.success(`Marco enviado (${res.personalizationSource === "ai" ? "IA" : res.personalizationSource})`);
+      await queryClient.refetchQueries({ queryKey: ["simulator-messages", patientId] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar marco");
+    },
+  });
+
   function startNewPatient() {
     setPatientId(null);
     setText("");
@@ -358,6 +371,29 @@ export function AdminSimulatorPage() {
                   <Zap className="size-4" />
                   Disparar lembrete agora
                 </Button>
+
+                <div className="flex gap-2">
+                  <Select value={milestoneDays} onValueChange={setMilestoneDays}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">D7</SelectItem>
+                      <SelectItem value="14">D14</SelectItem>
+                      <SelectItem value="30">D30</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    disabled={milestoneMutation.isPending || !canTriggerReminder}
+                    onClick={() => milestoneMutation.mutate()}
+                  >
+                    Disparar marco
+                  </Button>
+                </div>
+
                 {!canTriggerReminder && (
                   <p className="text-center text-[11px] text-muted-foreground">
                     Conclua o onboarding na conversa antes de disparar lembretes.

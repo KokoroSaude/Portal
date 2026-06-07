@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -56,6 +57,16 @@ export function AdminTenantsPage() {
       api.adminAssignTenantPlan(token!, tenantId, planId),
     onSuccess: () => {
       toast.success("Plano atribuído");
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const aiMutation = useMutation({
+    mutationFn: ({ tenantId, aiEnabled }: { tenantId: string; aiEnabled: boolean }) =>
+      api.adminUpdateTenantAi(token!, tenantId, aiEnabled),
+    onSuccess: () => {
+      toast.success("IA do tenant atualizada");
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -113,6 +124,7 @@ export function AdminTenantsPage() {
                   <TableHead>Slug</TableHead>
                   <TableHead>Plano atual</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>IA</TableHead>
                   <TableHead>Alterar plano</TableHead>
                   <TableHead />
                   <TableHead />
@@ -122,7 +134,7 @@ export function AdminTenantsPage() {
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={8}
+                    colSpan={9}
                     message={
                       query.trim()
                         ? "Nenhum tenant corresponde à busca."
@@ -139,6 +151,16 @@ export function AdminTenantsPage() {
                       <Badge variant={t.isActive ? "success" : "muted"}>
                         {t.isActive ? "Ativo" : "Inativo"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={t.aiEnabled}
+                        disabled={aiMutation.isPending}
+                        onCheckedChange={(checked) =>
+                          aiMutation.mutate({ tenantId: t.id, aiEnabled: checked })
+                        }
+                        aria-label={`IA ${t.name}`}
+                      />
                     </TableCell>
                     <TableCell>
                       <Select
