@@ -192,16 +192,15 @@ function NavGroup({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
           isGroupActive
             ? "text-primary-foreground"
             : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
         )}
       >
-        <Icon className="size-4 shrink-0" />
         <span className="flex-1 text-left">{item.label}</span>
         <ChevronDown
-          className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")}
+          className={cn("size-4 shrink-0 opacity-70 transition-transform", open && "rotate-180")}
           aria-hidden
         />
       </button>
