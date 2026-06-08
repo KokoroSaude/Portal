@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Building2,
+  ChevronDown,
   FileText,
   GitBranch,
   HelpCircle,
@@ -146,6 +148,14 @@ function NavGroup({
   const isGroupActive = visibleChildren.some(
     (child) => child.to && (pathname === child.to || pathname.startsWith(`${child.to}/`)),
   );
+  const [open, setOpen] = useState(false);
+  const wasActiveRef = useRef(false);
+
+  useEffect(() => {
+    if (isGroupActive && !wasActiveRef.current) setOpen(true);
+    if (!isGroupActive && wasActiveRef.current) setOpen(false);
+    wasActiveRef.current = isGroupActive;
+  }, [isGroupActive]);
 
   if (collapsed) {
     const firstChild = visibleChildren.find((child) => child.to);
@@ -177,25 +187,40 @@ function NavGroup({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-primary-foreground">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+          isGroupActive
+            ? "text-primary-foreground"
+            : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+        )}
+      >
         <Icon className="size-4 shrink-0" />
-        {item.label}
-      </div>
-      {visibleChildren.map((child) =>
-        child.to ? (
-          <NavLinkItem
-            key={child.to}
-            to={child.to}
-            label={child.label}
-            icon={child.icon}
-            end={child.end}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-            indent
-            sectionTitle={item.label}
-          />
-        ) : null,
-      )}
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown
+          className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+      {open &&
+        visibleChildren.map((child) =>
+          child.to ? (
+            <NavLinkItem
+              key={child.to}
+              to={child.to}
+              label={child.label}
+              icon={child.icon}
+              end={child.end}
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+              indent
+              sectionTitle={item.label}
+            />
+          ) : null,
+        )}
     </div>
   );
 }
