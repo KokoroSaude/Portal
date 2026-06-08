@@ -538,7 +538,29 @@ export interface WhatsappConversationMessage {
   content: string;
   wamId: string | null;
   messageType: string | null;
+  contentSource: string | null;
+  templateKey: string | null;
+  contextJson: string | null;
   createdAt: string;
+}
+
+export interface WhatsappConversationScheduling {
+  carePlan: {
+    medication: string;
+    dosage: string;
+    scheduledTimes: string;
+    startDate: string;
+  } | null;
+  patientStatus: string;
+  activatedAt: string | null;
+  conversationStep: string | null;
+  reminders: {
+    id: string;
+    scheduledFor: string;
+    status: string;
+    sentAt: string | null;
+    failureReason: string | null;
+  }[];
 }
 
 export interface WhatsappConversationThread {
@@ -547,6 +569,8 @@ export interface WhatsappConversationThread {
     name: string | null;
     phone: string;
     status: string;
+    activatedAt?: string | null;
   };
   messages: WhatsappConversationMessage[];
+  scheduling?: WhatsappConversationScheduling;
 }

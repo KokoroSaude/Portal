@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, RefreshCw, Trash2, UserX } from "lucide-react";
+import { CalendarClock, MessageCircle, RefreshCw, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,22 @@ import { api, ApiClientError } from "@/lib/api";
 import { cn, formatDateTime, maskPhone } from "@/lib/utils";
 import type { WhatsappConversationMessage } from "@/types/api";
 
+const CONTENT_SOURCE_LABELS: Record<string, string> = {
+  patient: "Paciente",
+  template: "Template",
+  rules: "Regras",
+  ai: "IA",
+  system: "Sistema",
+};
+
+function contentSourceLabel(source: string | null | undefined): string | null {
+  if (!source) return null;
+  return CONTENT_SOURCE_LABELS[source] ?? source;
+}
+
 function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
   const outbound = message.direction === "Outbound";
+  const sourceLabel = contentSourceLabel(message.contentSource);
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -24,9 +38,89 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
             : "rounded-bl-md bg-muted text-foreground",
         )}
       >
+        {sourceLabel && (
+          <Badge
+            variant={outbound ? "secondary" : "muted"}
+            className={cn("mb-1 text-[10px]", outbound && "bg-primary-foreground/15 text-primary-foreground")}
+          >
+            {sourceLabel}
+          </Badge>
+        )}
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
       </div>
+    </div>
+  );
+}
+
+function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/types/api").WhatsappConversationThread["scheduling"]> }) {
+  const nextPending = scheduling.reminders
+    .filter((r) => r.status === "Pending")
+    .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))[0];
+
+  const firstReminderTomorrow =
+    nextPending &&
+    new Date(nextPending.scheduledFor).toDateString() >
+      new Date().toDateString();
+
+  return (
+    <div className="space-y-3 rounded-xl border p-3 text-sm">
+      <div className="flex items-center gap-2 font-medium">
+        <CalendarClock className="size-4" />
+        Agendamento
+      </div>
+
+      {scheduling.carePlan ? (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">{scheduling.carePlan.medication}</span>
+            {scheduling.carePlan.dosage && <> · {scheduling.carePlan.dosage}</>}
+          </p>
+          <p>Horários: {scheduling.carePlan.scheduledTimes.replace(/,/g, ", ")}</p>
+          {scheduling.activatedAt && (
+            <p>Ativado em {formatDateTime(scheduling.activatedAt)}</p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Nenhum plano de cuidado ativo.</p>
+      )}
+
+      {nextPending ? (
+        <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+          <p className="font-medium text-foreground">Próximo lembrete</p>
+          <p>{formatDateTime(nextPending.scheduledFor)}</p>
+          {firstReminderTomorrow && (
+            <p className="mt-1 text-muted-foreground">
+              O template de conclusão diz &quot;a partir de amanhã&quot; — o primeiro envio está agendado para amanhã.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Sem lembretes pendentes.</p>
+      )}
+
+      {scheduling.conversationStep && (
+        <p className="text-xs text-muted-foreground">
+          Etapa da conversa: <span className="font-medium text-foreground">{scheduling.conversationStep}</span>
+        </p>
+      )}
+
+      {scheduling.reminders.some((r) => r.status === "Failed") && (
+        <p className="text-xs text-destructive">
+          Há lembretes com falha de envio — verifique a lista abaixo.
+        </p>
+      )}
+
+      {scheduling.reminders.length > 0 && (
+        <ul className="max-h-32 space-y-1 overflow-y-auto text-[11px] text-muted-foreground">
+          {scheduling.reminders.slice(0, 8).map((r) => (
+            <li key={r.id} className="flex justify-between gap-2">
+              <span>{formatDateTime(r.scheduledFor)}</span>
+              <span className={cn(r.status === "Failed" && "text-destructive")}>{r.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -212,17 +306,27 @@ export function WhatsappConversationsPanel() {
                 )}
               </div>
 
-              <div className="flex-1 space-y-3 overflow-y-auto p-4">
-                {thread.isLoading ? (
-                  <Skeleton className="h-40 w-full" />
-                ) : !thread.data?.messages.length ? (
-                  <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
-                ) : (
-                  thread.data.messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
-                  ))
-                )}
-                <div ref={threadEndRef} />
+              <div className="grid flex-1 gap-0 lg:grid-cols-[1fr_minmax(200px,240px)]">
+                <div className="space-y-3 overflow-y-auto border-b p-4 lg:border-b-0 lg:border-r">
+                  {thread.isLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : !thread.data?.messages.length ? (
+                    <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
+                  ) : (
+                    thread.data.messages.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))
+                  )}
+                  <div ref={threadEndRef} />
+                </div>
+
+                <div className="p-4">
+                  {thread.isLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : thread.data?.scheduling ? (
+                    <SchedulingSidebar scheduling={thread.data.scheduling} />
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
