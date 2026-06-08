@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
-import { ADMIN_TEMPLATE_TONES, adminTemplateToneLabel } from "@/lib/adminTemplateTones";
+import { ADMIN_TEMPLATE_TONES, adminTemplateToneLabel, normalizeVoiceToneSlug } from "@/lib/adminTemplateTones";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { FeatureLocked } from "@/components/PageHeader";
 
@@ -35,8 +35,8 @@ export function TemplatesPage() {
   });
 
   useEffect(() => {
-    if (settings?.voiceTone) {
-      setTone(settings.voiceTone.toLowerCase());
+    if (settings?.voiceTone != null) {
+      setTone(normalizeVoiceToneSlug(settings.voiceTone));
     }
   }, [settings?.voiceTone]);
 

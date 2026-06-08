@@ -21,6 +21,7 @@ import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { LOCALE_LABELS, VOICE_TONES } from "@/lib/constants";
+import { normalizeVoiceToneSelectValue } from "@/lib/adminTemplateTones";
 import type { TenantSettings } from "@/types/api";
 
 export function SettingsPage() {
@@ -46,7 +47,13 @@ export function SettingsPage() {
   });
 
   useEffect(() => {
-    if (settings) setForm({ ...settings, aiEnabled: settings.aiEnabled ?? false });
+    if (settings) {
+      setForm({
+        ...settings,
+        voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
+        aiEnabled: settings.aiEnabled ?? false,
+      });
+    }
   }, [settings]);
 
   const saveMutation = useMutation({
@@ -180,7 +187,10 @@ export function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Tom de voz</Label>
-                  <Select value={form.voiceTone} onValueChange={(v) => update("voiceTone", v)}>
+                  <Select
+                    value={normalizeVoiceToneSelectValue(form.voiceTone)}
+                    onValueChange={(v) => update("voiceTone", v)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

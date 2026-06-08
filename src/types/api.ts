@@ -329,7 +329,7 @@ export interface TenantSettings {
   followupAfterHours: number;
   maxReengagementAttempts: number;
   inactiveDaysBeforeReengagement: number;
-  voiceTone: string;
+  voiceTone: string | number;
   locale: string;
   aiEnabled: boolean;
 }
