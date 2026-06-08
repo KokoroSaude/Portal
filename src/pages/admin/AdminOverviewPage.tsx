@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Building2, ChevronRight, TrendingUp, UserCheck } from "lucide-react";
 import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
+import { AdminPlatformAiCard } from "@/components/admin/AdminPlatformAiCard";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,8 @@ export function AdminOverviewPage() {
         title="Superadmin"
         description="Gestão de organizações e operação da plataforma Kokoro"
       />
+
+      <AdminPlatformAiCard />
 
       <Card>
         <CardHeader>

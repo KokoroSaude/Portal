@@ -2,6 +2,7 @@ import type {
   AdminMessageTemplate,
   AdminOnboardingFlow,
   AdminPlatformUser,
+  AdminPlatformAiSettings,
   AdminProductMetrics,
   AdminAdherenceReport,
   AdminEngagementReport,
@@ -443,6 +444,15 @@ export const api = {
 
   adminGetProductMetrics: (token: string) =>
     request<AdminProductMetrics>("/api/admin/metrics/product", { token }),
+
+  adminGetPlatformAi: (token: string) =>
+    request<AdminPlatformAiSettings>("/api/admin/platform/ai", { token }),
+
+  adminUpdatePlatformAi: (
+    token: string,
+    payload: { provider: string; model?: string | null },
+  ) =>
+    request<void>("/api/admin/platform/ai", { method: "PUT", token, body: payload }),
 
   adminUpdateTenantStatus: (token: string, tenantId: string, isActive: boolean) =>
     request<void>(`/api/admin/tenants/${tenantId}/status`, {

@@ -424,6 +424,14 @@ export interface AdminProductMetrics {
   onboardingsThisWeek: number;
 }
 
+export interface AdminPlatformAiSettings {
+  provider: string;
+  model: string;
+  isConfigured: boolean;
+  openAiConfigured: boolean;
+  anthropicConfigured: boolean;
+}
+
 export interface AdminPlatformUser {
   id: string;
   name: string;
