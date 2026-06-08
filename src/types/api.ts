@@ -430,6 +430,8 @@ export interface AdminPlatformAiSettings {
   isConfigured: boolean;
   openAiConfigured: boolean;
   anthropicConfigured: boolean;
+  openAiKeyHint: string | null;
+  anthropicKeyHint: string | null;
 }
 
 export interface AdminPlatformUser {

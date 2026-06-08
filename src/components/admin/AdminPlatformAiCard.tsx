@@ -27,6 +27,8 @@ export function AdminPlatformAiCard() {
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState("openai");
   const [model, setModel] = useState("");
+  const [openAiApiKey, setOpenAiApiKey] = useState("");
+  const [anthropicApiKey, setAnthropicApiKey] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-platform-ai"],
@@ -45,9 +47,15 @@ export function AdminPlatformAiCard() {
       api.adminUpdatePlatformAi(token!, {
         provider,
         model: model.trim() || null,
+        openAiApiKey: openAiApiKey.trim() || null,
+        anthropicApiKey: anthropicApiKey.trim() || null,
+        updateOpenAiApiKey: openAiApiKey.trim().length > 0,
+        updateAnthropicApiKey: anthropicApiKey.trim().length > 0,
       }),
     onSuccess: () => {
-      toast.success("Provedor de IA atualizado");
+      toast.success("Configuração de IA salva");
+      setOpenAiApiKey("");
+      setAnthropicApiKey("");
       queryClient.invalidateQueries({ queryKey: ["admin-platform-ai"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),
@@ -63,27 +71,30 @@ export function AdminPlatformAiCard() {
           Inteligência artificial
         </CardTitle>
         <CardDescription>
-          Troque entre Claude e GPT sem redeploy. As chaves ficam no Railway (variáveis de ambiente).
+          Salve as chaves aqui e troque o provedor quando quiser — sem redeploy. Chaves criptografadas no
+          banco (fallback: variáveis de ambiente no Railway).
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="flex flex-wrap gap-2">
           <Badge variant={data?.openAiConfigured ? "default" : "secondary"}>
-            OpenAI {data?.openAiConfigured ? "configurada" : "sem chave"}
+            OpenAI {data?.openAiConfigured ? "ok" : "sem chave"}
+            {data?.openAiKeyHint ? ` · ${data.openAiKeyHint}` : ""}
           </Badge>
           <Badge variant={data?.anthropicConfigured ? "default" : "secondary"}>
-            Anthropic {data?.anthropicConfigured ? "configurada" : "sem chave"}
+            Anthropic {data?.anthropicConfigured ? "ok" : "sem chave"}
+            {data?.anthropicKeyHint ? ` · ${data.anthropicKeyHint}` : ""}
           </Badge>
           {data && (
             <Badge variant={data.isConfigured ? "success" : "warning"}>
-              {data.isConfigured ? "Pronta para uso" : "Chave do provedor ativo ausente"}
+              {data.isConfigured ? "Provedor ativo pronto" : "Falta chave do provedor selecionado"}
             </Badge>
           )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Provedor</Label>
+            <Label>Provedor ativo</Label>
             <Select value={provider} onValueChange={setProvider} disabled={isLoading}>
               <SelectTrigger>
                 <SelectValue />
@@ -103,14 +114,43 @@ export function AdminPlatformAiCard() {
               onChange={(e) => setModel(e.target.value)}
               disabled={isLoading}
             />
-            <p className="text-xs text-muted-foreground">
-              Padrão: {effectiveModel || DEFAULT_MODELS[provider]}
-            </p>
+            <p className="text-xs text-muted-foreground">Padrão: {effectiveModel}</p>
           </div>
         </div>
 
+        <div className="space-y-4 rounded-lg border p-4">
+          <p className="text-sm font-medium">Chaves de API</p>
+          <div className="space-y-2">
+            <Label htmlFor="anthropic-key">Anthropic (sk-ant-…)</Label>
+            <Input
+              id="anthropic-key"
+              type="password"
+              autoComplete="off"
+              placeholder={data?.anthropicKeyHint ? `Salva: ${data.anthropicKeyHint}` : "Cole a nova chave"}
+              value={anthropicApiKey}
+              onChange={(e) => setAnthropicApiKey(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="openai-key">OpenAI (sk-…)</Label>
+            <Input
+              id="openai-key"
+              type="password"
+              autoComplete="off"
+              placeholder={data?.openAiKeyHint ? `Salva: ${data.openAiKeyHint}` : "Cole a nova chave"}
+              value={openAiApiKey}
+              onChange={(e) => setOpenAiApiKey(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Deixe em branco para manter a chave atual. Preencha só ao cadastrar ou trocar.
+          </p>
+        </div>
+
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
-          {saveMutation.isPending ? "Salvando…" : "Salvar provedor"}
+          {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
         </Button>
       </CardContent>
     </Card>

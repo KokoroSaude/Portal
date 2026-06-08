@@ -107,7 +107,7 @@ export const PLATFORM_GUIDE: PortalGuide = {
           id: "ai-provider",
           title: "Inteligência artificial",
           description:
-            "Escolha entre Claude (Anthropic) e GPT (OpenAI) sem redeploy. As chaves de API ficam no Railway.",
+            "Cadastre as chaves Anthropic/OpenAI e escolha o provedor ativo — tudo salvo no banco, sem redeploy.",
           to: "/admin/configuracao",
           tips: ["Ative a IA também no tenant em Configurações → Operacional."],
         },

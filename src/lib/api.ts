@@ -450,7 +450,14 @@ export const api = {
 
   adminUpdatePlatformAi: (
     token: string,
-    payload: { provider: string; model?: string | null },
+    payload: {
+      provider: string;
+      model?: string | null;
+      openAiApiKey?: string | null;
+      anthropicApiKey?: string | null;
+      updateOpenAiApiKey?: boolean;
+      updateAnthropicApiKey?: boolean;
+    },
   ) =>
     request<void>("/api/admin/platform/ai", { method: "PUT", token, body: payload }),
 
