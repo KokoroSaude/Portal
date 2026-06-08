@@ -42,6 +42,8 @@ import type {
   UserInfo,
   UserProfile,
   PlatformUserInfo,
+  WhatsappConversation,
+  WhatsappConversationThread,
   WhatsappDiagnostics,
   WhatsappSender,
 } from "@/types/api";
@@ -324,6 +326,24 @@ export const api = {
 
   getWhatsAppDiagnostics: (token: string, limit = 50) =>
     request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),
+
+  listWhatsAppConversations: (token: string, limit = 30) =>
+    request<WhatsappConversation[]>(`/api/whatsapp/conversations?limit=${limit}`, { token }),
+
+  getWhatsAppConversationMessages: (token: string, patientId: string, limit = 200) =>
+    request<WhatsappConversationThread>(
+      `/api/whatsapp/conversations/${patientId}/messages?limit=${limit}`,
+      { token },
+    ),
+
+  deleteWhatsAppConversationMessages: (token: string, patientId: string) =>
+    request<{ deleted: number }>(`/api/whatsapp/conversations/${patientId}/messages`, {
+      method: "DELETE",
+      token,
+    }),
+
+  clearWhatsAppDiagnosticEvents: (token: string) =>
+    request<void>("/api/whatsapp/diagnostics/events", { method: "DELETE", token }),
 
   getSettings: (token: string) => request<TenantSettings>("/api/settings", { token }),
 

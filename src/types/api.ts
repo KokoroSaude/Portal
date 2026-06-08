@@ -508,5 +508,35 @@ export interface WhatsappDiagnostics {
     isActive: boolean;
   }>;
   events: WhatsappDiagnosticEvent[];
-  recentMessages: WhatsappDiagnosticMessage[];
+}
+
+export interface WhatsappConversation {
+  patientId: string;
+  name: string | null;
+  phone: string;
+  status: string | null;
+  messageCount: number;
+  lastMessageAt: string;
+  lastPreview: string;
+  lastDirection: string;
+}
+
+export interface WhatsappConversationMessage {
+  id: string;
+  direction: string;
+  status: string;
+  content: string;
+  wamId: string | null;
+  messageType: string | null;
+  createdAt: string;
+}
+
+export interface WhatsappConversationThread {
+  patient: {
+    id: string;
+    name: string | null;
+    phone: string;
+    status: string;
+  };
+  messages: WhatsappConversationMessage[];
 }

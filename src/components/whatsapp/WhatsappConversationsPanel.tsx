@@ -1,0 +1,197 @@
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MessageCircle, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { api, ApiClientError } from "@/lib/api";
+import { cn, formatDateTime, maskPhone } from "@/lib/utils";
+import type { WhatsappConversationMessage } from "@/types/api";
+
+function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
+  const outbound = message.direction === "Outbound";
+
+  return (
+    <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm",
+          outbound
+            ? "rounded-br-md bg-primary text-primary-foreground"
+            : "rounded-bl-md bg-muted text-foreground",
+        )}
+      >
+        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
+      </div>
+    </div>
+  );
+}
+
+export function WhatsappConversationsPanel() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const threadEndRef = useRef<HTMLDivElement>(null);
+
+  const conversations = useQuery({
+    queryKey: ["whatsapp-conversations"],
+    queryFn: () => api.listWhatsAppConversations(token!),
+    enabled: !!token,
+    refetchInterval: 10_000,
+  });
+
+  const thread = useQuery({
+    queryKey: ["whatsapp-conversation-messages", selectedPatientId],
+    queryFn: () => api.getWhatsAppConversationMessages(token!, selectedPatientId!),
+    enabled: !!token && !!selectedPatientId,
+    refetchInterval: 10_000,
+  });
+
+  useEffect(() => {
+    if (!selectedPatientId && conversations.data?.length) {
+      setSelectedPatientId(conversations.data[0].patientId);
+    }
+  }, [conversations.data, selectedPatientId]);
+
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [thread.data?.messages]);
+
+  const deleteMessages = useMutation({
+    mutationFn: (patientId: string) => api.deleteWhatsAppConversationMessages(token!, patientId),
+    onSuccess: (result) => {
+      toast.success(`${result.deleted} mensagem(ns) excluída(s)`);
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
+      });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
+  });
+
+  const selectedConversation = conversations.data?.find((c) => c.patientId === selectedPatientId);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="size-5" />
+            Conversas
+          </CardTitle>
+          <CardDescription>
+            Histórico real gravado pelo webhook — veja como a jornada se desenvolveu com cada contato.
+          </CardDescription>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={conversations.isFetching}
+          onClick={() => void conversations.refetch()}
+        >
+          <RefreshCw className={cn("size-4", conversations.isFetching && "animate-spin")} />
+          Atualizar
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {conversations.isLoading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : !conversations.data?.length ? (
+          <p className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+            Nenhuma conversa ainda. Envie uma mensagem para o número Business e aguarde o webhook.
+          </p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
+            <div className="space-y-2 rounded-xl border p-2">
+              {conversations.data.map((conversation) => {
+                const active = conversation.patientId === selectedPatientId;
+                return (
+                  <button
+                    key={conversation.patientId}
+                    type="button"
+                    onClick={() => setSelectedPatientId(conversation.patientId)}
+                    className={cn(
+                      "w-full rounded-lg border px-3 py-2 text-left transition-colors",
+                      active ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-muted/60",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium">
+                        {conversation.name ?? maskPhone(conversation.phone)}
+                      </p>
+                      <Badge variant="muted">{conversation.messageCount}</Badge>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {maskPhone(conversation.phone)}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {conversation.lastPreview}
+                    </p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {formatDateTime(conversation.lastMessageAt)}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex min-h-[320px] flex-col rounded-xl border">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+                <div>
+                  <p className="font-medium">
+                    {thread.data?.patient.name ?? selectedConversation?.name ?? "Contato"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {maskPhone(thread.data?.patient.phone ?? selectedConversation?.phone ?? "")}
+                    {thread.data?.patient.status && (
+                      <> · {thread.data.patient.status}</>
+                    )}
+                  </p>
+                </div>
+                {selectedPatientId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={deleteMessages.isPending}
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          "Excluir todas as mensagens desta conversa? O paciente permanece cadastrado.",
+                        )
+                      ) {
+                        return;
+                      }
+                      deleteMessages.mutate(selectedPatientId);
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    Limpar conversa
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                {thread.isLoading ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : !thread.data?.messages.length ? (
+                  <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
+                ) : (
+                  thread.data.messages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))
+                )}
+                <div ref={threadEndRef} />
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

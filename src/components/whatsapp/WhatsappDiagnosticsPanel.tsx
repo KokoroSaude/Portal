@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, CheckCircle2, RefreshCw, Trash2, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, ApiClientError } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import type { WhatsappDiagnosticEvent } from "@/types/api";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ function MetaFlag({ ok, label }: { ok: boolean; label: string }) {
 
 export function WhatsappDiagnosticsPanel() {
   const { token } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["whatsapp-diagnostics"],
@@ -75,26 +77,46 @@ export function WhatsappDiagnosticsPanel() {
     refetchInterval: 10_000,
   });
 
+  const clearLogs = useMutation({
+    mutationFn: () => api.clearWhatsAppDiagnosticEvents(token!),
+    onSuccess: () => {
+      toast.success("Logs da Meta limpos");
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-diagnostics"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao limpar logs"),
+  });
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0">
         <div>
-          <CardTitle>Diagnóstico em tempo real</CardTitle>
+          <CardTitle>Logs da Meta (webhook)</CardTitle>
           <CardDescription>
-            Eventos recentes do webhook Meta e mensagens gravadas. Envie um teste pelo WhatsApp e
-            atualize esta tela.
+            Eventos técnicos recebidos do webhook — útil para diagnosticar token, Phone ID e assinatura.
           </CardDescription>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isFetching}
-          onClick={() => void refetch()}
-        >
-          <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={clearLogs.isPending}
+            onClick={() => clearLogs.mutate()}
+          >
+            <Trash2 className="size-4" />
+            Limpar logs
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
+            Atualizar
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
@@ -108,7 +130,7 @@ export function WhatsappDiagnosticsPanel() {
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-xl border p-4 space-y-2">
+              <div className="space-y-2 rounded-xl border p-4">
                 <p className="text-sm font-medium">Configuração Meta (servidor)</p>
                 <MetaFlag ok={data.meta.hasAppSecret} label="App Secret" />
                 <MetaFlag ok={data.meta.hasAccessToken} label="Access Token" />
@@ -125,29 +147,24 @@ export function WhatsappDiagnosticsPanel() {
               <div className="rounded-xl border p-4 space-y-2 sm:col-span-2">
                 <p className="text-sm font-medium">Como interpretar</p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                  <li>Nada em eventos após enviar mensagem → Meta não está chamando o webhook.</li>
                   <li>
-                    <code className="text-xs">tenant_not_found</code> → Phone ID do remetente não
-                    bate com a Meta.
+                    <code className="text-xs">401</code> no detalhe → gere token permanente (System User).
                   </li>
                   <li>
-                    <code className="text-xs">signature_failed</code> → App Secret incorreto no
-                    Railway.
+                    <code className="text-xs">tenant_not_found</code> → Phone ID do remetente incorreto.
                   </li>
                   <li>
-                    <code className="text-xs">processed_with_reply</code> → Kokoro respondeu (se não
-                    chegou no celular, é entrega Meta).
+                    <code className="text-xs">processed_with_reply</code> → Kokoro enviou resposta à Meta.
                   </li>
                 </ul>
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Eventos do webhook ({data.events.length})</p>
+              <p className="text-sm font-medium">Eventos ({data.events.length})</p>
               {data.events.length === 0 ? (
                 <p className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                  Nenhum evento ainda. Mande uma mensagem para o número Business e clique em
-                  Atualizar.
+                  Nenhum evento registrado nesta réplica da API.
                 </p>
               ) : (
                 <Table>
@@ -166,9 +183,7 @@ export function WhatsappDiagnosticsPanel() {
                           {formatDateTime(event.at)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={eventVariant(event.eventType)}>
-                            {eventLabel(event)}
-                          </Badge>
+                          <Badge variant={eventVariant(event.eventType)}>{eventLabel(event)}</Badge>
                         </TableCell>
                         <TableCell className="font-mono text-xs">
                           {event.from && <div>{event.from}</div>}
@@ -179,40 +194,6 @@ export function WhatsappDiagnosticsPanel() {
                         <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                           {event.error ?? event.detail ?? "—"}
                         </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Mensagens recentes no banco ({data.recentMessages.length})</p>
-              {data.recentMessages.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma mensagem gravada ainda.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Quando</TableHead>
-                      <TableHead>Direção</TableHead>
-                      <TableHead>Conteúdo</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.recentMessages.map((msg) => (
-                      <TableRow key={msg.id}>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {formatDateTime(msg.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={msg.direction === "Inbound" ? "secondary" : "outline"}>
-                            {msg.direction === "Inbound" ? "Recebida" : "Enviada"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-md truncate text-sm">{msg.content}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{msg.status}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

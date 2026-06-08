@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingsSendersTab } from "@/components/settings/SettingsSendersTab";
+import { WhatsappConversationsPanel } from "@/components/whatsapp/WhatsappConversationsPanel";
 import { WhatsappDiagnosticsPanel } from "@/components/whatsapp/WhatsappDiagnosticsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,6 +173,8 @@ export function WhatsappPage() {
       </Card>
 
       <SettingsSendersTab />
+
+      <WhatsappConversationsPanel />
 
       <WhatsappDiagnosticsPanel />
     </div>
