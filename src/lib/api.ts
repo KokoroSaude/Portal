@@ -327,6 +327,9 @@ export const api = {
     },
   ) => request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body: payload }),
 
+  deleteSender: (token: string, senderId: string) =>
+    request<void>(`/api/senders/${senderId}`, { method: "DELETE", token }),
+
   getWhatsAppDiagnostics: (token: string, limit = 50) =>
     request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),
 

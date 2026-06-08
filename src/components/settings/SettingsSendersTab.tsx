@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -105,6 +105,27 @@ export function SettingsSendersTab() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (sender: WhatsappSender) => api.deleteSender(token!, sender.id),
+    onSuccess: () => {
+      toast.success("Remetente excluído");
+      queryClient.invalidateQueries({ queryKey: ["senders"] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-diagnostics"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
+  });
+
+  function confirmDelete(sender: WhatsappSender) {
+    if (
+      !window.confirm(
+        `Excluir permanentemente o remetente "${sender.displayName}" (${maskPhone(sender.phoneNumber)})? Pacientes vinculados permanecem, mas deixam de apontar para este número.`,
+      )
+    ) {
+      return;
+    }
+    deleteMutation.mutate(sender);
+  }
 
   const filteredSenders = useMemo(() => {
     const all = data ?? [];
@@ -248,6 +269,15 @@ export function SettingsSendersTab() {
                         onClick={() => toggleActiveMutation.mutate({ id: s.id, isActive: !s.isActive })}
                       >
                         {s.isActive ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => confirmDelete(s)}
+                      >
+                        <Trash2 className="size-4" />
+                        Excluir
                       </Button>
                     </div>
                   </TableCell>
