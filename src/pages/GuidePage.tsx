@@ -24,14 +24,14 @@ export function GuidePage() {
           <BookOpen className="size-3.5" />
           {totalSteps} passos
         </Badge>
-        <Badge variant="outline">{isPlatform ? "Superadmin" : "Operação tenant"}</Badge>
+        <Badge variant="outline">{isPlatform ? "Superadmin" : "Operação"}</Badge>
         <Button type="button" size="sm" onClick={() => void startTour({ force: true })}>
           <Sparkles className="size-3.5" />
           {isCompleted ? "Reiniciar tour interativo" : "Iniciar tour interativo"}
         </Button>
         {!isPlatform && (
           <Button asChild variant="link" className="h-auto px-0 text-sm">
-            <Link to="/configuracoes">Ver plano e features →</Link>
+            <Link to="/configuracoes">Ir para configurações →</Link>
           </Button>
         )}
       </div>

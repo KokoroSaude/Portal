@@ -26,68 +26,39 @@ export type PortalGuide = {
 export const PLATFORM_GUIDE: PortalGuide = {
   audience: "platform",
   title: "Guia do superadmin",
-  subtitle: "Passo a passo para configurar a plataforma Kokoro, atender tenants e validar mensagens no WhatsApp.",
+  subtitle: "Passo a passo para configurar a plataforma Kokoro, atender organizações e validar mensagens no WhatsApp.",
   sections: [
     {
       id: "overview",
       title: "1. Visão geral",
-      description: "Entenda o estado da plataforma antes de alterar planos ou tenants.",
+      description: "Entenda o estado da plataforma antes de alterar organizações.",
       steps: [
         {
           id: "home",
           title: "Painel inicial",
           description:
-            "Na visão geral você vê quantos planos e tenants estão ativos e a lista dos clientes mais recentes.",
+            "Na visão geral você vê quantas organizações estão ativas e a lista dos cadastros mais recentes.",
           to: "/",
           tips: ["Use como ponto de partida após o login."],
         },
       ],
     },
     {
-      id: "plans",
-      title: "2. Planos e features",
-      description: "Defina o que cada plano comercial pode acessar no portal e na API.",
-      steps: [
-        {
-          id: "plans",
-          title: "Gerenciar planos",
-          description:
-            "Crie ou edite planos (Freemium, Premium, Enterprise). Cada tenant fica vinculado a um plano.",
-          to: "/admin/planos",
-          tips: ["Ordene os planos pelo campo sort order.", "Desative planos que não devem mais ser vendidos."],
-        },
-        {
-          id: "plan-features",
-          title: "Features por plano",
-          description:
-            "Abra um plano e ligue/desligue features como relatórios, templates customizados e jornada de onboarding.",
-          to: "/admin/planos",
-          tips: ["Mudanças afetam todos os tenants daquele plano."],
-        },
-        {
-          id: "features-catalog",
-          title: "Catálogo de features",
-          description: "Consulte todas as chaves de feature disponíveis na plataforma.",
-          to: "/admin/features",
-        },
-      ],
-    },
-    {
       id: "tenants",
-      title: "3. Tenants",
+      title: "2. Organizações",
       description: "Organizações (farmácias/clínicas) que usam o Kokoro no dia a dia.",
       steps: [
         {
           id: "tenants-list",
-          title: "Listar e alterar plano",
-          description: "Veja tenants cadastrados, status e plano atual. Atribua outro plano quando necessário.",
+          title: "Listar organizações",
+          description: "Veja organizações cadastradas, status e toggle de IA.",
           to: "/admin/tenants",
         },
         {
           id: "impersonate",
-          title: "Impersonar tenant",
+          title: "Entrar como organização",
           description:
-            "Entre como o tenant para reproduzir problemas ou ajudar na configuração. Um banner laranja indica impersonação.",
+            "Acesse o portal como a organização para reproduzir problemas ou ajudar na configuração. Um banner laranja indica o modo de visualização.",
           to: "/admin/tenants",
           tips: ["Saia da impersonação pelo banner no topo da tela."],
         },
@@ -95,7 +66,7 @@ export const PLATFORM_GUIDE: PortalGuide = {
     },
     {
       id: "messages",
-      title: "4. Mensagens e simulador",
+      title: "3. Mensagens e simulador",
       description: "Onboarding de pacientes, textos do dia a dia e ambiente seguro para testar fluxos.",
       steps: [
         {
@@ -113,7 +84,7 @@ export const PLATFORM_GUIDE: PortalGuide = {
             "Lembretes, follow-up, reengajamento e mensagens custom.* fora do cadastro inicial.",
           to: "/admin/mensagens",
           tips: [
-            "Use Nova mensagem para chaves custom.* usadas na jornada do tenant.",
+            "Use Nova mensagem para chaves custom.* usadas na jornada da organização.",
             "Restaurar padrão remove overrides salvos no banco.",
           ],
         },
@@ -160,9 +131,9 @@ export const TENANT_GUIDE: PortalGuide = {
       steps: [
         {
           id: "settings",
-          title: "Configurações do tenant",
+          title: "Configurações da organização",
           description:
-            "Defina nome da organização, tom de voz padrão, idioma e fuso. Confira qual plano e features você possui.",
+            "Defina tom de voz padrão, idioma, janela de envio e preferências de IA.",
           to: "/configuracoes",
         },
         {
@@ -203,7 +174,7 @@ export const TENANT_GUIDE: PortalGuide = {
     {
       id: "customize",
       title: "3. Personalização",
-      description: "Ajuste mensagens e fluxo conforme seu plano.",
+      description: "Ajuste mensagens e fluxo de onboarding do seu programa.",
       steps: [
         {
           id: "journey",
@@ -215,7 +186,7 @@ export const TENANT_GUIDE: PortalGuide = {
         },
         {
           id: "templates",
-          title: "Templates do tenant",
+          title: "Templates da organização",
           description:
             "Sobrescreva mensagens automáticas só da sua organização, mantendo o padrão global quando não houver customização.",
           to: "/templates",

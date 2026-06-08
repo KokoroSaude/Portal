@@ -53,7 +53,7 @@ export function DashboardPage() {
           <PageHeader title="Dashboard" description="Visão geral de adesão e pacientes ativos" />
           <FeatureLocked
             title="Dashboard indisponível"
-            description="Faça upgrade do plano para acessar métricas de adesão e check-ins."
+            description="Métricas de adesão e check-ins não estão disponíveis para sua conta."
           />
         </div>
       </>
@@ -113,7 +113,7 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Check-ins por hora</CardTitle>
-            <CardDescription>Gráficos disponíveis no plano Premium</CardDescription>
+            <CardDescription>Gráficos de check-ins por hora</CardDescription>
           </CardHeader>
           <CardContent>
             <Link to="/relatorios" className="text-sm text-primary hover:underline">

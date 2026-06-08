@@ -1,8 +1,6 @@
 import type {
-  AdminFeature,
   AdminMessageTemplate,
   AdminOnboardingFlow,
-  AdminPlan,
   AdminPlatformUser,
   AdminProductMetrics,
   AdminAdherenceReport,
@@ -31,11 +29,6 @@ import type {
   OnboardingJourney,
   Patient,
   PagedResult,
-  PlanFeatureUpdate,
-  PublicPlan,
-  BillingPlan,
-  BillingCheckoutResponse,
-  BillingStatus,
   SimulatorMessage,
   SimulatorPatient,
   SimulatorSession,
@@ -338,19 +331,6 @@ export const api = {
 
   getLocales: () => request<string[]>("/api/subscription/locales"),
 
-  getPublicPlans: () => request<PublicPlan[]>("/api/subscription/plans"),
-
-  getBillingPlans: () => request<BillingPlan[]>("/api/billing/plans"),
-
-  getBillingStatus: () => request<BillingStatus>("/api/billing/status"),
-
-  createBillingCheckout: (token: string, planKey: string) =>
-    request<BillingCheckoutResponse>("/api/billing/checkout", {
-      method: "POST",
-      token,
-      body: { planKey },
-    }),
-
   getTemplates: (token: string) => request<MessageTemplate[]>("/api/templates", { token }),
 
   upsertTemplate: (token: string, key: string, content: string, description?: string) =>
@@ -373,50 +353,6 @@ export const api = {
     request<void>("/api/journey/onboarding", { method: "DELETE", token }),
 
   // Admin
-  adminListPlans: (token: string) => request<AdminPlan[]>("/api/admin/plans", { token }),
-
-  adminCreatePlan: (token: string, key: string, name: string, sortOrder: number) =>
-    request<{ id: string }>("/api/admin/plans", { method: "POST", token, body: { key, name, sortOrder } }),
-
-  adminUpdatePlan: (token: string, planId: string, name: string, sortOrder: number, isActive: boolean) =>
-    request<void>(`/api/admin/plans/${planId}`, {
-      method: "PUT",
-      token,
-      body: { name, sortOrder, isActive },
-    }),
-
-  adminGetPlanFeatures: (token: string, planId: string) =>
-    request<TenantFeature[]>(`/api/admin/plans/${planId}/features`, { token }),
-
-  adminUpdatePlanFeatures: (token: string, planId: string, features: PlanFeatureUpdate[]) =>
-    request<void>(`/api/admin/plans/${planId}/features`, { method: "PUT", token, body: { features } }),
-
-  adminListFeatures: (token: string) => request<AdminFeature[]>("/api/admin/features", { token }),
-
-  adminCreateFeature: (
-    token: string,
-    key: string,
-    name: string,
-    category: string,
-    valueType: string,
-  ) =>
-    request<{ id: string }>("/api/admin/features", {
-      method: "POST",
-      token,
-      body: { key, name, category, valueType },
-    }),
-
-  adminUpdateFeature: (
-    token: string,
-    featureId: string,
-    payload: { name: string; category: string; isActive: boolean },
-  ) =>
-    request<void>(`/api/admin/features/${featureId}`, {
-      method: "PUT",
-      token,
-      body: payload,
-    }),
-
   adminListTenants: (token: string) => request<AdminTenant[]>("/api/admin/tenants", { token }),
 
   adminGetAdherenceReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
@@ -490,9 +426,6 @@ export const api = {
       token,
       body: { aiEnabled },
     }),
-
-  adminAssignTenantPlan: (token: string, tenantId: string, planId: string) =>
-    request<void>(`/api/admin/tenants/${tenantId}/plan`, { method: "PUT", token, body: { planId } }),
 
   adminListTenantUsers: (token: string, tenantId: string) =>
     request<TenantUser[]>(`/api/admin/tenants/${tenantId}/users`, { token }),

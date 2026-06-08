@@ -41,7 +41,7 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
     return tenants.filter((t) => {
       if (statusFilter === "active" && !t.isActive) return false;
       if (statusFilter === "inactive" && t.isActive) return false;
-      return matchesGridSearch(query, t.name, t.slug, t.planName, t.planKey);
+      return matchesGridSearch(query, t.name, t.slug);
     });
   }, [tenants, query, statusFilter]);
 
@@ -77,11 +77,11 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <CardTitle className="font-serif text-lg">Tenants no relatório</CardTitle>
+          <CardTitle className="font-serif text-lg">Organizações no relatório</CardTitle>
           <CardDescription>
             {selectedIds.size === 0
-              ? "Selecione ao menos um tenant"
-              : `${selectedIds.size} de ${tenants.length} tenant(s) selecionado(s)`}
+              ? "Selecione ao menos uma organização"
+              : `${selectedIds.size} de ${tenants.length} organização(ões) selecionada(s)`}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
             <GridSearchBar
               value={input}
               onChange={setInput}
-              placeholder="Buscar por nome, slug ou plano"
+              placeholder="Buscar por nome ou slug"
               resultCount={filteredTenants.length}
               totalCount={tenants.length}
             />
@@ -173,19 +173,18 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
                     <Checkbox
                       checked={allFilteredSelected ? true : someFilteredSelected ? "indeterminate" : false}
                       onCheckedChange={toggleAllFiltered}
-                      aria-label="Selecionar todos os tenants visíveis"
+                      aria-label="Selecionar todas as organizações visíveis"
                     />
                   </TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Plano</TableHead>
+                  <TableHead>Organização</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTenants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                      Nenhum tenant corresponde aos filtros.
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                      Nenhuma organização corresponde aos filtros.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -205,7 +204,6 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
                         <div className="font-medium">{t.name}</div>
                         <div className="font-mono text-xs text-muted-foreground">{t.slug}</div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{t.planName}</TableCell>
                       <TableCell>
                         <Badge variant={t.isActive ? "success" : "muted"}>
                           {t.isActive ? "Ativo" : "Inativo"}

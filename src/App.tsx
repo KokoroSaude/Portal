@@ -23,7 +23,6 @@ const PatientsPage = lazyPage(() => import("@/pages/PatientsPage"), "PatientsPag
 const ProfilePage = lazyPage(() => import("@/pages/ProfilePage"), "ProfilePage");
 const ReportsPage = lazyPage(() => import("@/pages/ReportsPage"), "ReportsPage");
 const SettingsPage = lazyPage(() => import("@/pages/SettingsPage"), "SettingsPage");
-const SignupPage = lazyPage(() => import("@/pages/SignupPage"), "SignupPage");
 const TemplatesPage = lazyPage(() => import("@/pages/TemplatesPage"), "TemplatesPage");
 const ResetPasswordPage = lazyPage(() => import("@/pages/ResetPasswordPage"), "ResetPasswordPage");
 const AdminEmailSignaturePage = lazy(() =>
@@ -32,12 +31,6 @@ const AdminEmailSignaturePage = lazy(() =>
   })),
 );
 const AdminSimulatorPage = lazyPage(() => import("@/pages/admin/AdminSimulatorPage"), "AdminSimulatorPage");
-const AdminFeaturesPage = lazyPage(() => import("@/pages/admin/AdminFeaturesPage"), "AdminFeaturesPage");
-const AdminPlanFeaturesPage = lazyPage(
-  () => import("@/pages/admin/AdminPlanFeaturesPage"),
-  "AdminPlanFeaturesPage",
-);
-const AdminPlansPage = lazyPage(() => import("@/pages/admin/AdminPlansPage"), "AdminPlansPage");
 const AdminPlatformUsersPage = lazyPage(
   () => import("@/pages/admin/AdminPlatformUsersPage"),
   "AdminPlatformUsersPage",
@@ -73,7 +66,7 @@ export default function App() {
             <Routes>
               <Route element={<GuestRoute />}>
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/cadastro" element={<SignupPage />} />
+                <Route path="/cadastro" element={<Navigate to="/login" replace />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
               </Route>
 
@@ -95,11 +88,8 @@ export default function App() {
 
                   <Route element={<RequirePlatform />}>
                     <Route path="admin" element={<Navigate to="/" replace />} />
-                    <Route path="admin/planos" element={<AdminPlansPage />} />
-                    <Route path="admin/planos/:planId" element={<AdminPlanFeaturesPage />} />
                     <Route path="admin/tenants" element={<AdminTenantsPage />} />
                     <Route path="admin/relatorios" element={<AdminReportsPage />} />
-                    <Route path="admin/features" element={<AdminFeaturesPage />} />
                     <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                     <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />
                     <Route path="admin/simulador" element={<AdminSimulatorPage />} />

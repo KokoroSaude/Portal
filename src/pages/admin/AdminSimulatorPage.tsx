@@ -184,7 +184,7 @@ export function AdminSimulatorPage() {
       <div className="space-y-4">
         <PageHeader
           title="Simulador WhatsApp"
-          description="Teste lembretes e respostas sem impersonar tenant nem usar a Meta."
+          description="Teste lembretes e respostas sem entrar como organização nem usar a Meta."
         />
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">

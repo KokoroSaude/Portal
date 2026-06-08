@@ -10,13 +10,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,27 +39,11 @@ export function AdminTenantsPage() {
     enabled: !!token,
   });
 
-  const plans = useQuery({
-    queryKey: ["admin-plans"],
-    queryFn: () => api.adminListPlans(token!),
-    enabled: !!token,
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: ({ tenantId, planId }: { tenantId: string; planId: string }) =>
-      api.adminAssignTenantPlan(token!, tenantId, planId),
-    onSuccess: () => {
-      toast.success("Plano atribuído");
-      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
-    },
-    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
-  });
-
   const aiMutation = useMutation({
     mutationFn: ({ tenantId, aiEnabled }: { tenantId: string; aiEnabled: boolean }) =>
       api.adminUpdateTenantAi(token!, tenantId, aiEnabled),
     onSuccess: () => {
-      toast.success("IA do tenant atualizada");
+      toast.success("IA da organização atualizada");
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -76,7 +53,7 @@ export function AdminTenantsPage() {
     mutationFn: ({ tenantId, isActive }: { tenantId: string; isActive: boolean }) =>
       api.adminUpdateTenantStatus(token!, tenantId, isActive),
     onSuccess: () => {
-      toast.success("Status do tenant atualizado");
+      toast.success("Status da organização atualizado");
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
@@ -94,21 +71,21 @@ export function AdminTenantsPage() {
   const filteredTenants = useMemo(() => {
     const all = tenants.data ?? [];
     return all.filter((t) =>
-      matchesGridSearch(query, t.name, t.slug, t.planName, t.isActive ? "ativo" : "inativo"),
+      matchesGridSearch(query, t.name, t.slug, t.isActive ? "ativo" : "inativo"),
     );
   }, [tenants.data, query]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tenants" description="Organizações e planos de assinatura" />
+      <PageHeader title="Organizações" description="Farmácias e clínicas cadastradas na plataforma" />
 
       <Card>
         <CardHeader className="space-y-4">
-          <CardTitle>Todos os tenants</CardTitle>
+          <CardTitle>Todas as organizações</CardTitle>
           <GridSearchBar
             value={input}
             onChange={setInput}
-            placeholder="Buscar por nome, slug ou plano"
+            placeholder="Buscar por nome ou slug"
             resultCount={filteredTenants.length}
             totalCount={tenants.data?.length}
           />
@@ -122,10 +99,8 @@ export function AdminTenantsPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
-                  <TableHead>Plano atual</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>IA</TableHead>
-                  <TableHead>Alterar plano</TableHead>
                   <TableHead />
                   <TableHead />
                   <TableHead />
@@ -134,11 +109,11 @@ export function AdminTenantsPage() {
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={9}
+                    colSpan={7}
                     message={
                       query.trim()
-                        ? "Nenhum tenant corresponde à busca."
-                        : "Nenhum tenant cadastrado."
+                        ? "Nenhuma organização corresponde à busca."
+                        : "Nenhuma organização cadastrada."
                     }
                   />
                 )}
@@ -146,7 +121,6 @@ export function AdminTenantsPage() {
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell className="font-mono text-xs">{t.slug}</TableCell>
-                    <TableCell>{t.planName}</TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>
                         {t.isActive ? "Ativo" : "Inativo"}
@@ -161,24 +135,6 @@ export function AdminTenantsPage() {
                         }
                         aria-label={`IA ${t.name}`}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        onValueChange={(planId) =>
-                          assignMutation.mutate({ tenantId: t.id, planId })
-                        }
-                      >
-                        <SelectTrigger className="w-44">
-                          <SelectValue placeholder="Trocar plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {plans.data?.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </TableCell>
                     <TableCell>
                       <Button
@@ -210,7 +166,7 @@ export function AdminTenantsPage() {
                         onClick={() => impersonateMutation.mutate(t.id)}
                       >
                         <Eye className="size-4" />
-                        Entrar como tenant
+                        Entrar como organização
                       </Button>
                     </TableCell>
                   </TableRow>

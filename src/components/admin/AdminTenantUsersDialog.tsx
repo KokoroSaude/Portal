@@ -115,14 +115,14 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Usuários do tenant</DialogTitle>
+            <DialogTitle>Usuários da organização</DialogTitle>
             <DialogDescription>
               {tenant ? (
                 <>
                   {tenant.name} <span className="font-mono text-xs">({tenant.slug})</span>
                 </>
               ) : (
-                "Selecione um tenant"
+                "Selecione uma organização"
               )}
             </DialogDescription>
           </DialogHeader>
@@ -156,7 +156,7 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
                     message={
                       query.trim()
                         ? "Nenhum usuário corresponde à busca."
-                        : "Nenhum usuário neste tenant."
+                        : "Nenhum usuário nesta organização."
                     }
                   />
                 )}
@@ -228,7 +228,7 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
           <DialogHeader>
             <DialogTitle>Alterar senha</DialogTitle>
             <DialogDescription>
-              Defina uma nova senha para o usuário do tenant (mínimo 8 caracteres).
+              Defina uma nova senha para o usuário da organização (mínimo 8 caracteres).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -255,7 +255,7 @@ export function AdminTenantUsersDialog({ tenant, open, onOpenChange }: Props) {
       <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir usuário do tenant</DialogTitle>
+            <DialogTitle>Excluir usuário da organização</DialogTitle>
             <DialogDescription>
               Remover permanentemente <strong>{deleteTarget?.name}</strong> ({deleteTarget?.email})?
             </DialogDescription>

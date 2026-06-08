@@ -46,7 +46,7 @@ export function FeatureLocked({
       </CardHeader>
       <CardContent>
         <Button asChild variant="outline">
-          <Link to="/configuracoes">Ver plano e features</Link>
+          <Link to="/configuracoes">Ir para configurações</Link>
         </Button>
       </CardContent>
     </Card>

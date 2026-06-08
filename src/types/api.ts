@@ -409,32 +409,12 @@ export interface CarePlanUpdate {
   endDate?: string;
 }
 
-export interface AdminPlan {
-  id: string;
-  key: string;
-  name: string;
-  sortOrder: number;
-  isActive: boolean;
-  tenantCount: number;
-}
-
-export interface AdminFeature {
-  id: string;
-  key: string;
-  name: string;
-  category: string;
-  valueType: string;
-  isActive: boolean;
-}
-
 export interface AdminTenant {
   id: string;
   name: string;
   slug: string;
   isActive: boolean;
   aiEnabled: boolean;
-  planKey: string;
-  planName: string;
   createdAt: string;
 }
 
@@ -460,39 +440,6 @@ export interface SimulatorSessionListItem {
   name: string | null;
   patientStatus: string;
   createdAt: string;
-}
-
-export interface PublicPlan {
-  id: string;
-  key: string;
-  name: string;
-  sortOrder: number;
-}
-
-export interface BillingPlan {
-  id: string;
-  key: string;
-  name: string;
-  sortOrder: number;
-  priceMonthly: number | null;
-  currency: string;
-}
-
-export interface BillingCheckoutResponse {
-  url: string;
-  sessionId: string | null;
-}
-
-export interface BillingStatus {
-  checkoutEnabled: boolean;
-  provider: string;
-  message: string;
-}
-
-export interface PlanFeatureUpdate {
-  featureKey: string;
-  enabled: boolean;
-  limitValue?: string | null;
 }
 
 export interface TenantUser {

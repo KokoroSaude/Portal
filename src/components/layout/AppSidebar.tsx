@@ -1,11 +1,10 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   BarChart3,
   Building2,
   FileText,
   GitBranch,
   HelpCircle,
-  Layers,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -14,7 +13,6 @@ import {
   PanelLeftClose,
   Settings,
   Shield,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
@@ -52,61 +50,14 @@ export const TENANT_NAV: NavItem[] = [
 export const PLATFORM_NAV: NavItem[] = [
   { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
   { to: "/", label: "Visão geral", icon: Shield, end: true },
-  { to: "/admin/planos", label: "Planos", icon: Layers },
-  { to: "/admin/tenants", label: "Tenants", icon: Building2 },
+  { to: "/admin/tenants", label: "Organizações", icon: Building2 },
   { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
-  { to: "/admin/features", label: "Features", icon: Shield },
   { to: "/admin/usuarios", label: "Superadmins", icon: Users },
   { to: "/admin/onboarding", label: "Onboarding WhatsApp", icon: GitBranch },
   { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
 ];
-
-function countVisibleNavItems(
-  items: NavItem[],
-  hasFeature: (key: string) => boolean,
-  isAdmin: boolean,
-): number {
-  return items.filter((item) => {
-    if (item.adminOnly && !isAdmin) return false;
-    if (item.feature && !hasFeature(item.feature)) return false;
-    return true;
-  }).length;
-}
-
-function FreemiumUpgradeHint({ collapsed }: { collapsed?: boolean }) {
-  if (collapsed) {
-    return (
-      <SidebarCollapsedFlyout collapsed label="Upgrade de plano" description="Desbloqueie mais recursos">
-        <Link
-          to="/configuracoes?tab=plano"
-          className="flex size-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:bg-white/10 hover:text-primary-foreground"
-          aria-label="Upgrade de plano"
-        >
-          <Sparkles className="size-4" />
-        </Link>
-      </SidebarCollapsedFlyout>
-    );
-  }
-
-  return (
-    <Link
-      to="/configuracoes?tab=plano"
-      className="block rounded-xl border border-white/25 bg-white/10 p-3 text-primary-foreground transition-colors hover:bg-white/15"
-    >
-      <div className="flex items-start gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0" />
-        <div className="min-w-0 space-y-1">
-          <p className="text-sm font-semibold leading-snug">Desbloqueie mais recursos</p>
-          <p className="text-xs text-primary-foreground/75">
-            Relatórios, templates, jornada e mais números WhatsApp no plano superior.
-          </p>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 function NavSection({
   title,
@@ -190,11 +141,6 @@ export function AppSidebar({
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 
-  const visibleTenantNavCount = isTenant
-    ? countVisibleNavItems(TENANT_NAV, hasFeature, isAdmin)
-    : TENANT_NAV.length;
-  const showFreemiumHint = isTenant && visibleTenantNavCount <= 5;
-
   const handleLogout = () => {
     onNavigate?.();
     logout();
@@ -251,17 +197,14 @@ export function AppSidebar({
 
       <nav className={cn("relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
         {isTenant && (
-          <>
-            <NavSection
-              title="Operação"
-              items={TENANT_NAV}
-              hasFeature={hasFeature}
-              isAdmin={isAdmin}
-              onNavigate={onNavigate}
-              collapsed={collapsed}
-            />
-            {showFreemiumHint && <FreemiumUpgradeHint collapsed={collapsed} />}
-          </>
+          <NavSection
+            title="Operação"
+            items={TENANT_NAV}
+            hasFeature={hasFeature}
+            isAdmin={isAdmin}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
         )}
         {isPlatform && (
           <NavSection
@@ -283,10 +226,10 @@ export function AppSidebar({
               label={displayName}
               description={
                 email
-                  ? `${email} · ${isPlatform ? "Superadmin" : role ?? "Tenant"}`
+                  ? `${email} · ${isPlatform ? "Superadmin" : role ?? "Operação"}`
                   : isPlatform
                     ? "Superadmin"
-                    : (role ?? "Tenant")
+                    : (role ?? "Operação")
               }
             >
               <NavLink to="/perfil" onClick={onNavigate} aria-label="Meu perfil">
@@ -328,7 +271,7 @@ export function AppSidebar({
                 <p className="truncate text-sm font-medium">{displayName}</p>
                 <p className="truncate text-xs text-primary-foreground/70">{email}</p>
                 <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
-                  {isPlatform ? "Superadmin" : role ?? "Tenant"}
+                  {isPlatform ? "Superadmin" : role ?? "Operação"}
                 </Badge>
               </div>
             </NavLink>

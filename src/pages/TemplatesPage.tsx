@@ -66,7 +66,7 @@ export function TemplatesPage() {
         <PageHeader title="Templates" description="Personalize mensagens automáticas" />
         <FeatureLocked
           title="Templates não disponíveis"
-          description="Faça upgrade para visualizar e editar templates do tenant."
+          description="Templates não estão disponíveis para sua conta."
         />
       </>
     );

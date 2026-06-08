@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Building2, ChevronRight, Layers, TrendingUp, UserCheck, Users } from "lucide-react";
+import { Building2, ChevronRight, TrendingUp, UserCheck } from "lucide-react";
 import { GettingStartedCard } from "@/components/guide/GettingStartedCard";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -17,12 +17,6 @@ export function AdminOverviewPage() {
   const { token } = useAuth();
   const { input, setInput, query } = useGridSearch();
 
-  const plans = useQuery({
-    queryKey: ["admin-plans"],
-    queryFn: () => api.adminListPlans(token!),
-    enabled: !!token,
-  });
-
   const tenants = useQuery({
     queryKey: ["admin-tenants"],
     queryFn: () => api.adminListTenants(token!),
@@ -35,15 +29,14 @@ export function AdminOverviewPage() {
     enabled: !!token,
   });
 
-  const loading = plans.isLoading || tenants.isLoading;
-  const activePlans = plans.data?.filter((p) => p.isActive).length ?? 0;
+  const loading = tenants.isLoading;
   const activeTenants = tenants.data?.filter((t) => t.isActive).length ?? 0;
 
   const filteredRecentTenants = useMemo(() => {
     const all = tenants.data ?? [];
     return [...all]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .filter((t) => matchesGridSearch(query, t.name, t.slug, t.planName))
+      .filter((t) => matchesGridSearch(query, t.name, t.slug))
       .slice(0, 8);
   }, [tenants.data, query]);
 
@@ -53,7 +46,7 @@ export function AdminOverviewPage() {
 
       <PageHeader
         title="Superadmin"
-        description="Gestão de planos, tenants e features da plataforma Kokoro"
+        description="Gestão de organizações e operação da plataforma Kokoro"
       />
 
       <Card>
@@ -76,7 +69,7 @@ export function AdminOverviewPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <Stat
                 icon={Building2}
-                label="Tenants ativos"
+                label="Organizações ativas"
                 value={productMetrics.data?.activeTenants ?? 0}
                 sub="organizações ativas"
               />
@@ -90,7 +83,7 @@ export function AdminOverviewPage() {
                 icon={TrendingUp}
                 label="Onboardings esta semana"
                 value={productMetrics.data?.onboardingsThisWeek ?? 0}
-                sub="novos tenants"
+                sub="novas organizações"
               />
             </div>
           )}
@@ -98,34 +91,26 @@ export function AdminOverviewPage() {
       </Card>
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
+        <Skeleton className="h-28 w-full max-w-sm" />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Stat icon={Layers} label="Planos ativos" value={activePlans} sub={`${plans.data?.length ?? 0} total`} />
-          <Stat icon={Building2} label="Tenants ativos" value={activeTenants} sub={`${tenants.data?.length ?? 0} total`} />
-          <Stat
-            icon={Users}
-            label="Tenants no Enterprise"
-            value={tenants.data?.filter((t) => t.planKey === "enterprise").length ?? 0}
-            sub="plano enterprise"
-          />
-        </div>
+        <Stat
+          icon={Building2}
+          label="Organizações ativas"
+          value={activeTenants}
+          sub={`${tenants.data?.length ?? 0} total`}
+        />
       )}
 
       <Card>
         <CardHeader className="space-y-4">
           <div>
-            <CardTitle>Tenants recentes</CardTitle>
-            <CardDescription>Organizações cadastradas na plataforma</CardDescription>
+            <CardTitle>Organizações recentes</CardTitle>
+            <CardDescription>Cadastros mais recentes na plataforma</CardDescription>
           </div>
           <GridSearchBar
             value={input}
             onChange={setInput}
-            placeholder="Buscar tenants por nome, slug ou plano"
+            placeholder="Buscar organizações por nome ou slug"
             resultCount={filteredRecentTenants.length}
             totalCount={tenants.data?.length}
           />
@@ -134,7 +119,9 @@ export function AdminOverviewPage() {
           <ul className="space-y-2 text-sm">
             {filteredRecentTenants.length === 0 && (
               <li className="py-6 text-center text-muted-foreground">
-                {query.trim() ? "Nenhum tenant corresponde à busca." : "Nenhum tenant cadastrado."}
+                {query.trim()
+                  ? "Nenhuma organização corresponde à busca."
+                  : "Nenhuma organização cadastrada."}
               </li>
             )}
             {filteredRecentTenants.map((t) => (
@@ -151,7 +138,6 @@ export function AdminOverviewPage() {
                     <span className="hidden text-xs sm:inline">
                       {formatDateTime(t.createdAt)}
                     </span>
-                    <span>{t.planName}</span>
                     <ChevronRight className="size-4" />
                   </span>
                 </Link>

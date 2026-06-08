@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const impersonateTenant = useCallback(async (tenantId: string) => {
     const current = loadAuth();
     if (!current?.token || current.scope !== "platform") {
-      throw new Error("Apenas superadmins podem impersonar tenants.");
+      throw new Error("Apenas superadmins podem entrar como organização.");
     }
 
     localStorage.setItem(IMPERSONATION_STORAGE_KEY, JSON.stringify(current));

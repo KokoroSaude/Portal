@@ -202,7 +202,7 @@ export function ReportsPage() {
         <PageHeader title="Relatórios" description="Adesão e engajamento do programa" />
         <FeatureLocked
           title="Relatórios não disponíveis"
-          description="Seu plano atual não inclui relatórios básicos."
+          description="Relatórios básicos não estão disponíveis para sua conta."
         />
       </>
     );
@@ -274,7 +274,7 @@ export function ReportsPage() {
               ) : (
                 <FeatureLocked
                   title="Gráficos de adesão"
-                  description="Disponível nos planos Premium e Enterprise."
+                  description="Recurso indisponível no momento."
                 />
               )}
             </>
@@ -285,7 +285,7 @@ export function ReportsPage() {
           {!hasFeature(FEATURE_KEYS.reportsAdvanced) ? (
             <FeatureLocked
               title="Relatório avançado"
-              description="Disponível nos planos Premium e Enterprise."
+              description="Recurso indisponível no momento."
             />
           ) : engagement.isError && engagement.error instanceof ApiClientError ? (
             <p className="text-destructive">{engagement.error.message}</p>
@@ -641,7 +641,7 @@ function SendersPerformanceTable({
       <CardHeader className="space-y-4">
         <div>
           <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
-          <CardDescription>Números WhatsApp do tenant no período</CardDescription>
+          <CardDescription>Números WhatsApp da organização no período</CardDescription>
         </div>
         {rows.length > 0 && (
           <GridSearchBar

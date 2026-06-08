@@ -51,16 +51,14 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | Escopo | Home (`/`) | Menu |
 |--------|------------|------|
 | `tenant` | Dashboard de adesão | Operação |
-| `platform` | Visão geral | Plataforma (planos, tenants) |
+| `platform` | Visão geral | Plataforma (tenants, relatórios) |
 
 ## Credenciais (seed)
 
 | Papel | E-mail | Senha |
 |-------|--------|-------|
-| Superadmin | `keinagata@kokorosaude.com.br` | `Super@123` |
-| Tenant Enterprise | `enterprise@kokorosaude.com.br` | `Admin@123` |
-| Tenant Premium | `premium@kokorosaude.com.br` | `Admin@123` |
-| Tenant Freemium | `freemium@kokorosaude.com.br` | `Admin@123` |
+| Superadmin | `admin@kokorosaude.com.br` | `Super@123` |
+| Tenant demonstração | `demonstracao@kokorosaude.com.br` | `Admin@123` |
 
 > Troque as senhas após o primeiro deploy em produção.
 
@@ -77,15 +75,13 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | `/templates` | Mensagens automáticas |
 | `/jornada` | Onboarding |
 | `/whatsapp` | Números WhatsApp (Meta) |
-| `/configuracoes` | Settings + plano |
+| `/configuracoes` | Settings operacionais |
 
 ### Plataforma (superadmin)
 
 | Rota | Descrição |
 |------|-----------|
-| `/admin/planos` | Planos |
 | `/admin/tenants` | Tenants |
-| `/admin/features` | Features |
 | `/admin/usuarios` | Superadmins |
 | `/admin/mensagens` | Mensagens padrão globais |
 | `/admin/simulador` | Simulador WhatsApp |

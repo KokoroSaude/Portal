@@ -84,26 +84,16 @@ export const PLATFORM_TOUR: ProductTourDefinition = {
       title: "Primeiros passos no Superadmin",
       subtitle: "Visão rápida da plataforma Kokoro.",
       description:
-        "O menu lateral concentra planos, tenants, mensagens globais e ferramentas de teste. Comece por aqui.",
-      openMobileNav: true,
-    },
-    {
-      id: "plans",
-      target: '[data-tour="nav-admin-planos"]',
-      title: "Planos",
-      subtitle: "O que cada cliente pode usar.",
-      description:
-        "Crie planos comerciais e defina quais features cada um libera (relatórios, templates, jornada, etc.).",
-      route: "/admin/planos",
+        "O menu lateral concentra organizações, mensagens globais e ferramentas de teste. Comece por aqui.",
       openMobileNav: true,
     },
     {
       id: "tenants",
       target: '[data-tour="nav-admin-tenants"]',
-      title: "Tenants",
+      title: "Organizações",
       subtitle: "Organizações na plataforma.",
       description:
-        "Gerencie farmácias e clínicas, altere planos e use impersonação para suporte sem trocar de login.",
+        "Gerencie farmácias e clínicas e use impersonação para suporte sem trocar de login.",
       route: "/admin/tenants",
       openMobileNav: true,
     },
@@ -162,7 +152,7 @@ export function tourStorageKey(audience: "platform" | "tenant"): string {
   return `kokoro.tour.${TOUR_STORAGE_VERSION}.${audience}`;
 }
 
-/** Passos extras só se o tenant tiver features premium */
+/** Passos extras para recursos avançados do tenant */
 export const TENANT_TOUR_OPTIONAL: TourStep[] = [
   {
     id: "journey",
@@ -178,7 +168,7 @@ export const TENANT_TOUR_OPTIONAL: TourStep[] = [
     id: "templates",
     target: '[data-tour="nav-templates"]',
     title: "Templates",
-    subtitle: "Mensagens do seu tenant.",
+    subtitle: "Mensagens da sua organização.",
     description: "Sobrescreva textos automáticos só da sua organização, mantendo o padrão global quando não editar.",
     feature: FEATURE_KEYS.templatesCustomRead,
     route: "/templates",

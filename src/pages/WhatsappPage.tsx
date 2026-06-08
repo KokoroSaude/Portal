@@ -78,7 +78,7 @@ export function WhatsappPage() {
     <div className="space-y-6">
       <PageHeader
         title="WhatsApp"
-        description="Gerencie os números remetentes do tenant (WABA ID, Phone ID e telefone E.164) conectados à Meta Business API."
+        description="Gerencie os números remetentes da organização (WABA ID, Phone ID e telefone E.164) conectados à Meta Business API."
       />
 
       <Card className="border-primary/20 bg-primary/[0.03]">
@@ -164,7 +164,7 @@ export function WhatsappPage() {
 
           {!canManageSenders && (
             <p className="text-sm text-muted-foreground">
-              Faça upgrade do plano para cadastrar remetentes e concluir a integração.
+              Cadastro de remetentes não está disponível para sua conta. Fale com o administrador.
             </p>
           )}
         </CardContent>

@@ -106,7 +106,7 @@ export function SettingsUsersTab() {
     return (
       <FeatureLocked
         title="Gerenciamento de usuários"
-        description="Faça upgrade do plano para convidar e gerenciar usuários da organização."
+        description="Gestão de usuários não está disponível para sua conta."
       />
     );
   }

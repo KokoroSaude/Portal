@@ -122,7 +122,7 @@ export function JourneyPage() {
         <PageHeader title="Jornada de onboarding" description="Fluxo WhatsApp para novos pacientes" />
         <FeatureLocked
           title="Jornada não disponível"
-          description="Faça upgrade para visualizar e customizar o onboarding."
+          description="Customização da jornada não está disponível para sua conta."
         />
       </>
     );
@@ -238,7 +238,7 @@ export function JourneyPage() {
               <div>
                 <CardTitle className="text-base">Passos do fluxo</CardTitle>
                 <CardDescription>
-                  {data?.isCustomized ? "Jornada customizada do tenant" : "Usando fluxo padrão Kokoro"}
+                  {data?.isCustomized ? "Jornada customizada da organização" : "Usando fluxo padrão Kokoro"}
                 </CardDescription>
               </div>
               <GridSearchBar

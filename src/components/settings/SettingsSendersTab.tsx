@@ -124,7 +124,7 @@ export function SettingsSendersTab() {
     return (
       <FeatureLocked
         title="Números WhatsApp"
-        description="Faça upgrade do plano para gerenciar remetentes WhatsApp Business."
+        description="Gerenciamento de remetentes não está disponível para sua conta."
       />
     );
   }

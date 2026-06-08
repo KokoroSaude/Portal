@@ -12,7 +12,7 @@ export function ImpersonationBanner() {
       <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
         <AlertTriangle className="size-4 shrink-0" />
         <span>
-          Visualizando como tenant · <strong>{auth?.user?.email}</strong>
+          Visualizando como organização · <strong>{auth?.user?.email}</strong>
         </span>
       </div>
       <Button variant="outline" size="sm" onClick={exitImpersonation}>

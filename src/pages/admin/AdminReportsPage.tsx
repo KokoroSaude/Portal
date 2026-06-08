@@ -220,7 +220,7 @@ export function AdminReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Relatórios da plataforma"
-        description="Métricas consolidadas de todos os tenants — escolha quais incluir"
+        description="Métricas consolidadas de todas as organizações — escolha quais incluir"
         actions={
           selectedIds.size > 0 ? (
             <Button
@@ -248,7 +248,7 @@ export function AdminReportsPage() {
       {selectedIds.size === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Selecione ao menos um tenant para carregar os relatórios.
+            Selecione ao menos uma organização para carregar os relatórios.
           </CardContent>
         </Card>
       ) : (
@@ -287,7 +287,7 @@ export function AdminReportsPage() {
                     <ResponseByDayChart data={adherence.data.avgResponseByDay} />
                     {adherence.data.byTenant.length > 1 && (
                       <SimpleBarChart
-                        title="Adesão por tenant"
+                        title="Adesão por organização"
                         description="Comparativo no período selecionado"
                         data={adherence.data.byTenant.map((t) => ({
                           label: t.tenantName,
@@ -444,13 +444,13 @@ function TenantMetricsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-lg">Detalhe por tenant</CardTitle>
+        <CardTitle className="font-serif text-lg">Detalhe por organização</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tenant</TableHead>
+              <TableHead>Organização</TableHead>
               <TableHead>Adesão</TableHead>
               <TableHead>Check-ins</TableHead>
               <TableHead>Ativos</TableHead>
@@ -538,7 +538,7 @@ function AdminRankingTable({
           <GridSearchBar
             value={input}
             onChange={setInput}
-            placeholder="Buscar tenant, paciente ou status"
+            placeholder="Buscar organização, paciente ou status"
             resultCount={filtered.length}
             totalCount={rows?.length}
           />
@@ -553,7 +553,7 @@ function AdminRankingTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tenant</TableHead>
+                <TableHead>Organização</TableHead>
                 <TableHead>Paciente</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Adesão</TableHead>
@@ -693,13 +693,13 @@ function AdminSendersTable({
       <CardHeader className="space-y-4">
         <div>
           <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
-          <CardDescription>Números WhatsApp dos tenants selecionados</CardDescription>
+          <CardDescription>Números WhatsApp das organizações selecionadas</CardDescription>
         </div>
         {rows.length > 0 && (
           <GridSearchBar
             value={input}
             onChange={setInput}
-            placeholder="Buscar tenant, nome ou telefone"
+            placeholder="Buscar organização, nome ou telefone"
             resultCount={filtered.length}
             totalCount={rows.length}
           />
@@ -707,12 +707,12 @@ function AdminSendersTable({
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum remetente ativo nos tenants selecionados.</p>
+          <p className="text-sm text-muted-foreground">Nenhum remetente ativo nas organizações selecionadas.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tenant</TableHead>
+                <TableHead>Organização</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Ativos</TableHead>

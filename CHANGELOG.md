@@ -82,7 +82,7 @@ Primeira versão versionada (SemVer) do portal em produção.
 - Jornada de onboarding configurável
 - Integração WhatsApp (Meta)
 - Configurações e assinatura do tenant
-- Área superadmin: planos, tenants, features, usuários
+- Área superadmin: tenants, relatórios, usuários
 - Simulador WhatsApp para superadmin
 - Assinatura de e-mail (export JPG)
 - Mensagens padrão globais da plataforma (`/admin/mensagens`)

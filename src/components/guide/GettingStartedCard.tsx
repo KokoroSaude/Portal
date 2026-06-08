@@ -39,7 +39,7 @@ export function GettingStartedCard() {
           <div>
             <CardTitle className="font-serif text-lg">Guia passo a passo</CardTitle>
             <CardDescription>
-              {totalSteps} etapas para {isPlatform ? "configurar a plataforma" : "operar seu tenant"}.
+              {totalSteps} etapas para {isPlatform ? "configurar a plataforma" : "operar sua organização"}.
             </CardDescription>
           </div>
         </div>

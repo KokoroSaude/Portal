@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { KokoroLogo } from "@/components/KokoroLogo";
 import { Button } from "@/components/ui/button";
@@ -167,12 +167,6 @@ export function LoginPage() {
                 {loading ? "Entrando…" : "Entrar"}
               </Button>
             </form>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Ainda não tem conta?{" "}
-              <Link to="/cadastro" className="font-medium text-primary hover:underline">
-                Criar conta
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </div>

@@ -115,7 +115,7 @@ function rankingSection(
   if (!rows?.length) return null;
 
   const head = includeTenant
-    ? ["Tenant", "Paciente", "Status", "Adesão", "Check-ins"]
+    ? ["Organização", "Paciente", "Status", "Adesão", "Check-ins"]
     : ["Paciente", "Status", "Adesão", "Check-ins"];
 
   const body = rows.map((r) => {
@@ -308,7 +308,7 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
   const tenantSubtitle =
     input.tenantNames.length <= 3
       ? input.tenantNames.join(", ")
-      : `${input.tenantNames.length} tenants selecionados`;
+      : `${input.tenantNames.length} organizações selecionadas`;
 
   if (input.adherence) {
     const a = input.adherence;
@@ -328,10 +328,10 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
 
     if (a.byTenant.length) {
       sections.push({
-        title: "Adesão por tenant",
+        title: "Adesão por organização",
         tables: [
           {
-            head: ["Tenant", "Adesão", "Check-ins", "Tomados", "Ativos"],
+            head: ["Organização", "Adesão", "Check-ins", "Tomados", "Ativos"],
             body: a.byTenant.map((t) => [
               t.tenantName,
               formatPercent(t.adherenceRate),
@@ -399,8 +399,8 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
         ...(o.byTenant.length
           ? [
               {
-                title: "Operação por tenant",
-                head: ["Tenant", "Lembretes", "Falhas", "Reengajamentos", "Reativados"],
+                title: "Operação por organização",
+                head: ["Organização", "Lembretes", "Falhas", "Reengajamentos", "Reativados"],
                 body: o.byTenant.map((t) => [
                   t.tenantName,
                   String(t.remindersSent),
@@ -420,7 +420,7 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
       title: "Performance por remetente",
       tables: [
         {
-          head: ["Tenant", "Nome", "Telefone", "Ativos", "Check-ins", "Adesão"],
+          head: ["Organização", "Nome", "Telefone", "Ativos", "Check-ins", "Adesão"],
           body: input.senders.map((s) => [
             s.tenantName,
             s.displayName,
