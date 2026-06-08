@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CheckCircle2, ChevronRight, Circle, Sparkles } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,33 +18,68 @@ function previewSteps(steps: GuideStep[], limit = 3): GuideStep[] {
   return steps.slice(0, limit);
 }
 
+const MINIMIZED_STORAGE_KEY = "kokoro.guide-card.minimized";
+
 export function GettingStartedCard() {
   const { isPlatform, hasFeature } = useAuth();
   const { startTour, isCompleted } = useTour();
   const checklist = useTenantOnboardingChecklist();
+  const [minimized, setMinimized] = useState(() => {
+    try {
+      return localStorage.getItem(MINIMIZED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const guide = getGuideForAudience(isPlatform);
   const sections = filterGuideSections(guide, hasFeature);
   const totalSteps = countGuideSteps(sections);
   const flatSteps = sections.flatMap((s) => s.steps);
   const preview = previewSteps(flatSteps);
 
+  const toggleMinimized = () => {
+    setMinimized((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(MINIMIZED_STORAGE_KEY, String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   if (totalSteps === 0) return null;
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-accent/50 to-background">
-      <CardHeader className="pb-3">
+      <CardHeader className={cn("pb-3", minimized && "pb-4")}>
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <BookOpen className="size-5" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <CardTitle className="font-serif text-lg">Guia passo a passo</CardTitle>
-            <CardDescription>
-              {totalSteps} etapas para {isPlatform ? "configurar a plataforma" : "operar sua organização"}.
-            </CardDescription>
+            {!minimized && (
+              <CardDescription>
+                {totalSteps} etapas para {isPlatform ? "configurar a plataforma" : "operar sua organização"}.
+              </CardDescription>
+            )}
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 text-muted-foreground"
+            onClick={toggleMinimized}
+            aria-label={minimized ? "Expandir guia passo a passo" : "Minimizar guia passo a passo"}
+            aria-expanded={!minimized}
+          >
+            {minimized ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+          </Button>
         </div>
       </CardHeader>
+      {!minimized && (
       <CardContent className="space-y-4">
         <ol className="space-y-2 text-sm">
           {preview.map((step, i) => (
@@ -112,6 +148,7 @@ export function GettingStartedCard() {
           </div>
         )}
       </CardContent>
+      )}
     </Card>
   );
 }
