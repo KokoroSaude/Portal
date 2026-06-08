@@ -61,7 +61,7 @@ export function useTenantOnboardingChecklist() {
       key: "whatsapp",
       title: "Conectar WhatsApp",
       description: "Cadastre WABA ID e Phone ID na Meta Business API.",
-      to: "/whatsapp",
+      to: "/whatsapp/configuracao",
       done: whatsappDone,
     },
     {

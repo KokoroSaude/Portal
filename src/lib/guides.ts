@@ -141,7 +141,7 @@ export const TENANT_GUIDE: PortalGuide = {
           title: "Conectar WhatsApp",
           description:
             "Vincule o número da Meta (Business) para enviar lembretes. Sem isso, pacientes não recebem mensagens.",
-          to: "/whatsapp",
+          to: "/whatsapp/configuracao",
           tips: ["Guarde o token e phone number ID fornecidos pela Meta."],
         },
       ],

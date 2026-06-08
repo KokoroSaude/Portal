@@ -4,8 +4,6 @@ import { CheckCircle2, Circle, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingsSendersTab } from "@/components/settings/SettingsSendersTab";
-import { WhatsappConversationsPanel } from "@/components/whatsapp/WhatsappConversationsPanel";
-import { WhatsappDiagnosticsPanel } from "@/components/whatsapp/WhatsappDiagnosticsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +32,7 @@ function copyToClipboard(value: string, label: string) {
   );
 }
 
-export function WhatsappPage() {
+export function WhatsappConfigPage() {
   const { token, hasFeature } = useAuth();
   const canManageSenders = hasFeature(FEATURE_KEYS.whatsappSendersManage);
 
@@ -79,7 +77,7 @@ export function WhatsappPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="WhatsApp"
+        title="Configuração"
         description="Gerencie os números remetentes da organização (WABA ID, Phone ID e telefone E.164) conectados à Meta Business API."
       />
 
@@ -173,10 +171,6 @@ export function WhatsappPage() {
       </Card>
 
       <SettingsSendersTab />
-
-      <WhatsappConversationsPanel />
-
-      <WhatsappDiagnosticsPanel />
     </div>
   );
 }

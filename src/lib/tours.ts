@@ -50,7 +50,7 @@ export const TENANT_TOUR: ProductTourDefinition = {
       subtitle: "Conexão com a Meta.",
       description:
         "Vincule o número Business para enviar lembretes. Sem essa etapa, os pacientes não recebem mensagens automáticas.",
-      route: "/whatsapp",
+      route: "/whatsapp/configuracao",
       openMobileNav: true,
     },
     {

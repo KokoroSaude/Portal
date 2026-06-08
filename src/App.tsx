@@ -16,7 +16,11 @@ function lazyPage(
 
 const GuidePage = lazyPage(() => import("@/pages/GuidePage"), "GuidePage");
 const JourneyPage = lazyPage(() => import("@/pages/JourneyPage"), "JourneyPage");
-const WhatsappPage = lazyPage(() => import("@/pages/WhatsappPage"), "WhatsappPage");
+const WhatsappConversationsPage = lazyPage(
+  () => import("@/pages/WhatsappConversationsPage"),
+  "WhatsappConversationsPage",
+);
+const WhatsappConfigPage = lazyPage(() => import("@/pages/WhatsappConfigPage"), "WhatsappConfigPage");
 const LoginPage = lazyPage(() => import("@/pages/LoginPage"), "LoginPage");
 const PatientDetailPage = lazyPage(() => import("@/pages/PatientDetailPage"), "PatientDetailPage");
 const PatientsPage = lazyPage(() => import("@/pages/PatientsPage"), "PatientsPage");
@@ -82,7 +86,9 @@ export default function App() {
                     <Route path="relatorios" element={<ReportsPage />} />
                     <Route path="templates" element={<TemplatesPage />} />
                     <Route path="jornada" element={<JourneyPage />} />
-                    <Route path="whatsapp" element={<WhatsappPage />} />
+                    <Route path="whatsapp" element={<Navigate to="/whatsapp/conversas" replace />} />
+                    <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
+                    <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
                   </Route>
 

@@ -223,7 +223,7 @@ export function PatientsPage() {
             {activeSender ? (
               <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
             ) : (
-              <Link to="/whatsapp" className="text-primary underline">
+              <Link to="/whatsapp/configuracao" className="text-primary underline">
                 seu número conectado
               </Link>
             )}

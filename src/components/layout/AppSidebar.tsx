@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Building2,
@@ -28,12 +28,13 @@ import { tourNavId } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 
 export type NavItem = {
-  to: string;
+  to?: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
   feature?: string;
   adminOnly?: boolean;
+  children?: NavItem[];
 };
 
 export const TENANT_NAV: NavItem[] = [
@@ -43,7 +44,14 @@ export const TENANT_NAV: NavItem[] = [
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, feature: FEATURE_KEYS.reportsBasic },
   { to: "/templates", label: "Templates", icon: FileText, feature: FEATURE_KEYS.templatesCustomRead },
   { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
-  { to: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
+  {
+    label: "WhatsApp",
+    icon: MessageCircle,
+    children: [
+      { to: "/whatsapp/conversas", label: "Conversas e Logs da Meta", icon: MessageCircle },
+      { to: "/whatsapp/configuracao", label: "Configuração", icon: Settings },
+    ],
+  },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
@@ -58,6 +66,139 @@ export const PLATFORM_NAV: NavItem[] = [
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
 ];
+
+function isNavItemVisible(item: NavItem, hasFeature: (key: string) => boolean, isAdmin: boolean): boolean {
+  if (item.adminOnly && !isAdmin) return false;
+  if (item.feature && !hasFeature(item.feature)) return false;
+  if (item.children?.length) {
+    return item.children.some((child) => isNavItemVisible(child, hasFeature, isAdmin));
+  }
+  return true;
+}
+
+function NavLinkItem({
+  to,
+  label,
+  icon: Icon,
+  end,
+  onNavigate,
+  collapsed,
+  indent,
+  sectionTitle,
+}: {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+  onNavigate?: () => void;
+  collapsed?: boolean;
+  indent?: boolean;
+  sectionTitle?: string;
+}) {
+  return (
+    <SidebarCollapsedFlyout
+      collapsed={collapsed}
+      label={label}
+      description={collapsed ? sectionTitle : undefined}
+    >
+      <NavLink
+        to={to}
+        end={end}
+        onClick={onNavigate}
+        data-tour={tourNavId(to)}
+        className={({ isActive }) =>
+          cn(
+            "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+            collapsed ? "justify-center px-2" : "gap-3 px-3",
+            !collapsed && indent && "ml-4 py-2 text-[13px]",
+            isActive
+              ? "bg-white/20 text-primary-foreground"
+              : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+          )
+        }
+      >
+        {collapsed && <Icon className="size-4 shrink-0" />}
+        {!collapsed && label}
+      </NavLink>
+    </SidebarCollapsedFlyout>
+  );
+}
+
+function NavGroup({
+  item,
+  hasFeature,
+  isAdmin,
+  onNavigate,
+  collapsed,
+  sectionTitle,
+  pathname,
+}: {
+  item: NavItem;
+  hasFeature: (key: string) => boolean;
+  isAdmin: boolean;
+  onNavigate?: () => void;
+  collapsed?: boolean;
+  sectionTitle: string;
+  pathname: string;
+}) {
+  const visibleChildren = (item.children ?? []).filter((child) => isNavItemVisible(child, hasFeature, isAdmin));
+  const Icon = item.icon;
+  const isGroupActive = visibleChildren.some(
+    (child) => child.to && (pathname === child.to || pathname.startsWith(`${child.to}/`)),
+  );
+
+  if (collapsed) {
+    const firstChild = visibleChildren.find((child) => child.to);
+    const flyoutHint = visibleChildren.map((child) => child.label).join(" · ");
+
+    return firstChild?.to ? (
+      <SidebarCollapsedFlyout
+        collapsed
+        label={item.label}
+        description={flyoutHint || sectionTitle}
+      >
+        <NavLink
+          to={firstChild.to}
+          onClick={onNavigate}
+          data-tour={tourNavId(firstChild.to)}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center justify-center rounded-lg px-2 py-2.5 transition-colors",
+              (isActive || isGroupActive) && "bg-white/20 text-primary-foreground",
+              !isActive && !isGroupActive && "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+            )
+          }
+        >
+          <Icon className="size-4 shrink-0" />
+        </NavLink>
+      </SidebarCollapsedFlyout>
+    ) : null;
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-primary-foreground">
+        <Icon className="size-4 shrink-0" />
+        {item.label}
+      </div>
+      {visibleChildren.map((child) =>
+        child.to ? (
+          <NavLinkItem
+            key={child.to}
+            to={child.to}
+            label={child.label}
+            icon={child.icon}
+            end={child.end}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+            indent
+            sectionTitle={item.label}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
 
 function NavSection({
   title,
@@ -74,11 +215,8 @@ function NavSection({
   onNavigate?: () => void;
   collapsed?: boolean;
 }) {
-  const visible = items.filter((item) => {
-    if (item.adminOnly && !isAdmin) return false;
-    if (item.feature && !hasFeature(item.feature)) return false;
-    return true;
-  });
+  const { pathname } = useLocation();
+  const visible = items.filter((item) => isNavItemVisible(item, hasFeature, isAdmin));
   if (visible.length === 0) return null;
 
   return (
@@ -88,33 +226,31 @@ function NavSection({
           {title}
         </p>
       )}
-      {visible.map(({ to, label, icon: Icon, end }) => (
-        <SidebarCollapsedFlyout
-          key={to}
-          collapsed={collapsed}
-          label={label}
-          description={collapsed ? title : undefined}
-        >
-          <NavLink
-            to={to}
-            end={end}
-            onClick={onNavigate}
-            data-tour={tourNavId(to)}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-                collapsed ? "justify-center px-2" : "gap-3 px-3",
-                isActive
-                  ? "bg-white/20 text-primary-foreground"
-                  : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
-              )
-            }
-          >
-            <Icon className="size-4 shrink-0" />
-            {!collapsed && label}
-          </NavLink>
-        </SidebarCollapsedFlyout>
-      ))}
+      {visible.map((item) =>
+        item.children?.length ? (
+          <NavGroup
+            key={item.label}
+            item={item}
+            hasFeature={hasFeature}
+            isAdmin={isAdmin}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+            sectionTitle={title}
+            pathname={pathname}
+          />
+        ) : item.to ? (
+          <NavLinkItem
+            key={item.to}
+            to={item.to}
+            label={item.label}
+            icon={item.icon}
+            end={item.end}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+            sectionTitle={title}
+          />
+        ) : null,
+      )}
     </div>
   );
 }
