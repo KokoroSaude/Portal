@@ -461,3 +461,52 @@ export interface WhatsappSender {
   isActive: boolean;
   createdAt: string;
 }
+
+export interface WhatsappDiagnosticEvent {
+  at: string;
+  eventType: string;
+  correlationId?: string | null;
+  phoneId?: string | null;
+  from?: string | null;
+  wamId?: string | null;
+  tenantSlug?: string | null;
+  detail?: string | null;
+  error?: string | null;
+}
+
+export interface WhatsappDiagnosticMessage {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  direction: string;
+  status: string;
+  content: string;
+  wamId: string | null;
+  messageType: string | null;
+  createdAt: string;
+}
+
+export interface WhatsappDiagnostics {
+  generatedAt: string;
+  scope: string;
+  note: string;
+  meta: {
+    hasAppSecret: boolean;
+    hasAccessToken: boolean;
+    hasPhoneId: boolean;
+    hasVerifyToken: boolean;
+    apiVersion: string;
+    simulatorMode: boolean;
+  };
+  senders: Array<{
+    id: string;
+    tenantSlug: string;
+    displayName: string;
+    phoneNumber: string;
+    wabaId: string;
+    phoneId: string;
+    isActive: boolean;
+  }>;
+  events: WhatsappDiagnosticEvent[];
+  recentMessages: WhatsappDiagnosticMessage[];
+}

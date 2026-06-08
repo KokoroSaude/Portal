@@ -42,6 +42,7 @@ import type {
   UserInfo,
   UserProfile,
   PlatformUserInfo,
+  WhatsappDiagnostics,
   WhatsappSender,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
@@ -320,6 +321,9 @@ export const api = {
       isActive?: boolean;
     },
   ) => request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body: payload }),
+
+  getWhatsAppDiagnostics: (token: string, limit = 50) =>
+    request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),
 
   getSettings: (token: string) => request<TenantSettings>("/api/settings", { token }),
 
