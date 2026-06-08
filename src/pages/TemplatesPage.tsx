@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw, Save } from "lucide-react";
@@ -11,23 +11,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { ADMIN_TEMPLATE_TONES, adminTemplateToneLabel } from "@/lib/adminTemplateTones";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { FeatureLocked } from "@/components/PageHeader";
 
 export function TemplatesPage() {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
+  const [tone, setTone] = useState("acolhedor");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [description, setDescription] = useState("");
   const [filter, setFilter] = useState("");
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token,
+  });
+
+  useEffect(() => {
+    if (settings?.voiceTone) {
+      setTone(settings.voiceTone.toLowerCase());
+    }
+  }, [settings?.voiceTone]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["templates"],
-    queryFn: () => api.getTemplates(token!),
+    queryKey: ["templates", tone],
+    queryFn: () => api.getTemplates(token!, tone),
     enabled: !!token && hasFeature(FEATURE_KEYS.templatesCustomRead),
   });
 
@@ -36,11 +51,20 @@ export function TemplatesPage() {
     [data, selectedKey],
   );
 
+  useEffect(() => {
+    if (!selectedKey) return;
+    const t = data?.find((x) => x.templateKey === selectedKey);
+    if (t) {
+      setContent(t.content);
+      setDescription(t.description ?? "");
+    }
+  }, [data, selectedKey]);
+
   const canWrite = hasFeature(FEATURE_KEYS.templatesCustomWrite);
   const canReset = hasFeature(FEATURE_KEYS.templatesCustomReset);
 
   const saveMutation = useMutation({
-    mutationFn: () => api.upsertTemplate(token!, selectedKey!, content, description || undefined),
+    mutationFn: () => api.upsertTemplate(token!, selectedKey!, content, description || undefined, tone),
     onSuccess: () => {
       toast.success("Template salvo");
       queryClient.invalidateQueries({ queryKey: ["templates"] });
@@ -49,7 +73,7 @@ export function TemplatesPage() {
   });
 
   const resetMutation = useMutation({
-    mutationFn: (key: string) => api.resetTemplate(token!, key),
+    mutationFn: (key: string) => api.resetTemplate(token!, key, tone),
     onSuccess: () => {
       toast.success("Template restaurado ao padrão");
       queryClient.invalidateQueries({ queryKey: ["templates"] });
@@ -86,9 +110,26 @@ export function TemplatesPage() {
     setDescription(t?.description ?? "");
   }
 
+  function handleToneChange(nextTone: string) {
+    setTone(nextTone);
+    setSelectedKey(null);
+    setContent("");
+    setDescription("");
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Templates" description="Personalize mensagens automáticas do WhatsApp" />
+
+      <Tabs value={tone} onValueChange={handleToneChange}>
+        <TabsList>
+          {ADMIN_TEMPLATE_TONES.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {isLoading ? (
         <Skeleton className="h-96 w-full" />
@@ -96,7 +137,7 @@ export function TemplatesPage() {
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           <Card>
             <CardHeader className="space-y-4">
-              <CardTitle className="text-base">Catálogo</CardTitle>
+              <CardTitle className="text-base">Catálogo · {adminTemplateToneLabel(tone)}</CardTitle>
               <GridSearchBar
                 value={filter}
                 onChange={setFilter}
@@ -136,7 +177,8 @@ export function TemplatesPage() {
             <CardHeader>
               <CardTitle className="font-mono text-base">{selectedKey ?? "Selecione um template"}</CardTitle>
               <CardDescription>
-                Use variáveis como {"{nome}"}, {"{medicamento}"}, {"{horario}"}, {"{saudacao}"}.
+                Tom <strong>{adminTemplateToneLabel(tone)}</strong> — use variáveis como {"{nome}"},{" "}
+                {"{medicamento}"}, {"{horario}"}, {"{saudacao}"}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

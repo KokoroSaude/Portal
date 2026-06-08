@@ -358,17 +358,18 @@ export const api = {
 
   getLocales: () => request<string[]>("/api/subscription/locales"),
 
-  getTemplates: (token: string) => request<MessageTemplate[]>("/api/templates", { token }),
+  getTemplates: (token: string, tone?: string) =>
+    request<MessageTemplate[]>(`/api/templates${qs({ tone })}`, { token }),
 
-  upsertTemplate: (token: string, key: string, content: string, description?: string) =>
+  upsertTemplate: (token: string, key: string, content: string, description?: string, tone?: string) =>
     request<void>(`/api/templates/${encodeURIComponent(key)}`, {
       method: "PUT",
       token,
-      body: { content, description },
+      body: { content, description, tone },
     }),
 
-  resetTemplate: (token: string, key: string) =>
-    request<void>(`/api/templates/${encodeURIComponent(key)}`, { method: "DELETE", token }),
+  resetTemplate: (token: string, key: string, tone?: string) =>
+    request<void>(`/api/templates/${encodeURIComponent(key)}${qs({ tone })}`, { method: "DELETE", token }),
 
   getOnboardingJourney: (token: string) =>
     request<OnboardingJourney>("/api/journey/onboarding", { token }),
