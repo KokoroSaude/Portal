@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Pencil, Play, Save } from "lucide-react";
+import { ArrowLeft, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
@@ -37,10 +37,12 @@ const EVENT_LABELS: Record<string, string> = {
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { token, canWrite } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [nameInput, setNameInput] = useState("");
@@ -135,6 +137,19 @@ export function PatientDetailPage() {
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar");
+    },
+  });
+
+  const deletePatientMutation = useMutation({
+    mutationFn: () => api.deletePatient(token!, id!),
+    onSuccess: () => {
+      toast.success("Paciente excluído");
+      void queryClient.invalidateQueries({ queryKey: ["patients"] });
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      navigate("/pacientes");
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir paciente");
     },
   });
 
@@ -268,6 +283,37 @@ export function PatientDetailPage() {
               <Play className="size-4" />
               Retomar
             </Button>
+          )}
+          {canWrite && (
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="size-4" />
+                  Excluir
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Excluir paciente</DialogTitle>
+                  <DialogDescription>
+                    Esta ação remove permanentemente {patient.name ?? "este paciente"}, incluindo
+                    mensagens, plano de cuidado, check-ins e todo o histórico. Não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deletePatientMutation.mutate()}
+                    disabled={deletePatientMutation.isPending}
+                  >
+                    Excluir permanentemente
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>

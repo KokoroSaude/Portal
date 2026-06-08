@@ -219,6 +219,9 @@ export const api = {
   resumePatient: (token: string, id: string) =>
     request<void>(`/api/patients/${id}/resume`, { method: "POST", token }),
 
+  deletePatient: (token: string, id: string) =>
+    request<void>(`/api/patients/${id}`, { method: "DELETE", token }),
+
   updateCarePlan: (token: string, patientId: string, payload: CarePlanUpdate) =>
     request<{ carePlanId: string }>(`/api/patients/${patientId}/care-plan`, {
       method: "PATCH",

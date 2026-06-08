@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, RefreshCw, Trash2 } from "lucide-react";
+import { MessageCircle, RefreshCw, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,17 @@ export function WhatsappConversationsPanel() {
       });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
+  });
+
+  const deletePatient = useMutation({
+    mutationFn: (patientId: string) => api.deletePatient(token!, patientId),
+    onSuccess: () => {
+      toast.success("Paciente excluído");
+      setSelectedPatientId(null);
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      void queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir paciente"),
   });
 
   const selectedConversation = conversations.data?.find((c) => c.patientId === selectedPatientId);
@@ -154,25 +165,50 @@ export function WhatsappConversationsPanel() {
                   </p>
                 </div>
                 {selectedPatientId && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={deleteMessages.isPending}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          "Excluir todas as mensagens desta conversa? O paciente permanece cadastrado.",
-                        )
-                      ) {
-                        return;
-                      }
-                      deleteMessages.mutate(selectedPatientId);
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                    Limpar conversa
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deleteMessages.isPending || deletePatient.isPending}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            "Excluir todas as mensagens desta conversa? O paciente permanece cadastrado.",
+                          )
+                        ) {
+                          return;
+                        }
+                        deleteMessages.mutate(selectedPatientId);
+                      }}
+                    >
+                      <Trash2 className="size-4" />
+                      Limpar conversa
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      disabled={deleteMessages.isPending || deletePatient.isPending}
+                      onClick={() => {
+                        const label =
+                          thread.data?.patient.name ??
+                          selectedConversation?.name ??
+                          maskPhone(thread.data?.patient.phone ?? selectedConversation?.phone ?? "");
+                        if (
+                          !window.confirm(
+                            `Excluir permanentemente o paciente "${label}"? Esta ação remove mensagens, plano de cuidado, check-ins e todo o histórico. Não pode ser desfeita.`,
+                          )
+                        ) {
+                          return;
+                        }
+                        deletePatient.mutate(selectedPatientId);
+                      }}
+                    >
+                      <UserX className="size-4" />
+                      Excluir paciente
+                    </Button>
+                  </div>
                 )}
               </div>
 
