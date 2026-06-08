@@ -16,7 +16,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SettingsPasswordTab } from "@/components/settings/SettingsPasswordTab";
 import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
@@ -30,10 +29,7 @@ export function SettingsPage() {
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
   const tabParam = searchParams.get("tab");
-  const defaultTab =
-    tabParam === "usuarios" || tabParam === "senha" || tabParam === "operacional"
-      ? tabParam
-      : "operacional";
+  const defaultTab = tabParam === "usuarios" || tabParam === "operacional" ? tabParam : "operacional";
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -81,26 +77,19 @@ export function SettingsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="font-serif text-3xl">Configurações</h1>
-          <p className="text-muted-foreground">Preferências da sua conta</p>
+          <p className="text-muted-foreground">Preferências da organização</p>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Foto de perfil</CardTitle>
-            <CardDescription>Personalize como você aparece no portal</CardDescription>
+            <CardTitle>Acesso restrito</CardTitle>
+            <CardDescription>
+              Configurações operacionais são gerenciadas pelo administrador da organização.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline">
-              <Link to="/perfil">Editar foto de perfil</Link>
+              <Link to="/perfil">Ir para meu perfil</Link>
             </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Alterar senha</CardTitle>
-            <CardDescription>Atualize a senha da sua conta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SettingsPasswordTab />
           </CardContent>
         </Card>
       </div>
@@ -122,7 +111,6 @@ export function SettingsPage() {
         <TabsList>
           <TabsTrigger value="operacional">Operacional</TabsTrigger>
           {hasFeature("users.manage") && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
-          <TabsTrigger value="senha">Senha</TabsTrigger>
         </TabsList>
 
         <TabsContent value="operacional">
@@ -257,17 +245,6 @@ export function SettingsPage() {
           </TabsContent>
         )}
 
-        <TabsContent value="senha">
-          <Card>
-            <CardHeader>
-              <CardTitle>Alterar senha</CardTitle>
-              <CardDescription>Atualize a senha da sua conta</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SettingsPasswordTab />
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
