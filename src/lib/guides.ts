@@ -99,6 +99,21 @@ export const PLATFORM_GUIDE: PortalGuide = {
       ],
     },
     {
+      id: "platform-config",
+      title: "4. Configuração da plataforma",
+      description: "Preferências globais que afetam todas as organizações.",
+      steps: [
+        {
+          id: "ai-provider",
+          title: "Inteligência artificial",
+          description:
+            "Escolha entre Claude (Anthropic) e GPT (OpenAI) sem redeploy. As chaves de API ficam no Railway.",
+          to: "/admin/configuracao",
+          tips: ["Ative a IA também no tenant em Configurações → Operacional."],
+        },
+      ],
+    },
+    {
       id: "team",
       title: "5. Equipe e marca",
       steps: [

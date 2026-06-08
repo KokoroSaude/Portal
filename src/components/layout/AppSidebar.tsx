@@ -66,6 +66,7 @@ export const PLATFORM_NAV: NavItem[] = [
   { to: "/admin/onboarding", label: "Onboarding WhatsApp", icon: GitBranch },
   { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
   { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
+  { to: "/admin/configuracao", label: "Configuração", icon: Settings },
   { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
 ];
 
