@@ -1,23 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, MessageCircle, RefreshCw, Trash2, UserX } from "lucide-react";
+import { CalendarClock, ExternalLink, MessageCircle, Pause, Play, RefreshCw, Send, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { CONVERSATION_STEP_LABELS, CONTENT_SOURCE_LABELS } from "@/lib/constants";
 import { cn, formatDateTime, maskPhone } from "@/lib/utils";
-import type { WhatsappConversationMessage } from "@/types/api";
-
-const CONTENT_SOURCE_LABELS: Record<string, string> = {
-  patient: "Paciente",
-  template: "Template",
-  rules: "Regras",
-  ai: "IA",
-  system: "Sistema",
-};
+import type { WhatsappConversationMessage, WhatsappConversationThread } from "@/types/api";
 
 function contentSourceLabel(source: string | null | undefined): string | null {
   if (!source) return null;
@@ -83,6 +79,11 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
               {understandingKind && ` · ${INTENT_KIND_LABELS[understandingKind] ?? understandingKind}`}
             </Badge>
           )}
+          {outbound && message.templateKey && (
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {message.templateKey}
+            </Badge>
+          )}
         </div>
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
@@ -91,7 +92,25 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
   );
 }
 
-function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/types/api").WhatsappConversationThread["scheduling"]> }) {
+function SchedulingSidebar({
+  scheduling,
+  patientId,
+  patientStatus,
+  canWrite,
+  onPause,
+  onResume,
+  isPausing,
+  isResuming,
+}: {
+  scheduling: NonNullable<WhatsappConversationThread["scheduling"]>;
+  patientId: string;
+  patientStatus: string;
+  canWrite: boolean;
+  onPause: () => void;
+  onResume: () => void;
+  isPausing: boolean;
+  isResuming: boolean;
+}) {
   const nextPending = scheduling.reminders
     .filter((r) => r.status === "Pending")
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))[0];
@@ -141,9 +160,54 @@ function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/t
         <p className="text-xs text-muted-foreground">Sem lembretes pendentes.</p>
       )}
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="sm" asChild>
+          <Link to={`/pacientes/${patientId}`}>
+            <ExternalLink className="size-3.5" />
+            Ficha do paciente
+          </Link>
+        </Button>
+        {canWrite && patientStatus === "Active" && (
+          <Button type="button" variant="outline" size="sm" disabled={isPausing} onClick={onPause}>
+            <Pause className="size-3.5" />
+            Pausar
+          </Button>
+        )}
+        {canWrite && (patientStatus === "Paused" || patientStatus === "Reengagement") && (
+          <Button type="button" variant="outline" size="sm" disabled={isResuming} onClick={onResume}>
+            <Play className="size-3.5" />
+            Retomar
+          </Button>
+        )}
+      </div>
+
+      {scheduling.pausedUntil && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Pausado até {formatDateTime(scheduling.pausedUntil)}
+        </p>
+      )}
+
+      {(scheduling.consecutiveMissedCheckins ?? 0) >= 2 && (
+        <p className="text-xs text-muted-foreground">
+          {scheduling.consecutiveMissedCheckins} check-ins perdidos seguidos
+        </p>
+      )}
+
+      {scheduling.openReengagementAttempt != null && (
+        <p className="text-xs text-muted-foreground">
+          Reengajamento em andamento — tentativa {scheduling.openReengagementAttempt}
+          {scheduling.openReengagementSentAt && (
+            <> · enviado {formatDateTime(scheduling.openReengagementSentAt)}</>
+          )}
+        </p>
+      )}
+
       {scheduling.conversationStep && (
         <p className="text-xs text-muted-foreground">
-          Etapa da conversa: <span className="font-medium text-foreground">{scheduling.conversationStep}</span>
+          Etapa da conversa:{" "}
+          <span className="font-medium text-foreground">
+            {CONVERSATION_STEP_LABELS[scheduling.conversationStep] ?? scheduling.conversationStep}
+          </span>
         </p>
       )}
 
@@ -156,9 +220,14 @@ function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/t
       {scheduling.reminders.length > 0 && (
         <ul className="max-h-32 space-y-1 overflow-y-auto text-[11px] text-muted-foreground">
           {scheduling.reminders.slice(0, 8).map((r) => (
-            <li key={r.id} className="flex justify-between gap-2">
-              <span>{formatDateTime(r.scheduledFor)}</span>
-              <span className={cn(r.status === "Failed" && "text-destructive")}>{r.status}</span>
+            <li key={r.id} className="flex flex-col gap-0.5">
+              <div className="flex justify-between gap-2">
+                <span>{formatDateTime(r.scheduledFor)}</span>
+                <span className={cn(r.status === "Failed" && "text-destructive")}>{r.status}</span>
+              </div>
+              {r.failureReason && (
+                <span className="text-destructive/80">{r.failureReason}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -168,9 +237,10 @@ function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/t
 }
 
 export function WhatsappConversationsPanel() {
-  const { token } = useAuth();
+  const { token, isAdmin, canWrite } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   const conversations = useQuery({
@@ -207,6 +277,53 @@ export function WhatsappConversationsPanel() {
       });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
+  });
+
+  const pausePatient = useMutation({
+    mutationFn: (patientId: string) => api.pausePatient(token!, patientId),
+    onSuccess: () => {
+      toast.success("Paciente pausado");
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
+      });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao pausar"),
+  });
+
+  const resumePatient = useMutation({
+    mutationFn: (patientId: string) => api.resumePatient(token!, patientId),
+    onSuccess: () => {
+      toast.success("Paciente reativado");
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
+      });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao retomar"),
+  });
+
+  const sendOperatorReply = useMutation({
+    mutationFn: ({ patientId, text }: { patientId: string; text: string }) =>
+      api.sendWhatsAppOperatorReply(token!, patientId, { text }),
+    onSuccess: () => {
+      toast.success("Mensagem enviada");
+      setReplyText("");
+      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
+      });
+    },
+    onError: (err) => {
+      if (err instanceof ApiClientError && err.status === 422) {
+        toast.error(
+          err.message ||
+            "Janela de 24h expirada. Aguarde o paciente enviar uma mensagem.",
+        );
+        return;
+      }
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar mensagem");
+    },
   });
 
   const deletePatient = useMutation({
@@ -293,14 +410,14 @@ export function WhatsappConversationsPanel() {
                   <p className="font-medium">
                     {thread.data?.patient.name ?? selectedConversation?.name ?? "Contato"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {maskPhone(thread.data?.patient.phone ?? selectedConversation?.phone ?? "")}
+                  <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>{maskPhone(thread.data?.patient.phone ?? selectedConversation?.phone ?? "")}</span>
                     {thread.data?.patient.status && (
-                      <> · {thread.data.patient.status}</>
+                      <PatientStatusBadge status={thread.data.patient.status} />
                     )}
                   </p>
                 </div>
-                {selectedPatientId && (
+                {selectedPatientId && isAdmin && (
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
@@ -360,13 +477,61 @@ export function WhatsappConversationsPanel() {
                     ))
                   )}
                   <div ref={threadEndRef} />
+                  {canWrite && selectedPatientId && (
+                    <div className="space-y-2 border-t pt-3">
+                      <Textarea
+                        placeholder="Responder como farmácia…"
+                        value={replyText}
+                        rows={3}
+                        disabled={sendOperatorReply.isPending}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim()) {
+                            e.preventDefault();
+                            sendOperatorReply.mutate({
+                              patientId: selectedPatientId,
+                              text: replyText.trim(),
+                            });
+                          }
+                        }}
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={!replyText.trim() || sendOperatorReply.isPending}
+                          onClick={() =>
+                            sendOperatorReply.mutate({
+                              patientId: selectedPatientId,
+                              text: replyText.trim(),
+                            })
+                          }
+                        >
+                          <Send className="size-4" />
+                          Enviar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4">
                   {thread.isLoading ? (
                     <Skeleton className="h-40 w-full" />
                   ) : thread.data?.scheduling ? (
-                    <SchedulingSidebar scheduling={thread.data.scheduling} />
+                    <SchedulingSidebar
+                      scheduling={thread.data.scheduling}
+                      patientId={thread.data.patient.id}
+                      patientStatus={thread.data.patient.status}
+                      canWrite={canWrite}
+                      isPausing={pausePatient.isPending}
+                      isResuming={resumePatient.isPending}
+                      onPause={() => {
+                        if (!window.confirm("Pausar lembretes deste paciente?")) return;
+                        pausePatient.mutate(thread.data.patient.id);
+                      }}
+                      onResume={() => resumePatient.mutate(thread.data.patient.id)}
+                    />
                   ) : null}
                 </div>
               </div>

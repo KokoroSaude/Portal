@@ -332,6 +332,7 @@ export interface TenantSettings {
   voiceTone: string | number;
   locale: string;
   aiEnabled: boolean;
+  voiceMessagesEnabled: boolean;
 }
 
 export interface TenantSubscription {
@@ -568,7 +569,12 @@ export interface WhatsappConversationScheduling {
   }[];
   patientStatus: string;
   activatedAt: string | null;
+  pausedUntil?: string | null;
+  consecutiveMissedCheckins?: number;
   conversationStep: string | null;
+  openReengagementAttempt?: number | null;
+  openReengagementSentAt?: string | null;
+  lastReengagementAttempt?: number | null;
   reminders: {
     id: string;
     scheduledFor: string;
@@ -585,6 +591,8 @@ export interface WhatsappConversationThread {
     phone: string;
     status: string;
     activatedAt?: string | null;
+    pausedUntil?: string | null;
+    consecutiveMissedCheckins?: number;
   };
   messages: WhatsappConversationMessage[];
   scheduling?: WhatsappConversationScheduling;

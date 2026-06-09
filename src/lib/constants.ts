@@ -30,6 +30,24 @@ export const PATIENT_STATUS_LABELS: Record<string, string> = {
   OptedOut: "Opt-out",
 };
 
+export const CONVERSATION_STEP_LABELS: Record<string, string> = {
+  None: "Sem fluxo ativo",
+  OnboardingFlow: "Cadastro em andamento",
+  WaitingCheckin: "Aguardando check-in",
+  WaitingReengagement: "Aguardando resposta de reengajamento",
+  WaitingPauseResume: "Pausa acabou — aguardando retomar",
+  Active: "Ativo (mensagens livres)",
+};
+
+export const CONTENT_SOURCE_LABELS: Record<string, string> = {
+  patient: "Paciente",
+  template: "Template",
+  rules: "Regras",
+  ai: "IA",
+  system: "Sistema",
+  operator: "Farmácia",
+};
+
 export const VOICE_TONES = ["Acolhedor", "Motivacional", "Direto"] as const;
 
 export const LOCALE_LABELS: Record<string, string> = {

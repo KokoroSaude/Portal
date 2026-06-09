@@ -352,6 +352,12 @@ export const api = {
   clearWhatsAppDiagnosticEvents: (token: string) =>
     request<void>("/api/whatsapp/diagnostics/events", { method: "DELETE", token }),
 
+  sendWhatsAppOperatorReply: (token: string, patientId: string, body: { text: string }) =>
+    request<{ messageId: string; wamId: string | null }>(
+      `/api/whatsapp/conversations/${patientId}/reply`,
+      { method: "POST", token, body },
+    ),
+
   getSettings: (token: string) => request<TenantSettings>("/api/settings", { token }),
 
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>

@@ -48,6 +48,7 @@ export function SettingsPage() {
         ...settings,
         voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
         aiEnabled: settings.aiEnabled ?? false,
+        voiceMessagesEnabled: settings.voiceMessagesEnabled ?? false,
       });
     }
   }, [settings]);
@@ -206,6 +207,22 @@ export function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="voiceMessagesEnabled">Mensagens em voz</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Em breve — mensagens em áudio para pacientes. A preferência é salva, mas o envio
+                    em voz ainda não está ativo.
+                  </p>
+                </div>
+                <Switch
+                  id="voiceMessagesEnabled"
+                  checked={form.voiceMessagesEnabled ?? false}
+                  onCheckedChange={(checked) => update("voiceMessagesEnabled", checked)}
+                  disabled={!isAdmin}
+                />
               </div>
 
               <div className="flex items-center justify-between rounded-lg border p-4">
