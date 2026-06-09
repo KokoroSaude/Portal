@@ -40,6 +40,7 @@ function parseMessageContext(contextJson: string | null | undefined) {
 
 const INTENT_KIND_LABELS: Record<string, string> = {
   AddCarePlan: "Novo agendamento",
+  ListCarePlans: "Meus medicamentos",
   General: "Mensagem geral",
   Greeting: "Saudação",
   PharmacyQuestion: "Farmácia",
