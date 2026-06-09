@@ -24,9 +24,37 @@ function contentSourceLabel(source: string | null | undefined): string | null {
   return CONTENT_SOURCE_LABELS[source] ?? source;
 }
 
+function parseMessageContext(contextJson: string | null | undefined) {
+  if (!contextJson) return null;
+  try {
+    return JSON.parse(contextJson) as {
+      intentKind?: string;
+      parseType?: string;
+      source?: string;
+      confidence?: number;
+    };
+  } catch {
+    return null;
+  }
+}
+
+const INTENT_KIND_LABELS: Record<string, string> = {
+  AddCarePlan: "Novo agendamento",
+  General: "Mensagem geral",
+  Greeting: "Saudação",
+  PharmacyQuestion: "Farmácia",
+  ClinicalConcern: "Clínico",
+  Taken: "Tomou",
+  Missed: "Não tomou",
+  Ambiguous: "Ambíguo",
+};
+
 function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
   const outbound = message.direction === "Outbound";
   const sourceLabel = contentSourceLabel(message.contentSource);
+  const ctx = !outbound ? parseMessageContext(message.contextJson) : null;
+  const understandingSource = ctx?.source ? contentSourceLabel(ctx.source) : null;
+  const understandingKind = ctx?.intentKind ?? ctx?.parseType;
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -38,14 +66,22 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
             : "rounded-bl-md bg-muted text-foreground",
         )}
       >
-        {sourceLabel && (
-          <Badge
-            variant={outbound ? "secondary" : "muted"}
-            className={cn("mb-1 text-[10px]", outbound && "bg-primary-foreground/15 text-primary-foreground")}
-          >
-            {sourceLabel}
-          </Badge>
-        )}
+        <div className="mb-1 flex flex-wrap gap-1">
+          {sourceLabel && (
+            <Badge
+              variant={outbound ? "secondary" : "muted"}
+              className={cn("text-[10px]", outbound && "bg-primary-foreground/15 text-primary-foreground")}
+            >
+              {sourceLabel}
+            </Badge>
+          )}
+          {understandingSource && (
+            <Badge variant="outline" className="text-[10px]">
+              Entendido: {understandingSource}
+              {understandingKind && ` · ${INTENT_KIND_LABELS[understandingKind] ?? understandingKind}`}
+            </Badge>
+          )}
+        </div>
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
       </div>
@@ -70,13 +106,17 @@ function SchedulingSidebar({ scheduling }: { scheduling: NonNullable<import("@/t
         Agendamento
       </div>
 
-      {scheduling.carePlan ? (
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">{scheduling.carePlan.medication}</span>
-            {scheduling.carePlan.dosage && <> · {scheduling.carePlan.dosage}</>}
-          </p>
-          <p>Horários: {scheduling.carePlan.scheduledTimes.replace(/,/g, ", ")}</p>
+      {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).length > 0 ? (
+        <div className="space-y-2 text-xs text-muted-foreground">
+          {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).map((plan, idx) => (
+            <div key={`${plan.medication}-${idx}`} className="rounded-lg bg-muted/40 px-2 py-1.5">
+              <p>
+                <span className="font-medium text-foreground">{plan.medication}</span>
+                {plan.dosage && <> · {plan.dosage}</>}
+              </p>
+              <p>Horários: {plan.scheduledTimes.replace(/,/g, ", ")}</p>
+            </div>
+          ))}
           {scheduling.activatedAt && (
             <p>Ativado em {formatDateTime(scheduling.activatedAt)}</p>
           )}

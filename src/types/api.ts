@@ -551,6 +551,12 @@ export interface WhatsappConversationScheduling {
     scheduledTimes: string;
     startDate: string;
   } | null;
+  carePlans?: {
+    medication: string;
+    dosage: string;
+    scheduledTimes: string;
+    startDate: string;
+  }[];
   patientStatus: string;
   activatedAt: string | null;
   conversationStep: string | null;
