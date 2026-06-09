@@ -177,7 +177,13 @@ export function WhatsappDiagnosticsPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.events.map((event, i) => (
+                    {data.events
+                      .filter(
+                        (event) =>
+                          event.eventType !== "webhook.post_received" &&
+                          event.eventType !== "webhook.no_messages",
+                      )
+                      .map((event, i) => (
                       <TableRow key={`${event.at}-${event.eventType}-${i}`}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {formatDateTime(event.at)}
