@@ -539,6 +539,15 @@ export interface WhatsappConversation {
   lastMessageAt: string;
   lastPreview: string;
   lastDirection: string;
+  messagingWindow: WhatsappMessagingWindow;
+}
+
+export interface WhatsappMessagingWindow {
+  lastInboundAt: string | null;
+  expiresAt: string | null;
+  isOpen: boolean;
+  templateConfigured: boolean;
+  canSendTemplate: boolean;
 }
 
 export interface WhatsappConversationMessage {
@@ -595,5 +604,6 @@ export interface WhatsappConversationThread {
     consecutiveMissedCheckins?: number;
   };
   messages: WhatsappConversationMessage[];
+  messagingWindow?: WhatsappMessagingWindow;
   scheduling?: WhatsappConversationScheduling;
 }

@@ -13,18 +13,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { ADMIN_TEMPLATE_TONES, adminTemplateToneLabel } from "@/lib/adminTemplateTones";
 import { api, ApiClientError } from "@/lib/api";
+import { JOURNEY_STEP_TYPE_LABELS } from "@/lib/constants";
 import type { AdminMessageTemplate } from "@/types/api";
 
-const STEP_TYPE_LABELS: Record<string, string> = {
-  WelcomeConsent: "Boas-vindas",
-  CollectName: "Pergunta",
-  CollectMedication: "Pergunta",
-  CollectSchedule: "Pergunta",
-  ConfirmCarePlan: "Confirmação",
-};
-
 function stepTypeLabel(type: string) {
-  return STEP_TYPE_LABELS[type] ?? type;
+  return JOURNEY_STEP_TYPE_LABELS[type] ?? type;
 }
 
 function findByBaseAndTone(items: AdminMessageTemplate[], baseKey: string, tone: string) {

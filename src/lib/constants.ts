@@ -63,6 +63,7 @@ export const JOURNEY_STEP_TYPE_LABELS: Record<string, string> = {
   collect_medication: "Coletar medicamento",
   collect_schedule: "Coletar horários",
   confirm_care_plan: "Confirmar plano",
+  ask_another_medication: "Perguntar outro medicamento",
 };
 
 export const JOURNEY_BUILTIN_IDS = [
@@ -71,4 +72,5 @@ export const JOURNEY_BUILTIN_IDS = [
   "collect_medication",
   "collect_schedule",
   "confirm_care_plan",
+  "ask_another_medication",
 ] as const;

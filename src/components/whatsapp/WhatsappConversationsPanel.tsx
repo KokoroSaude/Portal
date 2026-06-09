@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
@@ -129,6 +130,9 @@ function SchedulingSidebar({
 
       {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).length > 0 ? (
         <div className="space-y-2 text-xs text-muted-foreground">
+          <p className="font-medium text-foreground">
+            Medicamentos ({(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).length})
+          </p>
           {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).map((plan, idx) => (
             <div key={`${plan.medication}-${idx}`} className="rounded-lg bg-muted/40 px-2 py-1.5">
               <p>
@@ -241,6 +245,7 @@ export function WhatsappConversationsPanel() {
   const queryClient = useQueryClient();
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   const conversations = useQuery({
@@ -304,8 +309,8 @@ export function WhatsappConversationsPanel() {
   });
 
   const sendOperatorReply = useMutation({
-    mutationFn: ({ patientId, text }: { patientId: string; text: string }) =>
-      api.sendWhatsAppOperatorReply(token!, patientId, { text }),
+    mutationFn: ({ patientId, text, useTemplate = false }: { patientId: string; text: string; useTemplate?: boolean }) =>
+      api.sendWhatsAppOperatorReply(token!, patientId, { text, useTemplate }),
     onSuccess: () => {
       toast.success("Mensagem enviada");
       setReplyText("");
@@ -320,6 +325,10 @@ export function WhatsappConversationsPanel() {
           err.message ||
             "Janela de 24h expirada. Aguarde o paciente enviar uma mensagem.",
         );
+        return;
+      }
+      if (err instanceof ApiClientError && err.status === 503) {
+        toast.error(err.message || "Template Meta não configurado.");
         return;
       }
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar mensagem");
@@ -338,6 +347,12 @@ export function WhatsappConversationsPanel() {
   });
 
   const selectedConversation = conversations.data?.find((c) => c.patientId === selectedPatientId);
+  const messagingWindow = thread.data?.messagingWindow ?? selectedConversation?.messagingWindow;
+  const canSendRegularMessage = messagingWindow?.isOpen ?? true;
+  const canSendTemplateMessage = !canSendRegularMessage && !!messagingWindow?.canSendTemplate;
+  const displayedMessages = onlyPharmacyMessages
+    ? (thread.data?.messages ?? []).filter((m) => m.contentSource === "operator")
+    : (thread.data?.messages ?? []);
 
   return (
     <Card>
@@ -388,7 +403,12 @@ export function WhatsappConversationsPanel() {
                       <p className="truncate text-sm font-medium">
                         {conversation.name ?? maskPhone(conversation.phone)}
                       </p>
-                      <Badge variant="muted">{conversation.messageCount}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={conversation.messagingWindow.isOpen ? "secondary" : "outline"}>
+                          {conversation.messagingWindow.isOpen ? "24h aberta" : "24h expirada"}
+                        </Badge>
+                        <Badge variant="muted">{conversation.messageCount}</Badge>
+                      </div>
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
                       {maskPhone(conversation.phone)}
@@ -469,24 +489,46 @@ export function WhatsappConversationsPanel() {
                 <div className="space-y-3 overflow-y-auto border-b p-4 lg:border-b-0 lg:border-r">
                   {thread.isLoading ? (
                     <Skeleton className="h-40 w-full" />
-                  ) : !thread.data?.messages.length ? (
+                  ) : !displayedMessages.length ? (
                     <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
                   ) : (
-                    thread.data.messages.map((message) => (
+                    displayedMessages.map((message) => (
                       <MessageBubble key={message.id} message={message} />
                     ))
                   )}
                   <div ref={threadEndRef} />
+                  <div className="mt-2 flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                    <span className="font-medium">Só Farmácia</span>
+                    <Switch
+                      checked={onlyPharmacyMessages}
+                      onCheckedChange={setOnlyPharmacyMessages}
+                      aria-label="Filtrar apenas mensagens da farmácia"
+                    />
+                  </div>
                   {canWrite && selectedPatientId && (
                     <div className="space-y-2 border-t pt-3">
+                      {messagingWindow && (
+                        <div
+                          className={cn(
+                            "rounded-md border px-3 py-2 text-xs",
+                            canSendRegularMessage
+                              ? "border-emerald-300/60 bg-emerald-50/60 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200"
+                              : "border-amber-300/60 bg-amber-50/60 text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200",
+                          )}
+                        >
+                          {canSendRegularMessage
+                            ? `Janela de 24h aberta${messagingWindow.expiresAt ? ` até ${formatDateTime(messagingWindow.expiresAt)}` : ""}.`
+                            : "Janela de 24h expirada. Use template Meta para responder fora da janela."}
+                        </div>
+                      )}
                       <Textarea
                         placeholder="Responder como farmácia…"
                         value={replyText}
                         rows={3}
-                        disabled={sendOperatorReply.isPending}
+                        disabled={sendOperatorReply.isPending || !canSendRegularMessage}
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim()) {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim() && canSendRegularMessage) {
                             e.preventDefault();
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,
@@ -495,11 +537,28 @@ export function WhatsappConversationsPanel() {
                           }
                         }}
                       />
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
+                        {canSendTemplateMessage && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={!replyText.trim() || sendOperatorReply.isPending}
+                            onClick={() =>
+                              sendOperatorReply.mutate({
+                                patientId: selectedPatientId,
+                                text: replyText.trim(),
+                                useTemplate: true,
+                              })
+                            }
+                          >
+                            Enviar via template Meta
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           size="sm"
-                          disabled={!replyText.trim() || sendOperatorReply.isPending}
+                          disabled={!replyText.trim() || sendOperatorReply.isPending || !canSendRegularMessage}
                           onClick={() =>
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,
