@@ -42,6 +42,7 @@ const INTENT_KIND_LABELS: Record<string, string> = {
   AddCarePlan: "Novo agendamento",
   ListCarePlans: "Meus medicamentos",
   General: "Mensagem geral",
+  NotUnderstood: "Não entendido",
   Greeting: "Saudação",
   PharmacyQuestion: "Farmácia",
   ClinicalConcern: "Clínico",
