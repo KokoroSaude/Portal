@@ -323,6 +323,131 @@ export interface AdminPeriodComparison {
   delta: PeriodComparison["delta"];
 }
 
+export interface MessageVolumeByDay {
+  date: string;
+  inbound: number;
+  outbound: number;
+}
+
+export interface InboundByHour {
+  hour: number;
+  count: number;
+}
+
+export interface OperatorThroughput {
+  userId: string;
+  userName: string | null;
+  date: string;
+  replyCount: number;
+}
+
+export interface AdminMessageVolumeMetrics {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  messagesByDay: MessageVolumeByDay[];
+  peakHours: InboundByHour[];
+  teamThroughput: OperatorThroughput[];
+}
+
+export interface SatisfactionDelayBucket {
+  bucket: string;
+  count: number;
+  avgScore: number;
+}
+
+export interface AdminSatisfactionMetrics {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  avgScore: number;
+  responseRate: number;
+  totalPrompts: number;
+  totalResponses: number;
+  byDelayBucket: SatisfactionDelayBucket[];
+}
+
+export interface LatencyByTenant {
+  tenantId: string;
+  tenantName: string;
+  avgSeconds: number;
+  p50Seconds: number;
+  p95Seconds: number;
+  sampleCount: number;
+}
+
+export interface LatencyByUser {
+  userId: string;
+  userName: string | null;
+  avgSeconds: number;
+  p50Seconds: number;
+  p95Seconds: number;
+  sampleCount: number;
+}
+
+export interface LatencyByDay {
+  date: string;
+  avgSeconds: number;
+  p50Seconds: number;
+  p95Seconds: number;
+  sampleCount: number;
+}
+
+export interface AdminOperationalLatencyMetrics {
+  from: string;
+  to: string;
+  tenantIds: string[];
+  avgSeconds: number;
+  p50Seconds: number;
+  p95Seconds: number;
+  sampleCount: number;
+  byTenant: LatencyByTenant[];
+  byUser: LatencyByUser[];
+  byDay: LatencyByDay[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  tenantId: string;
+  userId: string | null;
+  patientId: string | null;
+  action: string;
+  entityName: string;
+  entityId: string | null;
+  oldValues: string | null;
+  newValues: string | null;
+  ipAddress: string | null;
+  correlationId: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditLogResult {
+  items: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface InteractionEventEntry {
+  id: string;
+  eventType: string;
+  tenantId: string;
+  patientId: string | null;
+  messageId: string | null;
+  userId: string | null;
+  aiProvider: string | null;
+  aiModel: string | null;
+  properties: string | null;
+  occurredAt: string;
+}
+
+export interface AdminInteractionEventsResult {
+  items: InteractionEventEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface TenantSettings {
   sendWindowStart: string;
   sendWindowEnd: string;

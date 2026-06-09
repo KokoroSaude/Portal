@@ -10,6 +10,11 @@ import type {
   AdminPatientAdherenceRank,
   AdminPatientFunnel,
   AdminPeriodComparison,
+  AdminMessageVolumeMetrics,
+  AdminSatisfactionMetrics,
+  AdminOperationalLatencyMetrics,
+  AdminAuditLogResult,
+  AdminInteractionEventsResult,
   AdminSenderPerformance,
   AdminTenant,
   AdherenceReport,
@@ -451,6 +456,79 @@ export const api = {
       `/api/admin/reports/comparison${adminReportQs({ from, to }, tenantIds)}`,
       { token },
     ),
+
+  adminGetMessageVolumeMetrics: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminMessageVolumeMetrics>(
+      `/api/admin/metrics/messages${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetSatisfactionMetrics: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminSatisfactionMetrics>(
+      `/api/admin/metrics/satisfaction${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetOperationalLatencyMetrics: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminOperationalLatencyMetrics>(
+      `/api/admin/metrics/operations${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetAuditLog: (
+    token: string,
+    params: {
+      from?: string;
+      to?: string;
+      tenantIds?: string[];
+      patientId?: string;
+      userId?: string;
+      action?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) => {
+    const q = adminReportQs(
+      { from: params.from, to: params.to, limit: params.limit },
+      params.tenantIds,
+    );
+    const url = new URLSearchParams(q.startsWith("?") ? q.slice(1) : q);
+    if (params.offset) url.set("offset", String(params.offset));
+    if (params.patientId) url.set("patientId", params.patientId);
+    if (params.userId) url.set("userId", params.userId);
+    if (params.action) url.set("action", params.action);
+    const qs = url.toString();
+    return request<AdminAuditLogResult>(`/api/admin/audit-log${qs ? `?${qs}` : ""}`, { token });
+  },
+
+  adminGetInteractionEvents: (
+    token: string,
+    params: {
+      from?: string;
+      to?: string;
+      tenantIds?: string[];
+      patientId?: string;
+      userId?: string;
+      eventType?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) => {
+    const q = adminReportQs(
+      { from: params.from, to: params.to, limit: params.limit },
+      params.tenantIds,
+    );
+    const url = new URLSearchParams(q.startsWith("?") ? q.slice(1) : q);
+    if (params.offset) url.set("offset", String(params.offset));
+    if (params.patientId) url.set("patientId", params.patientId);
+    if (params.userId) url.set("userId", params.userId);
+    if (params.eventType) url.set("eventType", params.eventType);
+    const qs = url.toString();
+    return request<AdminInteractionEventsResult>(
+      `/api/admin/interaction-events${qs ? `?${qs}` : ""}`,
+      { token },
+    );
+  },
 
   adminGetProductMetrics: (token: string) =>
     request<AdminProductMetrics>("/api/admin/metrics/product", { token }),
