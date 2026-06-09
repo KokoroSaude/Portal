@@ -144,7 +144,58 @@ export function WhatsappDiagnosticsPanel() {
                 )}
               </div>
 
-              <div className="rounded-xl border p-4 space-y-2 sm:col-span-2">
+              <div className="space-y-2 rounded-xl border p-4">
+                <p className="text-sm font-medium">IA da plataforma (servidor)</p>
+                {data.platformAi ? (
+                  <>
+                    <MetaFlag ok={data.platformAi.isConfigured} label="Pronta para chamadas" />
+                    <p className="text-sm text-muted-foreground">
+                      Provedor: <span className="font-mono text-foreground">{data.platformAi.provider}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Modelo: <span className="font-mono text-foreground">{data.platformAi.model}</span>
+                    </p>
+                    <MetaFlag
+                      ok={data.platformAi.openAiConfigured}
+                      label={
+                        data.platformAi.openAiKeyHint
+                          ? `OpenAI (${data.platformAi.openAiKeyHint})`
+                          : "OpenAI sem chave"
+                      }
+                    />
+                    <MetaFlag
+                      ok={data.platformAi.anthropicConfigured}
+                      label={
+                        data.platformAi.anthropicKeyHint
+                          ? `Anthropic (${data.platformAi.anthropicKeyHint})`
+                          : "Anthropic sem chave"
+                      }
+                    />
+                    {!data.platformAi.isConfigured && (
+                      <p className="flex items-center gap-2 text-sm text-amber-600">
+                        <AlertCircle className="size-4 shrink-0" />
+                        Configure o provedor ativo em Superadmin → Configuração de IA.
+                      </p>
+                    )}
+                    {data.platformAi.provider === "anthropic" && !data.platformAi.anthropicConfigured && (
+                      <p className="text-xs text-destructive">
+                        Provedor Anthropic, mas a chave Anthropic não está disponível no servidor.
+                      </p>
+                    )}
+                    {data.platformAi.provider === "openai" && !data.platformAi.openAiConfigured && (
+                      <p className="text-xs text-destructive">
+                        Provedor OpenAI, mas a chave OpenAI não está disponível no servidor.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Indisponível nesta versão da API — atualize o deploy.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-xl border p-4 space-y-2">
                 <p className="text-sm font-medium">Como interpretar</p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
                   <li>
@@ -155,6 +206,9 @@ export function WhatsappDiagnosticsPanel() {
                   </li>
                   <li>
                     <code className="text-xs">processed_with_reply</code> → Kokoro enviou resposta à Meta.
+                  </li>
+                  <li>
+                    Conversas com <strong>Entendido: IA</strong> só após chamada real ao provedor acima.
                   </li>
                 </ul>
               </div>

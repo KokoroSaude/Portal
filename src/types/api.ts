@@ -508,6 +508,15 @@ export interface WhatsappDiagnostics {
     apiVersion: string;
     simulatorMode: boolean;
   };
+  platformAi?: {
+    provider: string;
+    model: string;
+    isConfigured: boolean;
+    openAiConfigured: boolean;
+    anthropicConfigured: boolean;
+    openAiKeyHint: string | null;
+    anthropicKeyHint: string | null;
+  };
   senders: Array<{
     id: string;
     tenantSlug: string;
