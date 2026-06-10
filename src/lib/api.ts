@@ -19,6 +19,7 @@ import type {
   AdminMoriskyReport,
   AdminTenant,
   AdherenceReport,
+  MoriskyReport,
   AdherenceTrendPoint,
   CarePlanUpdate,
   CreateTenantResponse,
@@ -260,6 +261,9 @@ export const api = {
 
   getAdherenceTrend: (token: string, from?: string, to?: string) =>
     request<AdherenceTrendPoint[]>(`/api/reports/adherence/trend${qs({ from, to })}`, { token }),
+
+  getMoriskyReport: (token: string, from?: string, to?: string) =>
+    request<MoriskyReport>(`/api/reports/morisky${qs({ from, to })}`, { token }),
 
   getPatientFunnel: (token: string) =>
     request<PatientFunnel>("/api/reports/funnel", { token }),

@@ -10,6 +10,9 @@ import {
   AdherenceTrendChart,
   CheckinsByHourChart,
   EngagementBarChart,
+  MoriskyLevelChart,
+  MoriskyTrendChart,
+  MoriskyTriggerChart,
   PatientFunnelChart,
   ResponseByDayChart,
   SimpleBarChart,
@@ -33,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
-import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { FEATURE_KEYS, MORISKY_LEVEL_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
 import type { MessageEngagement } from "@/types/api";
@@ -156,6 +159,12 @@ export function ReportsPage() {
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
+  const morisky = useQuery({
+    queryKey: ["morisky-report", range],
+    queryFn: () => api.getMoriskyReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsBasic),
+  });
+
   const handleExportPdf = async () => {
     if (!adherence.data) {
       toast.error("Aguarde o carregamento dos dados de adesão.");
@@ -245,6 +254,7 @@ export function ReportsPage() {
           {hasFeature(FEATURE_KEYS.reportsCohort) && (
             <TabsTrigger value="comparison">Comparativo</TabsTrigger>
           )}
+          <TabsTrigger value="morisky">MMAS-8</TabsTrigger>
         </TabsList>
 
         <TabsContent value="adherence" className="space-y-6">
@@ -382,6 +392,88 @@ export function ReportsPage() {
 
         <TabsContent value="senders">
           <SendersPerformanceTable rows={senders.data ?? []} loading={senders.isLoading} />
+        </TabsContent>
+
+        <TabsContent value="morisky" className="space-y-6">
+          {morisky.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : morisky.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard title="Avaliações" value={morisky.data.totalAssessments} />
+                <MetricCard
+                  title="Score normalizado médio"
+                  value={formatPercent(morisky.data.avgNormalizedScore)}
+                />
+                <MetricCard
+                  title="Adesão check-in"
+                  value={formatPercent(morisky.data.checkinAdherenceRate)}
+                />
+                <MetricCard
+                  title="Baixa adesão"
+                  value={morisky.data.byLevel.find((l) => l.level === "low")?.count ?? 0}
+                />
+              </div>
+
+              {morisky.data.totalAssessments > 0 ? (
+                <>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <MoriskyTrendChart data={morisky.data.trend} />
+                    <MoriskyLevelChart data={morisky.data.byLevel} />
+                    {morisky.data.byTrigger.length > 0 && (
+                      <MoriskyTriggerChart data={morisky.data.byTrigger} />
+                    )}
+                  </div>
+
+                  {morisky.data.patientRanking.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="font-serif text-lg">Ranking de pacientes</CardTitle>
+                        <CardDescription>Últimas avaliações MMAS-8 no período</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Paciente</TableHead>
+                              <TableHead>Score</TableHead>
+                              <TableHead>Nível</TableHead>
+                              <TableHead>Data</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {morisky.data.patientRanking.map((row) => (
+                              <TableRow key={`${row.patientId}-${row.completedAt}`}>
+                                <TableCell>
+                                  {row.patientName ?? maskPhone(row.phone)}
+                                </TableCell>
+                                <TableCell>
+                                  {row.score}/{row.maxScore}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">
+                                    {MORISKY_LEVEL_LABELS[row.level] ?? row.level}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {new Date(row.completedAt).toLocaleDateString("pt-BR")}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma avaliação MMAS-8 concluída no período. Conclua o onboarding com MMAS-8
+                  habilitado ou aguarde gatilhos periódicos.
+                </p>
+              )}
+            </>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="comparison">
