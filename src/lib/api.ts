@@ -34,8 +34,6 @@ import type {
   LoginResponse,
   MessageTemplate,
   MoriskyReport,
-  MoriskyScaleDefinition,
-  MoriskyScaleResponse,
   OnboardingJourney,
   Patient,
   PatientMoriskyHistory,
@@ -284,14 +282,6 @@ export const api = {
 
   getMoriskyReport: (token: string, from?: string, to?: string) =>
     request<MoriskyReport>(`/api/reports/morisky${qs({ from, to })}`, { token }),
-
-  getMoriskyScale: (token: string) => request<MoriskyScaleResponse>("/api/morisky/scale", { token }),
-
-  updateMoriskyScale: (token: string, scale: MoriskyScaleDefinition) =>
-    request<void>("/api/morisky/scale", { method: "PUT", token, body: scale }),
-
-  resetMoriskyScale: (token: string) =>
-    request<void>("/api/morisky/scale", { method: "DELETE", token }),
 
   getPatientMorisky: (token: string, patientId: string) =>
     request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
