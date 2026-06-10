@@ -247,6 +247,7 @@ export function WhatsappConversationsPanel() {
   const patientIdFromUrl = searchParams.get("patientId");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientIdFromUrl);
   const [replyText, setReplyText] = useState("");
+  const [requestCsat, setRequestCsat] = useState(false);
   const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
 
@@ -315,11 +316,21 @@ export function WhatsappConversationsPanel() {
   });
 
   const sendOperatorReply = useMutation({
-    mutationFn: ({ patientId, text, useTemplate = false }: { patientId: string; text: string; useTemplate?: boolean }) =>
-      api.sendWhatsAppOperatorReply(token!, patientId, { text, useTemplate }),
+    mutationFn: ({
+      patientId,
+      text,
+      useTemplate = false,
+      requestCsat: askCsat = false,
+    }: {
+      patientId: string;
+      text: string;
+      useTemplate?: boolean;
+      requestCsat?: boolean;
+    }) => api.sendWhatsAppOperatorReply(token!, patientId, { text, useTemplate, requestCsat: askCsat }),
     onSuccess: () => {
       toast.success("Mensagem enviada");
       setReplyText("");
+      setRequestCsat(false);
       void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
       void queryClient.invalidateQueries({
         queryKey: ["whatsapp-conversation-messages", selectedPatientId],
@@ -549,10 +560,23 @@ export function WhatsappConversationsPanel() {
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,
                               text: replyText.trim(),
+                              requestCsat,
                             });
                           }
                         }}
                       />
+                      {canSendRegularMessage && (
+                        <div className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+                          <span className="text-muted-foreground">
+                            Pedir avaliação de satisfação (1–5) após esta mensagem
+                          </span>
+                          <Switch
+                            checked={requestCsat}
+                            onCheckedChange={setRequestCsat}
+                            aria-label="Pedir avaliação de satisfação"
+                          />
+                        </div>
+                      )}
                       <div className="flex justify-end gap-2">
                         {canSendTemplateMessage && (
                           <Button
@@ -579,6 +603,7 @@ export function WhatsappConversationsPanel() {
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,
                               text: replyText.trim(),
+                              requestCsat,
                             })
                           }
                         >

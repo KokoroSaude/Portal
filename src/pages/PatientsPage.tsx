@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Download, MessageCircle, Plus } from "lucide-react";
+import { ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -51,6 +51,8 @@ export function PatientsPage() {
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMoriskyOpen, setBulkMoriskyOpen] = useState(false);
+  const [bulkCsatOpen, setBulkCsatOpen] = useState(false);
+  const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
@@ -103,6 +105,34 @@ export function PatientsPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
   });
 
+  const bulkCsatMutation = useMutation({
+    mutationFn: (patientIds: string[]) => api.triggerCsatBulk(token!, { patientIds }),
+    onSuccess: (result) => {
+      setBulkCsatOpen(false);
+      setSelectedIds(new Set());
+      toast.success(
+        `Pesquisa de satisfação enviada para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar pesquisa de satisfação"),
+  });
+
+  const bulkOnboardingMutation = useMutation({
+    mutationFn: (patientIds: string[]) => api.triggerOnboardingResumeBulk(token!, { patientIds }),
+    onSuccess: (result) => {
+      setBulkOnboardingOpen(false);
+      setSelectedIds(new Set());
+      toast.success(
+        `Cadastro reenviado para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
+  });
+
   const createMutation = useMutation({
     mutationFn: () =>
       api.createPatient(token!, {
@@ -137,7 +167,10 @@ export function PatientsPage() {
   const pageIds = data?.items.map((p) => p.id) ?? [];
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
-  const moriskyBulkEnabled = canWrite && tenantSettings?.moriskyEnabled;
+  const bulkSelectEnabled = canWrite;
+  const moriskyBulkEnabled = bulkSelectEnabled && tenantSettings?.moriskyEnabled;
+  const csatBulkEnabled = bulkSelectEnabled;
+  const onboardingBulkEnabled = bulkSelectEnabled;
 
   function togglePatient(id: string, checked: boolean) {
     setSelectedIds((prev) => {
@@ -311,12 +344,72 @@ export function PatientsPage() {
                   {exporting ? "Exportando…" : "Exportar CSV"}
                 </Button>
               )}
+              {onboardingBulkEnabled && selectedIds.size > 0 && (
+                <Dialog open={bulkOnboardingOpen} onOpenChange={setBulkOnboardingOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <RefreshCw className="size-4" />
+                      Continuar cadastro ({selectedIds.size})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reenviar onboarding para selecionados?</DialogTitle>
+                      <DialogDescription>
+                        {selectedIds.size} paciente(s) receberão a etapa pendente do cadastro no
+                        WhatsApp. Quem não estiver em onboarding ou não puder receber será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkOnboardingOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkOnboardingMutation.mutate([...selectedIds])}
+                        disabled={bulkOnboardingMutation.isPending}
+                      >
+                        {bulkOnboardingMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {csatBulkEnabled && selectedIds.size > 0 && (
+                <Dialog open={bulkCsatOpen} onOpenChange={setBulkCsatOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Star className="size-4" />
+                      Satisfação ({selectedIds.size})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Enviar pesquisa de satisfação?</DialogTitle>
+                      <DialogDescription>
+                        {selectedIds.size} paciente(s) receberão a pergunta de 1 a 5 no WhatsApp.
+                        Quem já tiver pesquisa pendente ou estiver em outro fluxo será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkCsatOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkCsatMutation.mutate([...selectedIds])}
+                        disabled={bulkCsatMutation.isPending}
+                      >
+                        {bulkCsatMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
               {moriskyBulkEnabled && selectedIds.size > 0 && (
                 <Dialog open={bulkMoriskyOpen} onOpenChange={setBulkMoriskyOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm">
                       <ClipboardList className="size-4" />
-                      Enviar MMAS-8 ({selectedIds.size})
+                      MMAS-8 ({selectedIds.size})
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -363,7 +456,7 @@ export function PatientsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {moriskyBulkEnabled && (
+                    {bulkSelectEnabled && (
                       <TableHead className="w-10">
                         <Checkbox
                           checked={allPageSelected}
@@ -382,7 +475,7 @@ export function PatientsPage() {
                 <TableBody>
                   {data?.items.length === 0 && (
                     <GridEmptyRow
-                      colSpan={moriskyBulkEnabled ? 6 : 5}
+                      colSpan={bulkSelectEnabled ? 6 : 5}
                       message={
                         searchInput.trim()
                           ? "Nenhum paciente corresponde à busca."
@@ -392,7 +485,7 @@ export function PatientsPage() {
                   )}
                   {data?.items.map((p) => (
                     <TableRow key={p.id}>
-                      {moriskyBulkEnabled && (
+                      {bulkSelectEnabled && (
                         <TableCell>
                           <Checkbox
                             checked={selectedIds.has(p.id)}

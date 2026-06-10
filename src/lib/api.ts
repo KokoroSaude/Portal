@@ -19,9 +19,13 @@ import type {
   AdminMoriskyReport,
   AdminTenant,
   AdherenceReport,
+  CsatBulkTriggerResult,
+  CsatManualTriggerResult,
   MoriskyBulkTriggerResult,
   MoriskyManualTriggerResult,
   MoriskyReport,
+  OnboardingBulkTriggerResult,
+  OnboardingManualTriggerResult,
   AdherenceTrendPoint,
   CarePlanUpdate,
   CreateTenantResponse,
@@ -244,6 +248,38 @@ export const api = {
       body: { ignoreCooldown: true, ...payload },
     }),
 
+  triggerPatientCsat: (token: string, patientId: string) =>
+    request<CsatManualTriggerResult>(`/api/patients/${patientId}/csat/trigger`, {
+      method: "POST",
+      token,
+    }),
+
+  triggerOnboardingResume: (token: string, patientId: string) =>
+    request<OnboardingManualTriggerResult>(`/api/patients/${patientId}/onboarding/resume`, {
+      method: "POST",
+      token,
+    }),
+
+  triggerOnboardingResumeBulk: (
+    token: string,
+    payload: { patientIds?: string[]; allOnboarding?: boolean; status?: string },
+  ) =>
+    request<OnboardingBulkTriggerResult>("/api/onboarding/resume/trigger", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  triggerCsatBulk: (
+    token: string,
+    payload: { patientIds?: string[]; allActive?: boolean; status?: string },
+  ) =>
+    request<CsatBulkTriggerResult>("/api/csat/trigger", {
+      method: "POST",
+      token,
+      body: { ignoreCooldown: true, ...payload },
+    }),
+
   pausePatient: (token: string, id: string, reason?: string, pauseUntil?: string) =>
     request<void>(`/api/patients/${id}/pause`, { method: "POST", token, body: { reason, pauseUntil } }),
 
@@ -391,7 +427,7 @@ export const api = {
   sendWhatsAppOperatorReply: (
     token: string,
     patientId: string,
-    body: { text: string; useTemplate?: boolean },
+    body: { text: string; useTemplate?: boolean; requestCsat?: boolean },
   ) =>
     request<{ messageId: string; wamId: string | null }>(
       `/api/whatsapp/conversations/${patientId}/reply`,

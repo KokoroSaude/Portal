@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Save, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
@@ -89,6 +89,26 @@ export function PatientDetailPage() {
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
+  });
+
+  const triggerCsatMutation = useMutation({
+    mutationFn: () => api.triggerPatientCsat(token!, id!),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar pesquisa de satisfação"),
+  });
+
+  const triggerOnboardingResumeMutation = useMutation({
+    mutationFn: () => api.triggerOnboardingResume(token!, id!),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
   });
 
   const hasMoreTimeline = (timeline?.length ?? 0) >= timelinePageSize;
@@ -272,6 +292,28 @@ export function PatientDetailPage() {
               {canWrite ? "Enviar mensagem" : "Ver conversa"}
             </Link>
           </Button>
+          {canWrite && patient.status === "Onboarding" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => triggerOnboardingResumeMutation.mutate()}
+              disabled={triggerOnboardingResumeMutation.isPending}
+            >
+              <RefreshCw className="size-4" />
+              {triggerOnboardingResumeMutation.isPending ? "Enviando…" : "Continuar cadastro"}
+            </Button>
+          )}
+          {canWrite && patient.status !== "Onboarding" && patient.status !== "OptedOut" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => triggerCsatMutation.mutate()}
+              disabled={triggerCsatMutation.isPending}
+            >
+              <Star className="size-4" />
+              {triggerCsatMutation.isPending ? "Enviando…" : "Pesquisa de satisfação"}
+            </Button>
+          )}
           {canWrite && canPause && (
             <Dialog open={pauseOpen} onOpenChange={setPauseOpen}>
               <DialogTrigger asChild>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { RefreshCw, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,15 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +38,8 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
+  const [bulkCsatOpen, setBulkCsatOpen] = useState(false);
+  const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const tabParam = searchParams.get("tab");
   const defaultTab = tabParam === "usuarios" || tabParam === "operacional" ? tabParam : "operacional";
 
@@ -49,9 +61,46 @@ export function SettingsPage() {
         voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
         aiEnabled: settings.aiEnabled ?? false,
         voiceMessagesEnabled: settings.voiceMessagesEnabled ?? false,
+        onboardingResumeEnabled: settings.onboardingResumeEnabled ?? true,
+        onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
+        onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
       });
     }
   }, [settings]);
+
+  const bulkOnboardingMutation = useMutation({
+    mutationFn: () => api.triggerOnboardingResumeBulk(token!, { allOnboarding: true }),
+    onSuccess: (result) => {
+      setBulkOnboardingOpen(false);
+      if (result.sent === 0 && result.requested === 0) {
+        toast.warning("Nenhum paciente em onboarding encontrado.");
+        return;
+      }
+      toast.success(
+        `Cadastro reenviado para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
+  });
+
+  const bulkCsatMutation = useMutation({
+    mutationFn: () => api.triggerCsatBulk(token!, { allActive: true }),
+    onSuccess: (result) => {
+      setBulkCsatOpen(false);
+      if (result.sent === 0 && result.requested === 0) {
+        toast.warning("Nenhum paciente ativo encontrado.");
+        return;
+      }
+      toast.success(
+        `Pesquisa enviada para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar pesquisa"),
+  });
 
   const saveMutation = useMutation({
     mutationFn: (payload: Partial<TenantSettings>) => api.updateSettings(token!, payload),
@@ -175,6 +224,30 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="onboardingResumeAfterDays">Dias sem resposta no onboarding</Label>
+                  <Input
+                    id="onboardingResumeAfterDays"
+                    type="number"
+                    min={0}
+                    value={form.onboardingResumeAfterDays}
+                    onChange={(e) => update("onboardingResumeAfterDays", Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="onboardingResumeCooldownHours">
+                    Intervalo entre lembretes de onboarding (horas)
+                  </Label>
+                  <Input
+                    id="onboardingResumeCooldownHours"
+                    type="number"
+                    min={0}
+                    value={form.onboardingResumeCooldownHours}
+                    onChange={(e) =>
+                      update("onboardingResumeCooldownHours", Number(e.target.value))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Tom de voz</Label>
                   <Select
                     value={normalizeVoiceToneSelectValue(form.voiceTone)}
@@ -211,6 +284,20 @@ export function SettingsPage() {
 
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-1">
+                  <Label htmlFor="onboardingResumeEnabled">Lembrete automático de onboarding</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Reenvia a etapa pendente quando o paciente para de responder no meio do cadastro.
+                  </p>
+                </div>
+                <Switch
+                  id="onboardingResumeEnabled"
+                  checked={form.onboardingResumeEnabled}
+                  onCheckedChange={(checked) => update("onboardingResumeEnabled", checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
                   <Label htmlFor="aiEnabled">Inteligência artificial</Label>
                   <p className="text-sm text-muted-foreground">
                     NLU no WhatsApp, insights nos relatórios e personalização de marcos. Desligado usa
@@ -227,6 +314,85 @@ export function SettingsPage() {
               <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? "Salvando…" : "Salvar alterações"}
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Onboarding pendente</CardTitle>
+              <CardDescription>
+                Reenvie manualmente a etapa do cadastro — por paciente, seleção na lista ou todos em
+                onboarding.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={bulkOnboardingOpen} onOpenChange={setBulkOnboardingOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={bulkOnboardingMutation.isPending}>
+                    <RefreshCw className="size-4" />
+                    Reenviar para todos em onboarding
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Reenviar onboarding para todos?</DialogTitle>
+                    <DialogDescription>
+                      Cada paciente com status Onboarding receberá a etapa pendente no WhatsApp.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setBulkOnboardingOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={() => bulkOnboardingMutation.mutate()}
+                      disabled={bulkOnboardingMutation.isPending}
+                    >
+                      {bulkOnboardingMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pesquisa de satisfação (CSAT)</CardTitle>
+              <CardDescription>
+                Dispare manualmente a pergunta de 1 a 5 no WhatsApp — por paciente, seleção na lista
+                ou todos os ativos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={bulkCsatOpen} onOpenChange={setBulkCsatOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={bulkCsatMutation.isPending}>
+                    <Star className="size-4" />
+                    Enviar para todos os pacientes ativos
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Enviar CSAT para todos os ativos?</DialogTitle>
+                    <DialogDescription>
+                      Cada paciente com status Ativo receberá a pesquisa no WhatsApp. Quem já tiver
+                      pesquisa pendente ou estiver em check-in/MMAS-8 será ignorado.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setBulkCsatOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={() => bulkCsatMutation.mutate()}
+                      disabled={bulkCsatMutation.isPending}
+                    >
+                      {bulkCsatMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </TabsContent>

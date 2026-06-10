@@ -463,6 +463,20 @@ export interface TenantSettings {
   moriskyPeriodicDays: number | null;
   moriskyTriggerAfterMisses: number | null;
   moriskyCooldownDays: number;
+  onboardingResumeEnabled: boolean;
+  onboardingResumeAfterDays: number;
+  onboardingResumeCooldownHours: number;
+}
+
+export interface OnboardingBulkTriggerResult {
+  requested: number;
+  sent: number;
+  skipped: number;
+  skippedSamples: Array<{
+    patientId: string;
+    patientName: string | null;
+    reason: string;
+  }>;
 }
 
 export interface MoriskyQuestionDefinition {
@@ -544,6 +558,31 @@ export interface MoriskyBulkTriggerResult {
   sent: number;
   skipped: number;
   skippedSamples: MoriskyBulkSkipItem[];
+}
+
+export interface CsatManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+}
+
+export interface OnboardingManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+}
+
+export interface CsatBulkSkipItem {
+  patientId: string;
+  patientName: string | null;
+  reason: string;
+}
+
+export interface CsatBulkTriggerResult {
+  requested: number;
+  sent: number;
+  skipped: number;
+  skippedSamples: CsatBulkSkipItem[];
 }
 
 export interface MoriskyLevelCount {
