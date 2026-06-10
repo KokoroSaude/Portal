@@ -73,16 +73,16 @@ export function SettingsPage() {
     onSuccess: (result) => {
       setBulkOnboardingOpen(false);
       if (result.sent === 0 && result.requested === 0) {
-        toast.warning("Nenhum paciente em onboarding encontrado.");
+        toast.warning("Nenhum paciente com cadastro em andamento.");
         return;
       }
       toast.success(
-        `Cadastro reenviado para ${result.sent} de ${result.requested} paciente(s)` +
+        `Lembrete enviado para ${result.sent} de ${result.requested} paciente(s)` +
           (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
       );
     },
     onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar lembrete de cadastro"),
   });
 
   const bulkCsatMutation = useMutation({
@@ -224,30 +224,6 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="onboardingResumeAfterDays">Dias sem resposta no onboarding</Label>
-                  <Input
-                    id="onboardingResumeAfterDays"
-                    type="number"
-                    min={0}
-                    value={form.onboardingResumeAfterDays}
-                    onChange={(e) => update("onboardingResumeAfterDays", Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="onboardingResumeCooldownHours">
-                    Intervalo entre lembretes de onboarding (horas)
-                  </Label>
-                  <Input
-                    id="onboardingResumeCooldownHours"
-                    type="number"
-                    min={0}
-                    value={form.onboardingResumeCooldownHours}
-                    onChange={(e) =>
-                      update("onboardingResumeCooldownHours", Number(e.target.value))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>Tom de voz</Label>
                   <Select
                     value={normalizeVoiceToneSelectValue(form.voiceTone)}
@@ -284,20 +260,6 @@ export function SettingsPage() {
 
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-1">
-                  <Label htmlFor="onboardingResumeEnabled">Lembrete automático de onboarding</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Reenvia a etapa pendente quando o paciente para de responder no meio do cadastro.
-                  </p>
-                </div>
-                <Switch
-                  id="onboardingResumeEnabled"
-                  checked={form.onboardingResumeEnabled}
-                  onCheckedChange={(checked) => update("onboardingResumeEnabled", checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="space-y-1">
                   <Label htmlFor="aiEnabled">Inteligência artificial</Label>
                   <p className="text-sm text-muted-foreground">
                     NLU no WhatsApp, insights nos relatórios e personalização de marcos. Desligado usa
@@ -319,25 +281,76 @@ export function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Onboarding pendente</CardTitle>
+              <CardTitle className="text-base">Cadastro pendente no WhatsApp</CardTitle>
               <CardDescription>
-                Reenvie manualmente a etapa do cadastro — por paciente, seleção na lista ou todos em
-                onboarding.
+                Para quem começou o cadastro pelo WhatsApp e parou no meio — sem terminar nome,
+                medicamento ou horários.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Dialog open={bulkOnboardingOpen} onOpenChange={setBulkOnboardingOpen}>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="onboardingResumeEnabled">Lembrete automático</Label>
+                  <p className="text-sm text-muted-foreground">
+                    A Kokoro reenvia no WhatsApp a próxima pergunta do cadastro quando o paciente fica
+                    alguns dias sem responder.
+                  </p>
+                </div>
+                <Switch
+                  id="onboardingResumeEnabled"
+                  checked={form.onboardingResumeEnabled}
+                  onCheckedChange={(checked) => update("onboardingResumeEnabled", checked)}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="onboardingResumeAfterDays">Esperar antes de lembrar (dias)</Label>
+                  <Input
+                    id="onboardingResumeAfterDays"
+                    type="number"
+                    min={0}
+                    value={form.onboardingResumeAfterDays}
+                    onChange={(e) => update("onboardingResumeAfterDays", Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Só envia lembrete se o paciente ficar esse tempo sem responder no WhatsApp.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="onboardingResumeCooldownHours">Intervalo entre lembretes (horas)</Label>
+                  <Input
+                    id="onboardingResumeCooldownHours"
+                    type="number"
+                    min={0}
+                    value={form.onboardingResumeCooldownHours}
+                    onChange={(e) =>
+                      update("onboardingResumeCooldownHours", Number(e.target.value))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tempo mínimo entre um lembrete e outro para o mesmo paciente.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando…" : "Salvar lembretes automáticos"}
+                </Button>
+                <Dialog open={bulkOnboardingOpen} onOpenChange={setBulkOnboardingOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" disabled={bulkOnboardingMutation.isPending}>
                     <RefreshCw className="size-4" />
-                    Reenviar para todos em onboarding
+                    Lembrar todos com cadastro em andamento
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Reenviar onboarding para todos?</DialogTitle>
+                    <DialogTitle>Lembrar todos com cadastro em andamento?</DialogTitle>
                     <DialogDescription>
-                      Cada paciente com status Onboarding receberá a etapa pendente no WhatsApp.
+                      Cada paciente que ainda não terminou o cadastro receberá no WhatsApp a pergunta
+                      em que parou. Quem não puder receber agora será ignorado.
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -348,11 +361,18 @@ export function SettingsPage() {
                       onClick={() => bulkOnboardingMutation.mutate()}
                       disabled={bulkOnboardingMutation.isPending}
                     >
-                      {bulkOnboardingMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      {bulkOnboardingMutation.isPending ? "Enviando…" : "Enviar lembretes"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                O envio manual é imediato: use{" "}
+                <span className="font-medium text-foreground">Continuar cadastro</span> na ficha do
+                paciente ou na lista de pacientes.
+              </p>
             </CardContent>
           </Card>
 

@@ -108,7 +108,7 @@ export function PatientDetailPage() {
       else toast.warning(result.message);
     },
     onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar lembrete de cadastro"),
   });
 
   const hasMoreTimeline = (timeline?.length ?? 0) >= timelinePageSize;

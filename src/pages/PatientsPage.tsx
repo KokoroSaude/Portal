@@ -125,12 +125,12 @@ export function PatientsPage() {
       setBulkOnboardingOpen(false);
       setSelectedIds(new Set());
       toast.success(
-        `Cadastro reenviado para ${result.sent} de ${result.requested} paciente(s)` +
+        `Lembrete enviado para ${result.sent} de ${result.requested} paciente(s)` +
           (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
       );
     },
     onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reenviar onboarding"),
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar lembrete de cadastro"),
   });
 
   const createMutation = useMutation({
@@ -354,10 +354,11 @@ export function PatientsPage() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Reenviar onboarding para selecionados?</DialogTitle>
+                      <DialogTitle>Lembrar pacientes selecionados?</DialogTitle>
                       <DialogDescription>
-                        {selectedIds.size} paciente(s) receberão a etapa pendente do cadastro no
-                        WhatsApp. Quem não estiver em onboarding ou não puder receber será ignorado.
+                        {selectedIds.size} paciente(s) receberão no WhatsApp a pergunta em que o
+                        cadastro parou. Só quem ainda estiver com cadastro em andamento será
+                        incluído.
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
