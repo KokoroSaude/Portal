@@ -527,6 +527,25 @@ export interface PatientMoriskyHistory {
   assessments: MoriskyAssessmentDetail[];
 }
 
+export interface MoriskyManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+}
+
+export interface MoriskyBulkSkipItem {
+  patientId: string;
+  patientName: string | null;
+  reason: string;
+}
+
+export interface MoriskyBulkTriggerResult {
+  requested: number;
+  sent: number;
+  skipped: number;
+  skippedSamples: MoriskyBulkSkipItem[];
+}
+
 export interface MoriskyLevelCount {
   level: string;
   count: number;

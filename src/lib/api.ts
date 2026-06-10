@@ -19,6 +19,8 @@ import type {
   AdminMoriskyReport,
   AdminTenant,
   AdherenceReport,
+  MoriskyBulkTriggerResult,
+  MoriskyManualTriggerResult,
   MoriskyReport,
   AdherenceTrendPoint,
   CarePlanUpdate,
@@ -225,6 +227,22 @@ export const api = {
 
   getPatientMorisky: (token: string, patientId: string) =>
     request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
+
+  triggerPatientMorisky: (token: string, patientId: string) =>
+    request<MoriskyManualTriggerResult>(`/api/patients/${patientId}/morisky/trigger`, {
+      method: "POST",
+      token,
+    }),
+
+  triggerMoriskyBulk: (
+    token: string,
+    payload: { patientIds?: string[]; allActive?: boolean; status?: string },
+  ) =>
+    request<MoriskyBulkTriggerResult>("/api/morisky/trigger", {
+      method: "POST",
+      token,
+      body: { ignoreCooldown: true, ...payload },
+    }),
 
   pausePatient: (token: string, id: string, reason?: string, pauseUntil?: string) =>
     request<void>(`/api/patients/${id}/pause`, { method: "POST", token, body: { reason, pauseUntil } }),

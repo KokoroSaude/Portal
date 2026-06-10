@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, MessageCircle, Plus } from "lucide-react";
+import { ClipboardList, Download, MessageCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -48,6 +49,8 @@ export function PatientsPage() {
   const { token, hasFeature, canWrite } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkMoriskyOpen, setBulkMoriskyOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
@@ -57,6 +60,7 @@ export function PatientsPage() {
 
   useEffect(() => {
     setPage(1);
+    setSelectedIds(new Set());
   }, [search, status]);
 
   const { data, isLoading } = useQuery({
@@ -78,6 +82,26 @@ export function PatientsPage() {
   });
 
   const activeSender = senders.find((s) => s.isActive) ?? senders[0];
+
+  const { data: tenantSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token && canWrite,
+  });
+
+  const bulkMoriskyMutation = useMutation({
+    mutationFn: (patientIds: string[]) => api.triggerMoriskyBulk(token!, { patientIds }),
+    onSuccess: (result) => {
+      setBulkMoriskyOpen(false);
+      setSelectedIds(new Set());
+      toast.success(
+        `MMAS-8 enviado para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
+  });
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -110,6 +134,30 @@ export function PatientsPage() {
   });
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
+  const pageIds = data?.items.map((p) => p.id) ?? [];
+  const allPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const moriskyBulkEnabled = canWrite && tenantSettings?.moriskyEnabled;
+
+  function togglePatient(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage(checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of pageIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
 
   async function handleExport() {
     if (!token) return;
@@ -263,6 +311,36 @@ export function PatientsPage() {
                   {exporting ? "Exportando…" : "Exportar CSV"}
                 </Button>
               )}
+              {moriskyBulkEnabled && selectedIds.size > 0 && (
+                <Dialog open={bulkMoriskyOpen} onOpenChange={setBulkMoriskyOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <ClipboardList className="size-4" />
+                      Enviar MMAS-8 ({selectedIds.size})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Enviar MMAS-8 para selecionados?</DialogTitle>
+                      <DialogDescription>
+                        {selectedIds.size} paciente(s) receberão a pesquisa no WhatsApp. Quem não
+                        puder receber (check-in pendente, opt-out, etc.) será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkMoriskyOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkMoriskyMutation.mutate([...selectedIds])}
+                        disabled={bulkMoriskyMutation.isPending}
+                      >
+                        {bulkMoriskyMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
           <GridSearchBar
@@ -285,6 +363,15 @@ export function PatientsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {moriskyBulkEnabled && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={allPageSelected}
+                          onCheckedChange={(v) => toggleAllOnPage(v === true)}
+                          aria-label="Selecionar página"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>Status</TableHead>
@@ -295,7 +382,7 @@ export function PatientsPage() {
                 <TableBody>
                   {data?.items.length === 0 && (
                     <GridEmptyRow
-                      colSpan={5}
+                      colSpan={moriskyBulkEnabled ? 6 : 5}
                       message={
                         searchInput.trim()
                           ? "Nenhum paciente corresponde à busca."
@@ -305,6 +392,15 @@ export function PatientsPage() {
                   )}
                   {data?.items.map((p) => (
                     <TableRow key={p.id}>
+                      {moriskyBulkEnabled && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(p.id)}
+                            onCheckedChange={(v) => togglePatient(p.id, v === true)}
+                            aria-label={`Selecionar ${p.name ?? "paciente"}`}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Link to={`/pacientes/${p.id}`} className="font-medium text-primary hover:underline">
                           {p.name ?? "Sem nome"}

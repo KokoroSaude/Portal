@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { AlertTriangle, ChevronDown, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, ChevronDown, ClipboardList, TrendingDown, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
@@ -112,35 +113,65 @@ function AssessmentCard({ assessment, index }: { assessment: MoriskyAssessmentDe
 type PatientMoriskyTabProps = {
   assessments: MoriskyAssessmentDetail[] | undefined;
   isLoading: boolean;
+  canTrigger?: boolean;
+  moriskyEnabled?: boolean;
+  onTrigger?: () => void;
+  isTriggering?: boolean;
 };
 
-export function PatientMoriskyTab({ assessments, isLoading }: PatientMoriskyTabProps) {
+export function PatientMoriskyTab({
+  assessments,
+  isLoading,
+  canTrigger,
+  moriskyEnabled,
+  onTrigger,
+  isTriggering,
+}: PatientMoriskyTabProps) {
   if (isLoading) {
     return <Skeleton className="h-48 w-full" />;
   }
 
+  const triggerButton =
+    canTrigger && moriskyEnabled ? (
+      <Button size="sm" onClick={onTrigger} disabled={isTriggering}>
+        <ClipboardList className="size-4" />
+        {isTriggering ? "Enviando…" : "Enviar MMAS-8 agora"}
+      </Button>
+    ) : null;
+
   if (!assessments?.length) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>MMAS-8 (Morisky)</CardTitle>
-          <CardDescription>
-            Nenhuma avaliação concluída ainda. A escala é aplicada conforme os gatilhos
-            configurados em Configurações → MMAS-8.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div>
+            <CardTitle>MMAS-8 (Morisky)</CardTitle>
+            <CardDescription>
+              Nenhuma avaliação concluída ainda. A escala é aplicada conforme os gatilhos
+              configurados em MMAS-8, ou você pode disparar manualmente.
+            </CardDescription>
+          </div>
+          {triggerButton}
         </CardHeader>
+        {canTrigger && !moriskyEnabled && (
+          <CardContent className="pt-0 text-sm text-muted-foreground">
+            Habilite o MMAS-8 em MMAS-8 → Gatilhos para enviar manualmente.
+          </CardContent>
+        )}
       </Card>
     );
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>MMAS-8 (Morisky)</CardTitle>
-        <CardDescription>
-          {assessments.length} avaliação(ões) — expanda para ver respostas e mudanças em relação à
-          anterior.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle>MMAS-8 (Morisky)</CardTitle>
+          <CardDescription>
+            {assessments.length} avaliação(ões) — expanda para ver respostas e mudanças em relação à
+            anterior.
+          </CardDescription>
+        </div>
+        {triggerButton}
       </CardHeader>
       <CardContent className="space-y-3">
         {assessments.map((a, i) => (

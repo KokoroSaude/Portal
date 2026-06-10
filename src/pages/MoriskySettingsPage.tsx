@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { ClipboardList, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { MORISKY_LEVEL_LABELS } from "@/lib/constants";
@@ -53,6 +62,25 @@ export function MoriskySettingsPage() {
       });
     }
   }, [settingsQuery.data]);
+
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  const bulkTriggerMutation = useMutation({
+    mutationFn: () => api.triggerMoriskyBulk(token!, { allActive: true }),
+    onSuccess: (result) => {
+      setBulkOpen(false);
+      if (result.sent === 0 && result.requested === 0) {
+        toast.warning("Nenhum paciente ativo encontrado.");
+        return;
+      }
+      toast.success(
+        `MMAS-8 enviado para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar MMAS-8"),
+  });
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -195,7 +223,9 @@ export function MoriskySettingsPage() {
                   patchTriggers({ moriskyCooldownDays: Number(e.target.value) || 14 })
                 }
               />
-              <p className="text-xs text-muted-foreground">Entre duas avaliações do mesmo paciente.</p>
+              <p className="text-xs text-muted-foreground">
+                Entre avaliações automáticas. Disparos manuais ignoram este intervalo.
+              </p>
             </div>
           </div>
 
@@ -203,6 +233,54 @@ export function MoriskySettingsPage() {
             <Save className="size-4" />
             {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Disparo manual</CardTitle>
+          <CardDescription>
+            Envie o MMAS-8 fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
+            específico ou toda a base ativa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Na ficha do paciente (aba MMAS-8) ou na lista de pacientes (seleção múltipla), use{" "}
+            <strong className="text-foreground">Enviar MMAS-8</strong>. O intervalo mínimo não se
+            aplica a disparos manuais.
+          </p>
+          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={!triggers.moriskyEnabled || bulkTriggerMutation.isPending}
+              >
+                <ClipboardList className="size-4" />
+                Enviar para todos os pacientes ativos
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Enviar MMAS-8 para todos os ativos?</DialogTitle>
+                <DialogDescription>
+                  Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp. Quem já
+                  estiver respondendo ou com check-in pendente será ignorado.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setBulkOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => bulkTriggerMutation.mutate()}
+                  disabled={bulkTriggerMutation.isPending}
+                >
+                  {bulkTriggerMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 

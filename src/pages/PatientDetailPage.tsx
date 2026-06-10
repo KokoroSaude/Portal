@@ -75,6 +75,22 @@ export function PatientDetailPage() {
     enabled: !!token && !!id,
   });
 
+  const { data: tenantSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token && canWrite,
+  });
+
+  const triggerMoriskyMutation = useMutation({
+    mutationFn: () => api.triggerPatientMorisky(token!, id!),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
+  });
+
   const hasMoreTimeline = (timeline?.length ?? 0) >= timelinePageSize;
 
   useEffect(() => {
@@ -487,6 +503,10 @@ export function PatientDetailPage() {
           <PatientMoriskyTab
             assessments={moriskyHistory?.assessments}
             isLoading={moriskyLoading}
+            canTrigger={canWrite}
+            moriskyEnabled={tenantSettings?.moriskyEnabled}
+            onTrigger={() => triggerMoriskyMutation.mutate()}
+            isTriggering={triggerMoriskyMutation.isPending}
           />
         </TabsContent>
       </Tabs>
