@@ -10,6 +10,9 @@ import {
   AdherenceTrendChart,
   CheckinsByHourChart,
   EngagementBarChart,
+  MoriskyLevelChart,
+  MoriskyTrendChart,
+  MoriskyTriggerChart,
   PatientFunnelChart,
   ResponseByDayChart,
   SimpleBarChart,
@@ -33,10 +36,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
-import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { FEATURE_KEYS, MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
-import type { MessageEngagement } from "@/types/api";
+import type { MessageEngagement, MoriskyPatientRank } from "@/types/api";
 
 function defaultRange() {
   const to = new Date();
@@ -156,6 +159,12 @@ export function ReportsPage() {
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
+  const morisky = useQuery({
+    queryKey: ["morisky-report", range],
+    queryFn: () => api.getMoriskyReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsBasic),
+  });
+
   const handleExportPdf = async () => {
     if (!adherence.data) {
       toast.error("Aguarde o carregamento dos dados de adesão.");
@@ -186,6 +195,7 @@ export function ReportsPage() {
         operations: operations.data,
         senders: senders.data,
         comparison: comparison.data,
+        morisky: morisky.data,
       });
       downloadReportPdf(doc);
       toast.success("PDF exportado com sucesso.");
@@ -245,6 +255,7 @@ export function ReportsPage() {
           {hasFeature(FEATURE_KEYS.reportsCohort) && (
             <TabsTrigger value="comparison">Comparativo</TabsTrigger>
           )}
+          <TabsTrigger value="morisky">Morisky</TabsTrigger>
         </TabsList>
 
         <TabsContent value="adherence" className="space-y-6">
@@ -415,6 +426,77 @@ export function ReportsPage() {
                 </CardContent>
               </Card>
             </div>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="morisky" className="space-y-6">
+          {morisky.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : morisky.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard title="Avaliações" value={morisky.data.totalAssessments} />
+                <MetricCard
+                  title="Score normalizado médio"
+                  value={formatPercent(morisky.data.avgNormalizedScore)}
+                />
+                <MetricCard
+                  title="Adesão check-in"
+                  value={formatPercent(morisky.data.checkinAdherenceRate)}
+                />
+                <MetricCard
+                  title="Baixa adesão"
+                  value={morisky.data.byLevel.find((l) => l.level === "low")?.count ?? 0}
+                />
+              </div>
+
+              {morisky.data.totalAssessments > 0 && (
+                <>
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="font-serif text-lg">Check-in vs Morisky</CardTitle>
+                      <CardDescription>
+                        Comparação das médias no mesmo período
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Adesão check-in</p>
+                        <p className="font-serif text-2xl">
+                          {formatPercent(morisky.data.checkinAdherenceRate)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Score Morisky normalizado</p>
+                        <p className="font-serif text-2xl">
+                          {formatPercent(morisky.data.avgNormalizedScore)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <MoriskyTrendChart data={morisky.data.trend} />
+                    <MoriskyLevelChart data={morisky.data.byLevel} />
+                    {morisky.data.byTrigger.length > 0 && (
+                      <MoriskyTriggerChart data={morisky.data.byTrigger} />
+                    )}
+                  </div>
+
+                  {morisky.data.byTrigger.length > 0 && (
+                    <MoriskyTriggerTable rows={morisky.data.byTrigger} />
+                  )}
+
+                  <MoriskyPatientRankingTable rows={morisky.data.patientRanking} />
+                </>
+              )}
+
+              {morisky.data.totalAssessments === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma avaliação Morisky concluída no período.
+                </p>
+              )}
+            </>
           ) : null}
         </TabsContent>
       </Tabs>
@@ -680,6 +762,134 @@ function SendersPerformanceTable({
                   <TableCell>{s.activePatients}</TableCell>
                   <TableCell>{s.checkinsTotal}</TableCell>
                   <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MoriskyTriggerTable({
+  rows,
+}: {
+  rows: { trigger: string; count: number; avgNormalizedScore: number }[];
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Detalhe por gatilho</CardTitle>
+        <CardDescription>Origem das avaliações Morisky no período</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Gatilho</TableHead>
+              <TableHead>Avaliações</TableHead>
+              <TableHead>Score médio</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.trigger}>
+                <TableCell>{MORISKY_TRIGGER_LABELS[r.trigger] ?? r.trigger}</TableCell>
+                <TableCell>{r.count}</TableCell>
+                <TableCell>{formatPercent(r.avgNormalizedScore)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MoriskyPatientRankingTable({ rows }: { rows: MoriskyPatientRank[] }) {
+  const { input, setInput, query } = useGridSearch();
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) =>
+        matchesGridSearch(
+          query,
+          r.patientName,
+          r.phone,
+          maskPhone(r.phone),
+          r.level,
+          MORISKY_LEVEL_LABELS[r.level],
+          r.score,
+          `${r.score}/${r.maxScore}`,
+          r.checkinAdherenceRate != null ? formatPercent(r.checkinAdherenceRate) : "",
+        ),
+      ),
+    [query, rows],
+  );
+
+  return (
+    <Card>
+      <CardHeader className="space-y-4">
+        <div>
+          <CardTitle className="font-serif text-lg">Ranking de pacientes</CardTitle>
+          <CardDescription>Última avaliação Morisky de cada paciente no período</CardDescription>
+        </div>
+        {rows.length > 0 && (
+          <GridSearchBar
+            value={input}
+            onChange={setInput}
+            placeholder="Buscar paciente ou telefone"
+            resultCount={filtered.length}
+            totalCount={rows.length}
+          />
+        )}
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem avaliações no período.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Nível</TableHead>
+                <TableHead>Adesão check-in</TableHead>
+                <TableHead>Concluída em</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <GridEmptyRow colSpan={6} message="Nenhum paciente corresponde à busca." />
+              )}
+              {filtered.map((r) => (
+                <TableRow key={r.patientId}>
+                  <TableCell>
+                    <Link
+                      to={`/pacientes/${r.patientId}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {r.patientName ?? "Sem nome"}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{maskPhone(r.phone)}</TableCell>
+                  <TableCell>
+                    {r.score}/{r.maxScore}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {MORISKY_LEVEL_LABELS[r.level] ?? r.level}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {r.checkinAdherenceRate != null
+                      ? formatPercent(r.checkinAdherenceRate)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.completedAt).toLocaleDateString("pt-BR")}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

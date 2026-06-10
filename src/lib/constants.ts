@@ -74,3 +74,16 @@ export const JOURNEY_BUILTIN_IDS = [
   "confirm_care_plan",
   "ask_another_medication",
 ] as const;
+
+export const MORISKY_LEVEL_LABELS: Record<string, string> = {
+  high: "Alta adesão",
+  medium: "Adesão média",
+  low: "Baixa adesão",
+};
+
+export const MORISKY_TRIGGER_LABELS: Record<string, string> = {
+  Onboarding: "Onboarding",
+  Periodic: "Periódica",
+  AdherenceDrop: "Queda de adesão",
+  Manual: "Manual",
+};

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, ClipboardList, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,10 +22,127 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
-import type { CarePlanUpdate, TimelineEvent } from "@/types/api";
+import type { CarePlanUpdate, MoriskyAssessment, TimelineEvent } from "@/types/api";
+
+function PatientMoriskySection({
+  token,
+  patientId,
+  canWrite,
+}: {
+  token: string;
+  patientId: string;
+  canWrite: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["patient-morisky", patientId],
+    queryFn: () => api.getPatientMorisky(token, patientId),
+  });
+
+  const triggerMutation = useMutation({
+    mutationFn: () => api.triggerPatientMorisky(token, patientId),
+    onSuccess: () => {
+      toast.success("Escala Morisky iniciada no WhatsApp");
+      queryClient.invalidateQueries({ queryKey: ["patient-morisky", patientId] });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Não foi possível iniciar a escala"),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardList className="size-5" />
+            Escala Morisky
+          </CardTitle>
+          <CardDescription>Adesão medicamentosa (MMAS) — histórico e disparo manual</CardDescription>
+        </div>
+        {canWrite && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => triggerMutation.mutate()}
+            disabled={triggerMutation.isPending}
+          >
+            {triggerMutation.isPending ? "Enviando…" : "Disparar escala"}
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : !data?.latest ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma avaliação Morisky concluída para este paciente.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Última avaliação</p>
+                <p className="font-serif text-2xl">
+                  {data.latest.score}/{data.latest.maxScore}
+                </p>
+              </div>
+              <Badge variant="secondary">
+                {MORISKY_LEVEL_LABELS[data.latest.level] ?? data.latest.level}
+              </Badge>
+              <div className="text-sm text-muted-foreground">
+                {formatDateTime(data.latest.completedAt)} ·{" "}
+                {MORISKY_TRIGGER_LABELS[data.latest.trigger] ?? data.latest.trigger}
+              </div>
+            </div>
+
+            {data.history.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Nível</TableHead>
+                    <TableHead>Gatilho</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.history.map((item: MoriskyAssessment) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{formatDateTime(item.completedAt)}</TableCell>
+                      <TableCell>
+                        {item.score}/{item.maxScore}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {MORISKY_LEVEL_LABELS[item.level] ?? item.level}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {MORISKY_TRIGGER_LABELS[item.trigger] ?? item.trigger}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 const EVENT_LABELS: Record<string, string> = {
   message_inbound: "Mensagem recebida",
@@ -346,6 +464,10 @@ export function PatientDetailPage() {
       </div>
 
       {token && id && <PatientAiInsightCard token={token} patientId={id} />}
+
+      {token && id && (
+        <PatientMoriskySection token={token} patientId={id} canWrite={canWrite} />
+      )}
 
       <Tabs defaultValue="timeline">
         <TabsList>

@@ -3,6 +3,7 @@ import { PATIENT_STATUS_LABELS } from "@/lib/constants";
 import type {
   AdminAdherenceReport,
   AdminEngagementReport,
+  AdminMoriskyReport,
   AdminOperationsReport,
   AdminPatientAdherenceRank,
   AdminPatientFunnel,
@@ -12,6 +13,7 @@ import type {
   AdherenceTrendPoint,
   EngagementReport,
   MessageEngagement,
+  MoriskyReport,
   OperationsReport,
   PatientAdherenceRank,
   PatientFunnel,
@@ -20,6 +22,7 @@ import type {
 } from "@/types/api";
 import { formatDate, formatDateTime, formatPercent, maskPhone } from "@/lib/utils";
 import type { ReportPdfDocument, ReportPdfSection } from "@/lib/reportPdf";
+import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
 
 function periodLabel(from: string, to: string) {
   return `${formatDate(from)} — ${formatDate(to)}`;
@@ -134,6 +137,139 @@ function rankingSection(
   return { title, tables: [{ head, body }] };
 }
 
+function moriskySection(morisky?: MoriskyReport): ReportPdfSection | null {
+  if (!morisky || morisky.totalAssessments === 0) return null;
+
+  const tables = [];
+
+  if (morisky.byLevel.length) {
+    tables.push({
+      title: "Distribuição por nível",
+      head: ["Nível", "Avaliações"],
+      body: morisky.byLevel.map((l) => [
+        MORISKY_LEVEL_LABELS[l.level] ?? l.level,
+        String(l.count),
+      ]),
+    });
+  }
+
+  if (morisky.byTrigger.length) {
+    tables.push({
+      title: "Por gatilho",
+      head: ["Gatilho", "Avaliações", "Score médio"],
+      body: morisky.byTrigger.map((t) => [
+        MORISKY_TRIGGER_LABELS[t.trigger] ?? t.trigger,
+        String(t.count),
+        formatPercent(t.avgNormalizedScore),
+      ]),
+    });
+  }
+
+  if (morisky.trend.length) {
+    tables.push({
+      title: "Tendência diária",
+      head: ["Data", "Score médio", "Avaliações"],
+      body: morisky.trend.map((p) => [
+        formatDate(p.date),
+        formatPercent(p.avgNormalizedScore),
+        String(p.count),
+      ]),
+    });
+  }
+
+  if (morisky.patientRanking.length) {
+    tables.push({
+      title: "Ranking de pacientes",
+      head: ["Paciente", "Telefone", "Score", "Nível", "Adesão check-in", "Concluída em"],
+      body: morisky.patientRanking.map((p) => [
+        p.patientName ?? "Sem nome",
+        maskPhone(p.phone),
+        `${p.score}/${p.maxScore}`,
+        MORISKY_LEVEL_LABELS[p.level] ?? p.level,
+        p.checkinAdherenceRate != null ? formatPercent(p.checkinAdherenceRate) : "—",
+        formatDateTime(p.completedAt),
+      ]),
+    });
+  }
+
+  return {
+    title: "Morisky (MMAS)",
+    metrics: [
+      { label: "Avaliações", value: String(morisky.totalAssessments) },
+      { label: "Score normalizado médio", value: formatPercent(morisky.avgNormalizedScore) },
+      { label: "Adesão check-in (período)", value: formatPercent(morisky.checkinAdherenceRate) },
+    ],
+    tables,
+  };
+}
+
+function adminMoriskySection(morisky?: AdminMoriskyReport): ReportPdfSection | null {
+  if (!morisky || morisky.totalAssessments === 0) return null;
+
+  const tables = [];
+
+  if (morisky.byLevel.length) {
+    tables.push({
+      title: "Distribuição por nível",
+      head: ["Nível", "Avaliações"],
+      body: morisky.byLevel.map((l) => [
+        MORISKY_LEVEL_LABELS[l.level] ?? l.level,
+        String(l.count),
+      ]),
+    });
+  }
+
+  if (morisky.byTrigger.length) {
+    tables.push({
+      title: "Por gatilho",
+      head: ["Gatilho", "Avaliações", "Score médio"],
+      body: morisky.byTrigger.map((t) => [
+        MORISKY_TRIGGER_LABELS[t.trigger] ?? t.trigger,
+        String(t.count),
+        formatPercent(t.avgNormalizedScore),
+      ]),
+    });
+  }
+
+  if (morisky.byTenant.length) {
+    tables.push({
+      title: "Por organização",
+      head: ["Organização", "Avaliações", "Score médio", "Baixa adesão"],
+      body: morisky.byTenant.map((t) => [
+        t.tenantName,
+        String(t.totalAssessments),
+        formatPercent(t.avgNormalizedScore),
+        String(t.lowCount),
+      ]),
+    });
+  }
+
+  if (morisky.patientRanking.length) {
+    tables.push({
+      title: "Ranking de pacientes",
+      head: ["Organização", "Paciente", "Score", "Nível", "Adesão check-in", "Concluída em"],
+      body: morisky.patientRanking.slice(0, 50).map((p) => [
+        p.tenantName,
+        p.patientName ?? "Sem nome",
+        `${p.score}/${p.maxScore}`,
+        MORISKY_LEVEL_LABELS[p.level] ?? p.level,
+        p.checkinAdherenceRate != null ? formatPercent(p.checkinAdherenceRate) : "—",
+        formatDateTime(p.completedAt),
+      ]),
+    });
+  }
+
+  return {
+    title: "Morisky (MMAS)",
+    metrics: [
+      { label: "Avaliações", value: String(morisky.totalAssessments) },
+      { label: "Score normalizado médio", value: formatPercent(morisky.avgNormalizedScore) },
+      { label: "Adesão check-in (período)", value: formatPercent(morisky.checkinAdherenceRate) },
+    ],
+    tables,
+  };
+}
+
 export interface TenantReportPdfFeatures {
   charts: boolean;
   advanced: boolean;
@@ -155,6 +291,7 @@ export interface TenantReportPdfInput {
   operations?: OperationsReport;
   senders?: SenderPerformance[];
   comparison?: PeriodComparison;
+  morisky?: MoriskyReport;
 }
 
 export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocument {
@@ -279,6 +416,9 @@ export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocu
     });
   }
 
+  const moriskySec = moriskySection(input.morisky);
+  if (moriskySec) sections.push(moriskySec);
+
   return {
     title: "Relatório Kokoro",
     subtitle: input.orgName,
@@ -301,6 +441,7 @@ export interface AdminReportPdfInput {
   operations?: AdminOperationsReport;
   senders?: AdminSenderPerformance[];
   comparison?: AdminPeriodComparison;
+  morisky?: AdminMoriskyReport;
 }
 
 export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocument {
@@ -458,6 +599,9 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
       ],
     });
   }
+
+  const moriskySec = adminMoriskySection(input.morisky);
+  if (moriskySec) sections.push(moriskySec);
 
   return {
     title: "Relatório da plataforma",

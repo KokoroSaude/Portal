@@ -458,6 +458,120 @@ export interface TenantSettings {
   locale: string;
   aiEnabled: boolean;
   voiceMessagesEnabled: boolean;
+  moriskyEnabled: boolean;
+  moriskyOnOnboarding: boolean;
+  moriskyPeriodicDays: number | null;
+  moriskyTriggerAfterMisses: number | null;
+  moriskyCooldownDays: number;
+}
+
+export interface MoriskyQuestionDefinition {
+  id: string;
+  text: string;
+  order: number;
+  enabled: boolean;
+  yesScoresPoint: boolean;
+}
+
+export interface MoriskyLevelThreshold {
+  level: string;
+  minScore: number;
+  maxScore: number;
+}
+
+export interface MoriskyScaleDefinition {
+  introText: string;
+  thankYouText: string;
+  invalidText: string;
+  questions: MoriskyQuestionDefinition[];
+  levels: MoriskyLevelThreshold[];
+}
+
+export interface MoriskyScaleResponse {
+  defaultScale: MoriskyScaleDefinition;
+  tenantScale: MoriskyScaleDefinition | null;
+  effectiveScale: MoriskyScaleDefinition;
+}
+
+export interface MoriskyAssessment {
+  id: string;
+  trigger: string;
+  score: number;
+  maxScore: number;
+  level: string;
+  completedAt: string;
+}
+
+export interface PatientMoriskyHistory {
+  latest: MoriskyAssessment | null;
+  history: MoriskyAssessment[];
+}
+
+export interface MoriskyLevelCount {
+  level: string;
+  count: number;
+}
+
+export interface MoriskyTrendPoint {
+  date: string;
+  avgNormalizedScore: number;
+  count: number;
+}
+
+export interface MoriskyTriggerCount {
+  trigger: string;
+  count: number;
+  avgNormalizedScore: number;
+}
+
+export interface MoriskyPatientRank {
+  patientId: string;
+  patientName: string | null;
+  phone: string;
+  score: number;
+  maxScore: number;
+  level: string;
+  checkinAdherenceRate: number | null;
+  completedAt: string;
+}
+
+export interface MoriskyReport {
+  from: string;
+  to: string;
+  totalAssessments: number;
+  avgScore: number;
+  avgNormalizedScore: number;
+  checkinAdherenceRate: number;
+  byLevel: MoriskyLevelCount[];
+  trend: MoriskyTrendPoint[];
+  byTrigger: MoriskyTriggerCount[];
+  patientRanking: MoriskyPatientRank[];
+}
+
+export interface AdminMoriskyTenantSlice {
+  tenantId: string;
+  tenantName: string;
+  totalAssessments: number;
+  avgNormalizedScore: number;
+  lowCount: number;
+}
+
+export interface AdminMoriskyPatientRank extends MoriskyPatientRank {
+  tenantId: string;
+  tenantName: string;
+}
+
+export interface AdminMoriskyReport {
+  from: string;
+  to: string;
+  totalAssessments: number;
+  avgNormalizedScore: number;
+  checkinAdherenceRate: number;
+  byLevel: MoriskyLevelCount[];
+  trend: MoriskyTrendPoint[];
+  byTrigger: MoriskyTriggerCount[];
+  byTenant: AdminMoriskyTenantSlice[];
+  patientRanking: AdminMoriskyPatientRank[];
 }
 
 export interface TenantSubscription {

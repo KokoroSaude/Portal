@@ -29,7 +29,10 @@ export function SettingsPage() {
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
   const tabParam = searchParams.get("tab");
-  const defaultTab = tabParam === "usuarios" || tabParam === "operacional" ? tabParam : "operacional";
+  const defaultTab =
+    tabParam === "usuarios" || tabParam === "operacional" || tabParam === "morisky"
+      ? tabParam
+      : "operacional";
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -49,6 +52,11 @@ export function SettingsPage() {
         voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
         aiEnabled: settings.aiEnabled ?? false,
         voiceMessagesEnabled: settings.voiceMessagesEnabled ?? false,
+        moriskyEnabled: settings.moriskyEnabled ?? false,
+        moriskyOnOnboarding: settings.moriskyOnOnboarding ?? false,
+        moriskyPeriodicDays: settings.moriskyPeriodicDays ?? null,
+        moriskyTriggerAfterMisses: settings.moriskyTriggerAfterMisses ?? null,
+        moriskyCooldownDays: settings.moriskyCooldownDays ?? 14,
       });
     }
   }, [settings]);
@@ -111,6 +119,7 @@ export function SettingsPage() {
       <Tabs defaultValue={defaultTab} key={defaultTab}>
         <TabsList>
           <TabsTrigger value="operacional">Operacional</TabsTrigger>
+          <TabsTrigger value="morisky">Morisky</TabsTrigger>
           {hasFeature("users.manage") && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
 
@@ -241,9 +250,198 @@ export function SettingsPage() {
                 />
               </div>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle>Escala de Morisky</CardTitle>
+                  <CardDescription>
+                    Avaliação de adesão medicamentosa via WhatsApp (MMAS-8 configurável).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="moriskyEnabled">Habilitar Morisky</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Coleta autorrelato de adesão com perguntas Sim/Não.
+                      </p>
+                    </div>
+                    <Switch
+                      id="moriskyEnabled"
+                      checked={form.moriskyEnabled ?? false}
+                      onCheckedChange={(checked) => update("moriskyEnabled", checked)}
+                      disabled={!isAdmin}
+                    />
+                  </div>
+
+                  {form.moriskyEnabled && (
+                    <>
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                        <Label htmlFor="moriskyOnOnboarding">Aplicar no fim do onboarding</Label>
+                        <Switch
+                          id="moriskyOnOnboarding"
+                          checked={form.moriskyOnOnboarding ?? false}
+                          onCheckedChange={(checked) => update("moriskyOnOnboarding", checked)}
+                          disabled={!isAdmin}
+                        />
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Reaplicar a cada (dias)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="Desligado"
+                            value={form.moriskyPeriodicDays ?? ""}
+                            onChange={(e) =>
+                              update(
+                                "moriskyPeriodicDays",
+                                e.target.value ? Number(e.target.value) : null,
+                              )
+                            }
+                            disabled={!isAdmin}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Disparar após misses consecutivos</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="Desligado"
+                            value={form.moriskyTriggerAfterMisses ?? ""}
+                            onChange={(e) =>
+                              update(
+                                "moriskyTriggerAfterMisses",
+                                e.target.value ? Number(e.target.value) : null,
+                              )
+                            }
+                            disabled={!isAdmin}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Cooldown entre avaliações (dias)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={form.moriskyCooldownDays ?? 14}
+                            onChange={(e) => update("moriskyCooldownDays", Number(e.target.value))}
+                            disabled={!isAdmin}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <Button variant="outline" asChild>
+                    <Link to="/configuracoes/morisky">Editar perguntas e scoring</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
               <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? "Salvando…" : "Salvar alterações"}
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="morisky">
+          <Card>
+            <CardHeader>
+              <CardTitle>Escala Morisky (MMAS)</CardTitle>
+              <CardDescription>
+                Avaliação de adesão medicamentosa via WhatsApp — gatilhos automáticos e disparo manual.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="moriskyEnabled">Habilitar escala Morisky</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permite aplicar a escala MMAS aos pacientes desta organização.
+                  </p>
+                </div>
+                <Switch
+                  id="moriskyEnabled"
+                  checked={form.moriskyEnabled}
+                  onCheckedChange={(checked) => update("moriskyEnabled", checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="moriskyOnOnboarding">Aplicar no onboarding</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Envia a escala automaticamente ao concluir o cadastro do paciente.
+                  </p>
+                </div>
+                <Switch
+                  id="moriskyOnOnboarding"
+                  checked={form.moriskyOnOnboarding}
+                  onCheckedChange={(checked) => update("moriskyOnOnboarding", checked)}
+                  disabled={!form.moriskyEnabled}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="moriskyPeriodicDays">Reaplicar a cada (dias)</Label>
+                  <Input
+                    id="moriskyPeriodicDays"
+                    type="number"
+                    min={1}
+                    placeholder="Desligado"
+                    value={form.moriskyPeriodicDays ?? ""}
+                    onChange={(e) =>
+                      update(
+                        "moriskyPeriodicDays",
+                        e.target.value === "" ? null : Number(e.target.value),
+                      )
+                    }
+                    disabled={!form.moriskyEnabled}
+                  />
+                  <p className="text-xs text-muted-foreground">Deixe vazio para desativar reaplicação periódica.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="moriskyTriggerAfterMisses">Disparar após misses consecutivos</Label>
+                  <Input
+                    id="moriskyTriggerAfterMisses"
+                    type="number"
+                    min={1}
+                    placeholder="Desligado"
+                    value={form.moriskyTriggerAfterMisses ?? ""}
+                    onChange={(e) =>
+                      update(
+                        "moriskyTriggerAfterMisses",
+                        e.target.value === "" ? null : Number(e.target.value),
+                      )
+                    }
+                    disabled={!form.moriskyEnabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Dispara após N check-ins perdidos seguidos. Vazio = desligado.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="moriskyCooldownDays">Intervalo mínimo entre avaliações (dias)</Label>
+                  <Input
+                    id="moriskyCooldownDays"
+                    type="number"
+                    min={1}
+                    value={form.moriskyCooldownDays}
+                    onChange={(e) => update("moriskyCooldownDays", Number(e.target.value))}
+                    disabled={!form.moriskyEnabled}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/configuracoes/morisky">Editar perguntas e pontuação</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

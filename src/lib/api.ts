@@ -16,6 +16,7 @@ import type {
   AdminAuditLogResult,
   AdminInteractionEventsResult,
   AdminSenderPerformance,
+  AdminMoriskyReport,
   AdminTenant,
   AdherenceReport,
   AdherenceTrendPoint,
@@ -32,8 +33,12 @@ import type {
   JourneyStep,
   LoginResponse,
   MessageTemplate,
+  MoriskyReport,
+  MoriskyScaleDefinition,
+  MoriskyScaleResponse,
   OnboardingJourney,
   Patient,
+  PatientMoriskyHistory,
   PagedResult,
   SimulatorMessage,
   SimulatorPatient,
@@ -277,6 +282,23 @@ export const api = {
   getPeriodComparison: (token: string, from?: string, to?: string) =>
     request<PeriodComparison>(`/api/reports/comparison${qs({ from, to })}`, { token }),
 
+  getMoriskyReport: (token: string, from?: string, to?: string) =>
+    request<MoriskyReport>(`/api/reports/morisky${qs({ from, to })}`, { token }),
+
+  getMoriskyScale: (token: string) => request<MoriskyScaleResponse>("/api/morisky/scale", { token }),
+
+  updateMoriskyScale: (token: string, scale: MoriskyScaleDefinition) =>
+    request<void>("/api/morisky/scale", { method: "PUT", token, body: scale }),
+
+  resetMoriskyScale: (token: string) =>
+    request<void>("/api/morisky/scale", { method: "DELETE", token }),
+
+  getPatientMorisky: (token: string, patientId: string) =>
+    request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
+
+  triggerPatientMorisky: (token: string, patientId: string) =>
+    request<void>(`/api/patients/${patientId}/morisky/trigger`, { method: "POST", token }),
+
   exportPatientsCsv: async (token: string, status?: string, from?: string, to?: string) => {
     const res = await fetch(
       `${API_BASE}/api/reports/patients/export${qs({ status, from, to })}`,
@@ -472,6 +494,12 @@ export const api = {
   adminGetOperationalLatencyMetrics: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
     request<AdminOperationalLatencyMetrics>(
       `/api/admin/metrics/operations${adminReportQs({ from, to }, tenantIds)}`,
+      { token },
+    ),
+
+  adminGetMoriskyReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
+    request<AdminMoriskyReport>(
+      `/api/admin/reports/morisky${adminReportQs({ from, to }, tenantIds)}`,
       { token },
     ),
 

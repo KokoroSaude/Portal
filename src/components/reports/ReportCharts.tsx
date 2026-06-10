@@ -15,8 +15,16 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CHART, DOW_LABELS, FUNNEL_COLORS } from "./chartTheme";
+import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
-import type { AdherenceReport, AdherenceTrendPoint, PatientFunnelSegment } from "@/types/api";
+import type {
+  AdherenceReport,
+  AdherenceTrendPoint,
+  MoriskyLevelCount,
+  MoriskyTrendPoint,
+  MoriskyTriggerCount,
+  PatientFunnelSegment,
+} from "@/types/api";
 
 function ChartTooltip({
   active,
@@ -221,6 +229,96 @@ export function PatientFunnelChart({ segments }: { segments: PatientFunnelSegmen
               </Pie>
               <Tooltip />
             </PieChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function MoriskyLevelChart({ data }: { data: MoriskyLevelCount[] }) {
+  const chartData = data.map((d) => ({
+    label: MORISKY_LEVEL_LABELS[d.level] ?? d.level,
+    value: d.count,
+  }));
+
+  return (
+    <SimpleBarChart
+      title="Distribuição por nível"
+      description="Classificação de adesão medicamentosa (MMAS)"
+      data={chartData}
+      name="Avaliações"
+    />
+  );
+}
+
+export function MoriskyTrendChart({ data }: { data: MoriskyTrendPoint[] }) {
+  const chartData = data.map((d) => ({
+    ...d,
+    label: d.date.slice(5),
+    scorePct: Math.round(d.avgNormalizedScore * 100),
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Evolução Morisky</CardTitle>
+        <CardDescription>Score normalizado médio por dia</CardDescription>
+      </CardHeader>
+      <CardContent className="h-72">
+        {chartData.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
+              <Tooltip content={<ChartTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="scorePct"
+                name="Score normalizado"
+                stroke={CHART.primary}
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: CHART.primary }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function MoriskyTriggerChart({ data }: { data: MoriskyTriggerCount[] }) {
+  const chartData = data.map((d) => ({
+    label: MORISKY_TRIGGER_LABELS[d.trigger] ?? d.trigger,
+    value: d.count,
+    avgScore: Math.round(d.avgNormalizedScore * 100),
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Avaliações por gatilho</CardTitle>
+        <CardDescription>Quantidade e score médio por tipo de disparo</CardDescription>
+      </CardHeader>
+      <CardContent className="h-72">
+        {chartData.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="right" orientation="right" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+              <Tooltip content={<ChartTooltip />} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="value" name="Avaliações" fill={CHART.primary} radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="avgScore" name="Score médio" fill={CHART.muted} radius={[4, 4, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         )}
       </CardContent>
