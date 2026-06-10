@@ -6,8 +6,8 @@ export function WhatsappConversationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Conversas e Logs da Meta"
-        description="Acompanhe conversas com pacientes e eventos de diagnóstico recebidos da Meta Business API."
+        title="Conversas com pacientes"
+        description="Veja o histórico de mensagens e responda manualmente como farmácia quando precisar."
       />
 
       <WhatsappConversationsPanel />

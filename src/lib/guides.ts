@@ -182,6 +182,18 @@ export const TENANT_GUIDE: PortalGuide = {
           tips: [
             "Novos pacientes entram em onboarding até concluir o fluxo no WhatsApp.",
             "Se o paciente trocou de número, atualize o telefone na ficha.",
+            "Use Enviar mensagem na ficha para abrir a conversa deste paciente.",
+          ],
+        },
+        {
+          id: "patient-messages",
+          title: "Responder pacientes no WhatsApp",
+          description:
+            "Em Conversas com pacientes você vê o histórico real e pode responder manualmente como farmácia dentro da janela de 24h.",
+          to: "/whatsapp/conversas",
+          tips: [
+            "Operadores enviam mensagens; perfis somente leitura apenas visualizam.",
+            "Fora da janela de 24h, use o envio via template Meta quando disponível.",
           ],
         },
       ],

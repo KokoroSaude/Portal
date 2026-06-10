@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ExternalLink, MessageCircle, Pause, Play, RefreshCw, Send, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
@@ -243,7 +243,9 @@ function SchedulingSidebar({
 export function WhatsappConversationsPanel() {
   const { token, isAdmin, canWrite } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const patientIdFromUrl = searchParams.get("patientId");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientIdFromUrl);
   const [replyText, setReplyText] = useState("");
   const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
@@ -263,10 +265,14 @@ export function WhatsappConversationsPanel() {
   });
 
   useEffect(() => {
+    if (patientIdFromUrl) {
+      setSelectedPatientId(patientIdFromUrl);
+      return;
+    }
     if (!selectedPatientId && conversations.data?.length) {
       setSelectedPatientId(conversations.data[0].patientId);
     }
-  }, [conversations.data, selectedPatientId]);
+  }, [conversations.data, selectedPatientId, patientIdFromUrl]);
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -346,7 +352,8 @@ export function WhatsappConversationsPanel() {
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir paciente"),
   });
 
-  const selectedConversation = conversations.data?.find((c) => c.patientId === selectedPatientId);
+  const conversationList = conversations.data ?? [];
+  const selectedConversation = conversationList.find((c) => c.patientId === selectedPatientId);
   const messagingWindow = thread.data?.messagingWindow ?? selectedConversation?.messagingWindow;
   const canSendRegularMessage = messagingWindow?.isOpen ?? true;
   const canSendTemplateMessage = !canSendRegularMessage && !!messagingWindow?.canSendTemplate;
@@ -380,14 +387,22 @@ export function WhatsappConversationsPanel() {
       <CardContent>
         {conversations.isLoading ? (
           <Skeleton className="h-64 w-full" />
-        ) : !conversations.data?.length ? (
+        ) : !conversationList.length && !patientIdFromUrl ? (
           <p className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
             Nenhuma conversa ainda. Envie uma mensagem para o número Business e aguarde o webhook.
           </p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
+          <div
+            className={cn(
+              "grid gap-4",
+              conversationList.length > 0
+                ? "lg:grid-cols-[minmax(220px,280px)_1fr]"
+                : "lg:grid-cols-1",
+            )}
+          >
+            {conversationList.length > 0 && (
             <div className="space-y-2 rounded-xl border p-2">
-              {conversations.data.map((conversation) => {
+              {conversationList.map((conversation) => {
                 const active = conversation.patientId === selectedPatientId;
                 return (
                   <button
@@ -423,6 +438,7 @@ export function WhatsappConversationsPanel() {
                 );
               })}
             </div>
+            )}
 
             <div className="flex min-h-[320px] flex-col rounded-xl border">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">

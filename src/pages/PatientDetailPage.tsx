@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pause, Pencil, Play, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
@@ -238,7 +238,17 @@ export function PatientDetailPage() {
             )}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={canWrite ? "default" : "outline"}
+            asChild
+          >
+            <Link to={`/whatsapp/conversas?patientId=${id}`}>
+              <MessageCircle className="size-4" />
+              {canWrite ? "Enviar mensagem" : "Ver conversa"}
+            </Link>
+          </Button>
           {canWrite && canPause && (
             <Dialog open={pauseOpen} onOpenChange={setPauseOpen}>
               <DialogTrigger asChild>

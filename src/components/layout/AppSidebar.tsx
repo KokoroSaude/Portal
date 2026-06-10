@@ -44,17 +44,11 @@ export const TENANT_NAV: NavItem[] = [
   { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, feature: FEATURE_KEYS.reportsBasic },
   { to: "/pacientes", label: "Pacientes", icon: Users },
+  { to: "/whatsapp/conversas", label: "Conversas com pacientes", icon: MessageCircle },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, feature: FEATURE_KEYS.reportsBasic },
   { to: "/templates", label: "Templates", icon: FileText, feature: FEATURE_KEYS.templatesCustomRead },
   { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
-  {
-    label: "WhatsApp",
-    icon: MessageCircle,
-    children: [
-      { to: "/whatsapp/conversas", label: "Conversas e Logs da Meta", icon: MessageCircle },
-      { to: "/whatsapp/configuracao", label: "Configuração", icon: Settings },
-    ],
-  },
+  { to: "/whatsapp/configuracao", label: "Configuração WhatsApp", icon: Settings },
   { to: "/morisky", label: "MMAS-8 (Morisky)", icon: ClipboardList, adminOnly: true },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
