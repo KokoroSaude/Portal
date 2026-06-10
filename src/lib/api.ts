@@ -33,10 +33,8 @@ import type {
   JourneyStep,
   LoginResponse,
   MessageTemplate,
-  MoriskyReport,
   OnboardingJourney,
   Patient,
-  PatientMoriskyHistory,
   PagedResult,
   SimulatorMessage,
   SimulatorPatient,
@@ -279,15 +277,6 @@ export const api = {
 
   getPeriodComparison: (token: string, from?: string, to?: string) =>
     request<PeriodComparison>(`/api/reports/comparison${qs({ from, to })}`, { token }),
-
-  getMoriskyReport: (token: string, from?: string, to?: string) =>
-    request<MoriskyReport>(`/api/reports/morisky${qs({ from, to })}`, { token }),
-
-  getPatientMorisky: (token: string, patientId: string) =>
-    request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
-
-  triggerPatientMorisky: (token: string, patientId: string) =>
-    request<void>(`/api/patients/${patientId}/morisky/trigger`, { method: "POST", token }),
 
   exportPatientsCsv: async (token: string, status?: string, from?: string, to?: string) => {
     const res = await fetch(
