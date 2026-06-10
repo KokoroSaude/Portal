@@ -4,6 +4,7 @@ import {
   BarChart3,
   Building2,
   ChevronDown,
+  ClipboardList,
   FileText,
   GitBranch,
   HelpCircle,
@@ -54,6 +55,7 @@ export const TENANT_NAV: NavItem[] = [
       { to: "/whatsapp/configuracao", label: "Configuração", icon: Settings },
     ],
   },
+  { to: "/morisky", label: "MMAS-8 (Morisky)", icon: ClipboardList, adminOnly: true },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 

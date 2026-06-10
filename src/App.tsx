@@ -97,8 +97,9 @@ export default function App() {
                     <Route path="whatsapp" element={<Navigate to="/whatsapp/conversas" replace />} />
                     <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
+                    <Route path="morisky" element={<MoriskySettingsPage />} />
+                    <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
-                    <Route path="configuracoes/morisky" element={<MoriskySettingsPage />} />
                   </Route>
 
                   <Route element={<RequirePlatform />}>

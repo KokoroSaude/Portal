@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,14 +102,6 @@ export function MoriskySettingsPage() {
       <PageHeader
         title="Escala MMAS-8 (Morisky)"
         description="Instrumento validado de adesão medicamentosa — perguntas fixas, gatilhos configuráveis."
-        actions={
-          <Button variant="outline" asChild>
-            <Link to="/configuracoes">
-              <ArrowLeft className="size-4" />
-              Configurações
-            </Link>
-          </Button>
-        }
       />
 
       <Card className="border-primary/20 bg-primary/[0.03]">
