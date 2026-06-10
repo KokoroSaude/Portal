@@ -500,9 +500,31 @@ export interface MoriskyAssessment {
   completedAt: string;
 }
 
+export interface MoriskyQuestionAnswer {
+  questionId: string;
+  order: number;
+  text: string;
+  answerYes: boolean;
+  answerLabel: string;
+  changedFromPrevious: boolean | null;
+  previousAnswerLabel: string | null;
+}
+
+export interface MoriskyAssessmentDetail {
+  id: string;
+  trigger: string;
+  score: number;
+  maxScore: number;
+  level: string;
+  completedAt: string;
+  scoreDeltaFromPrevious: number | null;
+  previousLevel: string | null;
+  levelChanged: boolean;
+  answers: MoriskyQuestionAnswer[];
+}
+
 export interface PatientMoriskyHistory {
-  latest: MoriskyAssessment | null;
-  history: MoriskyAssessment[];
+  assessments: MoriskyAssessmentDetail[];
 }
 
 export interface MoriskyLevelCount {

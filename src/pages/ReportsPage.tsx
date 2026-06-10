@@ -445,7 +445,12 @@ export function ReportsPage() {
                             {morisky.data.patientRanking.map((row) => (
                               <TableRow key={`${row.patientId}-${row.completedAt}`}>
                                 <TableCell>
-                                  {row.patientName ?? maskPhone(row.phone)}
+                                  <Link
+                                    to={`/pacientes/${row.patientId}`}
+                                    className="font-medium text-primary hover:underline"
+                                  >
+                                    {row.patientName ?? maskPhone(row.phone)}
+                                  </Link>
                                 </TableCell>
                                 <TableCell>
                                   {row.score}/{row.maxScore}

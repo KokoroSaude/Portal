@@ -37,6 +37,7 @@ import type {
   MoriskyScaleViewResponse,
   OnboardingJourney,
   Patient,
+  PatientMoriskyHistory,
   PagedResult,
   SimulatorMessage,
   SimulatorPatient,
@@ -221,6 +222,9 @@ export const api = {
 
   getPatientTimeline: (token: string, id: string, page = 1, pageSize = 20) =>
     request<TimelineEvent[]>(`/api/patients/${id}/timeline${qs({ page, pageSize })}`, { token }),
+
+  getPatientMorisky: (token: string, patientId: string) =>
+    request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
 
   pausePatient: (token: string, id: string, reason?: string, pauseUntil?: string) =>
     request<void>(`/api/patients/${id}/pause`, { method: "POST", token, body: { reason, pauseUntil } }),

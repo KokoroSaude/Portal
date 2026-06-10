@@ -5,6 +5,7 @@ import { ArrowLeft, MessageCircle, Pause, Pencil, Play, Save, Trash2 } from "luc
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
+import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -65,6 +66,12 @@ export function PatientDetailPage() {
   const { data: timeline, isLoading: timelineLoading } = useQuery({
     queryKey: ["patient-timeline", id, timelinePage],
     queryFn: () => api.getPatientTimeline(token!, id!, timelinePage, timelinePageSize),
+    enabled: !!token && !!id,
+  });
+
+  const { data: moriskyHistory, isLoading: moriskyLoading } = useQuery({
+    queryKey: ["patient-morisky", id],
+    queryFn: () => api.getPatientMorisky(token!, id!),
     enabled: !!token && !!id,
   });
 
@@ -361,6 +368,14 @@ export function PatientDetailPage() {
         <TabsList>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="careplan">Plano de cuidado</TabsTrigger>
+          <TabsTrigger value="morisky">
+            MMAS-8
+            {(moriskyHistory?.assessments.length ?? 0) > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+                {moriskyHistory!.assessments.length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="timeline">
@@ -466,6 +481,13 @@ export function PatientDetailPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="morisky">
+          <PatientMoriskyTab
+            assessments={moriskyHistory?.assessments}
+            isLoading={moriskyLoading}
+          />
         </TabsContent>
       </Tabs>
     </div>
