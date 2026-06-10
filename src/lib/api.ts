@@ -33,6 +33,7 @@ import type {
   JourneyStep,
   LoginResponse,
   MessageTemplate,
+  MoriskyScaleViewResponse,
   OnboardingJourney,
   Patient,
   PagedResult,
@@ -277,6 +278,9 @@ export const api = {
 
   getPeriodComparison: (token: string, from?: string, to?: string) =>
     request<PeriodComparison>(`/api/reports/comparison${qs({ from, to })}`, { token }),
+
+  getMoriskyScale: (token: string) =>
+    request<MoriskyScaleViewResponse>("/api/morisky/scale", { token }),
 
   exportPatientsCsv: async (token: string, status?: string, from?: string, to?: string) => {
     const res = await fetch(

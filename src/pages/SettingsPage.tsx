@@ -49,6 +49,11 @@ export function SettingsPage() {
         voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
         aiEnabled: settings.aiEnabled ?? false,
         voiceMessagesEnabled: settings.voiceMessagesEnabled ?? false,
+        moriskyEnabled: settings.moriskyEnabled ?? false,
+        moriskyOnOnboarding: settings.moriskyOnOnboarding ?? true,
+        moriskyPeriodicDays: settings.moriskyPeriodicDays ?? null,
+        moriskyTriggerAfterMisses: settings.moriskyTriggerAfterMisses ?? null,
+        moriskyCooldownDays: settings.moriskyCooldownDays ?? 14,
       });
     }
   }, [settings]);
@@ -223,6 +228,20 @@ export function SettingsPage() {
                   onCheckedChange={(checked) => update("aiEnabled", checked)}
                 />
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Escala MMAS-8 (Morisky)</CardTitle>
+                  <CardDescription>
+                    Visualize as perguntas oficiais e configure quando a avaliação é enviada.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" asChild>
+                    <Link to="/configuracoes/morisky">Ver perguntas e gatilhos</Link>
+                  </Button>
+                </CardContent>
+              </Card>
 
               <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? "Salvando…" : "Salvar alterações"}

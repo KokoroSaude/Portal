@@ -458,6 +458,37 @@ export interface TenantSettings {
   locale: string;
   aiEnabled: boolean;
   voiceMessagesEnabled: boolean;
+  moriskyEnabled: boolean;
+  moriskyOnOnboarding: boolean;
+  moriskyPeriodicDays: number | null;
+  moriskyTriggerAfterMisses: number | null;
+  moriskyCooldownDays: number;
+}
+
+export interface MoriskyQuestionDefinition {
+  id: string;
+  text: string;
+  order: number;
+  enabled: boolean;
+  yesScoresPoint: boolean;
+}
+
+export interface MoriskyLevelThreshold {
+  level: string;
+  minScore: number;
+  maxScore: number;
+}
+
+export interface MoriskyScaleDefinition {
+  introText: string;
+  thankYouText: string;
+  invalidText: string;
+  questions: MoriskyQuestionDefinition[];
+  levels: MoriskyLevelThreshold[];
+}
+
+export interface MoriskyScaleViewResponse {
+  scale: MoriskyScaleDefinition;
 }
 
 export interface MoriskyAssessment {

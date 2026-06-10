@@ -27,6 +27,10 @@ const PatientsPage = lazyPage(() => import("@/pages/PatientsPage"), "PatientsPag
 const ProfilePage = lazyPage(() => import("@/pages/ProfilePage"), "ProfilePage");
 const ReportsPage = lazyPage(() => import("@/pages/ReportsPage"), "ReportsPage");
 const SettingsPage = lazyPage(() => import("@/pages/SettingsPage"), "SettingsPage");
+const MoriskySettingsPage = lazyPage(
+  () => import("@/pages/MoriskySettingsPage"),
+  "MoriskySettingsPage",
+);
 const TemplatesPage = lazyPage(() => import("@/pages/TemplatesPage"), "TemplatesPage");
 const ResetPasswordPage = lazyPage(() => import("@/pages/ResetPasswordPage"), "ResetPasswordPage");
 const AdminEmailSignaturePage = lazy(() =>
@@ -94,6 +98,7 @@ export default function App() {
                     <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
+                    <Route path="configuracoes/morisky" element={<MoriskySettingsPage />} />
                   </Route>
 
                   <Route element={<RequirePlatform />}>
