@@ -15,7 +15,12 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CHART, DOW_LABELS, FUNNEL_COLORS } from "./chartTheme";
-import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
+import {
+  MORISKY_LEVEL_LABELS,
+  MORISKY_TRIGGER_LABELS,
+  TPB_CONSTRUCT_LABELS,
+  TPB_TRIGGER_LABELS,
+} from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
 import type {
   AdherenceReport,
@@ -24,6 +29,9 @@ import type {
   MoriskyTrendPoint,
   MoriskyTriggerCount,
   PatientFunnelSegment,
+  TpbConstructAvg,
+  TpbTrendPoint,
+  TpbTriggerCount,
 } from "@/types/api";
 
 function ChartTooltip({
@@ -318,6 +326,102 @@ export function MoriskyTriggerChart({ data }: { data: MoriskyTriggerCount[] }) {
               <Legend />
               <Bar yAxisId="left" dataKey="value" name="Avaliações" fill={CHART.primary} radius={[4, 4, 0, 0]} />
               <Bar yAxisId="right" dataKey="avgScore" name="Score médio" fill={CHART.muted} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TpbConstructChart({ data }: { data: TpbConstructAvg[] }) {
+  const chartData = data.map((d) => ({
+    label: TPB_CONSTRUCT_LABELS[d.construct] ?? d.construct,
+    value: Math.round(d.avgScore * 10) / 10,
+  }));
+
+  return (
+    <SimpleBarChart
+      title="Média por construto"
+      description="Scores TCP no período (escala 1–5)"
+      data={chartData}
+      name="Score médio"
+    />
+  );
+}
+
+export function TpbTrendChart({ data }: { data: TpbTrendPoint[] }) {
+  const chartData = data.map((d) => ({
+    ...d,
+    label: d.date.slice(5),
+    intention: Math.round(d.avgIntentionScore * 10) / 10,
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Evolução da intenção</CardTitle>
+        <CardDescription>Score médio de intenção por dia</CardDescription>
+      </CardHeader>
+      <CardContent className="h-72">
+        {chartData.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis domain={[1, 5]} tick={{ fontSize: 11 }} />
+              <Tooltip content={<ChartTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="intention"
+                name="Intenção"
+                stroke={CHART.primary}
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: CHART.primary }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TpbTriggerChart({ data }: { data: TpbTriggerCount[] }) {
+  const chartData = data.map((d) => ({
+    label: TPB_TRIGGER_LABELS[d.trigger] ?? d.trigger,
+    value: d.count,
+    avgIntention: Math.round(d.avgIntentionScore * 10) / 10,
+  }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">Avaliações por gatilho</CardTitle>
+        <CardDescription>Quantidade e intenção média por tipo de disparo</CardDescription>
+      </CardHeader>
+      <CardContent className="h-72">
+        {chartData.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="right" orientation="right" domain={[1, 5]} tick={{ fontSize: 11 }} />
+              <Tooltip content={<ChartTooltip />} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="value" name="Avaliações" fill={CHART.primary} radius={[4, 4, 0, 0]} />
+              <Bar
+                yAxisId="right"
+                dataKey="avgIntention"
+                name="Intenção média"
+                fill={CHART.muted}
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         )}

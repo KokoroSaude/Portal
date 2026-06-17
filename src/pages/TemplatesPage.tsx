@@ -65,8 +65,13 @@ export function TemplatesPage() {
 
   const saveMutation = useMutation({
     mutationFn: () => api.upsertTemplate(token!, selectedKey!, content, description || undefined, tone),
-    onSuccess: () => {
-      toast.success("Template salvo");
+    onSuccess: (result) => {
+      if (result && typeof result === "object" && "warnings" in result && result.warnings?.length) {
+        toast.success("Template salvo com avisos de nudge");
+        result.warnings.forEach((w) => toast.warning(w.message));
+      } else {
+        toast.success("Template salvo");
+      }
       queryClient.invalidateQueries({ queryKey: ["templates"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),

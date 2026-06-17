@@ -13,15 +13,24 @@ import type {
   AdherenceTrendPoint,
   EngagementReport,
   MessageEngagement,
+  MoriskyReport,
   OperationsReport,
   PatientAdherenceRank,
   PatientFunnel,
   PeriodComparison,
   SenderPerformance,
+  TpbReport,
+  TpbRiskReport,
 } from "@/types/api";
 import { formatDate, formatDateTime, formatPercent, maskPhone } from "@/lib/utils";
 import type { ReportPdfDocument, ReportPdfSection } from "@/lib/reportPdf";
-import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
+import {
+  MORISKY_LEVEL_LABELS,
+  MORISKY_TRIGGER_LABELS,
+  TPB_CONSTRUCT_LABELS,
+  TPB_RISK_LABELS,
+  TPB_TRIGGER_LABELS,
+} from "@/lib/constants";
 
 function periodLabel(from: string, to: string) {
   return `${formatDate(from)} — ${formatDate(to)}`;
@@ -136,6 +145,125 @@ function rankingSection(
   return { title, tables: [{ head, body }] };
 }
 
+function tenantMoriskySection(morisky?: MoriskyReport): ReportPdfSection | null {
+  if (!morisky || morisky.totalAssessments === 0) return null;
+
+  const tables = [];
+
+  if (morisky.byLevel.length) {
+    tables.push({
+      title: "Por nível de adesão",
+      head: ["Nível", "Quantidade"],
+      body: morisky.byLevel.map((l) => [
+        MORISKY_LEVEL_LABELS[l.level] ?? l.level,
+        String(l.count),
+      ]),
+    });
+  }
+
+  if (morisky.byTrigger.length) {
+    tables.push({
+      title: "Por gatilho",
+      head: ["Gatilho", "Quantidade", "Score médio"],
+      body: morisky.byTrigger.map((t) => [
+        MORISKY_TRIGGER_LABELS[t.trigger] ?? t.trigger,
+        String(t.count),
+        formatPercent(t.avgNormalizedScore),
+      ]),
+    });
+  }
+
+  if (morisky.patientRanking.length) {
+    tables.push({
+      title: "Ranking de pacientes",
+      head: ["Paciente", "Score", "Nível", "Última avaliação"],
+      body: morisky.patientRanking.slice(0, 30).map((p) => [
+        p.patientName ?? maskPhone(p.phone),
+        String(p.score),
+        MORISKY_LEVEL_LABELS[p.level] ?? p.level,
+        formatDate(p.completedAt),
+      ]),
+    });
+  }
+
+  return {
+    title: "MMAS-8 (Morisky)",
+    metrics: [
+      { label: "Avaliações", value: String(morisky.totalAssessments) },
+      { label: "Score normalizado médio", value: formatPercent(morisky.avgNormalizedScore) },
+      { label: "Adesão check-in (período)", value: formatPercent(morisky.checkinAdherenceRate) },
+    ],
+    tables,
+  };
+}
+
+function tenantTpbSection(tpb?: TpbReport, tpbRisk?: TpbRiskReport): ReportPdfSection | null {
+  if (!tpb || tpb.totalAssessments === 0) return null;
+
+  const tables = [];
+
+  if (tpb.byConstruct.length) {
+    tables.push({
+      title: "Média por construto",
+      head: ["Construto", "Média"],
+      body: tpb.byConstruct.map((c) => [
+        TPB_CONSTRUCT_LABELS[c.construct] ?? c.construct,
+        `${c.avgScore.toFixed(1)}/5`,
+      ]),
+    });
+  }
+
+  if (tpb.byTrigger.length) {
+    tables.push({
+      title: "Por gatilho",
+      head: ["Gatilho", "Quantidade", "Intenção média"],
+      body: tpb.byTrigger.map((t) => [
+        TPB_TRIGGER_LABELS[t.trigger] ?? t.trigger,
+        String(t.count),
+        `${t.avgIntentionScore.toFixed(1)}/5`,
+      ]),
+    });
+  }
+
+  if (tpb.patientRanking.length) {
+    tables.push({
+      title: "Ranking de pacientes",
+      head: ["Paciente", "Intenção", "Última avaliação"],
+      body: tpb.patientRanking.slice(0, 30).map((p) => [
+        p.patientName ?? maskPhone(p.phone),
+        `${p.intentionScore.toFixed(1)}/5`,
+        formatDate(p.completedAt),
+      ]),
+    });
+  }
+
+  const metrics = [
+    { label: "Avaliações", value: String(tpb.totalAssessments) },
+    { label: "Intenção média", value: `${tpb.avgIntentionScore.toFixed(1)}/5` },
+    { label: "Adesão check-in (período)", value: formatPercent(tpb.checkinAdherenceRate) },
+  ];
+
+  if (tpbRisk && tpbRisk.totalScored > 0) {
+    metrics.push(
+      { label: "Pacientes com risco calculado", value: String(tpbRisk.totalScored) },
+      { label: "Risco médio", value: formatPercent(tpbRisk.avgRiskScore) },
+    );
+    if (tpbRisk.distribution.length) {
+      tables.push({
+        title: "Distribuição de risco preditivo",
+        head: ["Faixa", "Pacientes", "%"],
+        body: tpbRisk.distribution.map((d) => [
+          TPB_RISK_LABELS[d.label] ?? d.label,
+          String(d.count),
+          formatPercent(d.percentage),
+        ]),
+      });
+    }
+  }
+
+  return { title: "TCP (Comportamento)", metrics, tables };
+}
+
 function adminMoriskySection(morisky?: AdminMoriskyReport): ReportPdfSection | null {
   if (!morisky || morisky.totalAssessments === 0) return null;
 
@@ -224,6 +352,9 @@ export interface TenantReportPdfInput {
   operations?: OperationsReport;
   senders?: SenderPerformance[];
   comparison?: PeriodComparison;
+  morisky?: MoriskyReport;
+  tpb?: TpbReport;
+  tpbRisk?: TpbRiskReport;
 }
 
 export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocument {
@@ -347,6 +478,12 @@ export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocu
       ],
     });
   }
+
+  const moriskySec = tenantMoriskySection(input.morisky);
+  if (moriskySec) sections.push(moriskySec);
+
+  const tpbSec = tenantTpbSection(input.tpb, input.tpbRisk);
+  if (tpbSec) sections.push(tpbSec);
 
   return {
     title: "Relatório Kokoro",

@@ -7,19 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api, ApiClientError } from "@/lib/api";
 import type { ReportInsight } from "@/types/api";
 
+export type ReportInsightVariant =
+  | "adherence"
+  | "engagement"
+  | "nudge"
+  | "cohort"
+  | "operations"
+  | "senders"
+  | "comparison"
+  | "morisky"
+  | "tpb";
+
 type Props = {
   token: string;
   from: string;
   to: string;
-  variant?: "adherence" | "engagement";
+  variant?: ReportInsightVariant;
 };
 
 export function ReportAiInsightCard({ token, from, to, variant = "adherence" }: Props) {
   const insight = useMutation({
-    mutationFn: () =>
-      variant === "engagement"
-        ? api.getEngagementInsights(token, from, to)
-        : api.getAdherenceInsights(token, from, to),
+    mutationFn: () => api.getReportInsights(token, variant, from, to),
     onError: (err) => {
       const msg = err instanceof ApiClientError ? err.message : "Não foi possível gerar o resumo.";
       toast.error(msg);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star } from "lucide-react";
+import { Brain, ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -51,6 +51,7 @@ export function PatientsPage() {
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMoriskyOpen, setBulkMoriskyOpen] = useState(false);
+  const [bulkTpbOpen, setBulkTpbOpen] = useState(false);
   const [bulkCsatOpen, setBulkCsatOpen] = useState(false);
   const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -103,6 +104,20 @@ export function PatientsPage() {
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
+  });
+
+  const bulkTpbMutation = useMutation({
+    mutationFn: (patientIds: string[]) => api.triggerTpbBulk(token!, { patientIds }),
+    onSuccess: (result) => {
+      setBulkTpbOpen(false);
+      setSelectedIds(new Set());
+      toast.success(
+        `TCP enviado para ${result.sent} de ${result.requested} paciente(s)` +
+          (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
+      );
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar TCP"),
   });
 
   const bulkCsatMutation = useMutation({
@@ -168,8 +183,9 @@ export function PatientsPage() {
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
   const bulkSelectEnabled = canWrite;
-  const moriskyBulkEnabled = bulkSelectEnabled && tenantSettings?.moriskyEnabled;
-  const csatBulkEnabled = bulkSelectEnabled;
+  const moriskyBulkEnabled = bulkSelectEnabled && hasFeature(FEATURE_KEYS.scalesMorisky) && tenantSettings?.moriskyEnabled;
+  const tpbBulkEnabled = bulkSelectEnabled && hasFeature(FEATURE_KEYS.scalesTpb) && tenantSettings?.tpbEnabled;
+  const csatBulkEnabled = bulkSelectEnabled && hasFeature(FEATURE_KEYS.satisfactionCsat);
   const onboardingBulkEnabled = bulkSelectEnabled;
 
   function togglePatient(id: string, checked: boolean) {
@@ -430,6 +446,36 @@ export function PatientsPage() {
                         disabled={bulkMoriskyMutation.isPending}
                       >
                         {bulkMoriskyMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {tpbBulkEnabled && selectedIds.size > 0 && (
+                <Dialog open={bulkTpbOpen} onOpenChange={setBulkTpbOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Brain className="size-4" />
+                      TCP ({selectedIds.size})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Enviar TCP para selecionados?</DialogTitle>
+                      <DialogDescription>
+                        {selectedIds.size} paciente(s) receberão a escala de comportamento no
+                        WhatsApp. Quem não puder receber será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkTpbOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkTpbMutation.mutate([...selectedIds])}
+                        disabled={bulkTpbMutation.isPending}
+                      >
+                        {bulkTpbMutation.isPending ? "Enviando…" : "Confirmar envio"}
                       </Button>
                     </DialogFooter>
                   </DialogContent>

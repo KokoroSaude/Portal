@@ -31,7 +31,12 @@ const MoriskySettingsPage = lazyPage(
   () => import("@/pages/MoriskySettingsPage"),
   "MoriskySettingsPage",
 );
+const TpbSettingsPage = lazyPage(
+  () => import("@/pages/TpbSettingsPage"),
+  "TpbSettingsPage",
+);
 const TemplatesPage = lazyPage(() => import("@/pages/TemplatesPage"), "TemplatesPage");
+const KnowledgePage = lazyPage(() => import("@/pages/KnowledgePage"), "KnowledgePage");
 const ResetPasswordPage = lazyPage(() => import("@/pages/ResetPasswordPage"), "ResetPasswordPage");
 const AdminEmailSignaturePage = lazy(() =>
   import("@/pages/admin/AdminEmailSignaturePage").then((m) => ({
@@ -93,11 +98,14 @@ export default function App() {
                     <Route path="pacientes/:id" element={<PatientDetailPage />} />
                     <Route path="relatorios" element={<ReportsPage />} />
                     <Route path="templates" element={<TemplatesPage />} />
+                    <Route path="conhecimento" element={<KnowledgePage />} />
                     <Route path="jornada" element={<JourneyPage />} />
                     <Route path="whatsapp" element={<Navigate to="/whatsapp/conversas" replace />} />
                     <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="morisky" element={<MoriskySettingsPage />} />
+                    <Route path="tcp" element={<TpbSettingsPage />} />
+                    <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
                   </Route>

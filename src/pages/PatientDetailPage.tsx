@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Save, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Save, Star, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
+import { PatientKokoroAssistantCard } from "@/components/patients/PatientKokoroAssistantCard";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
+import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { FEATURE_KEYS } from "@/lib/constants";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
 import type { CarePlanUpdate, TimelineEvent } from "@/types/api";
 
@@ -39,7 +42,7 @@ const EVENT_LABELS: Record<string, string> = {
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, canWrite } = useAuth();
+  const { token, canWrite, hasFeature } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -72,7 +75,25 @@ export function PatientDetailPage() {
   const { data: moriskyHistory, isLoading: moriskyLoading } = useQuery({
     queryKey: ["patient-morisky", id],
     queryFn: () => api.getPatientMorisky(token!, id!),
+    enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesMorisky),
+  });
+
+  const { data: achievements } = useQuery({
+    queryKey: ["patient-achievements", id],
+    queryFn: () => api.getPatientAchievements(token!, id!),
     enabled: !!token && !!id,
+  });
+
+  const { data: tpbHistory, isLoading: tpbLoading } = useQuery({
+    queryKey: ["patient-tpb", id],
+    queryFn: () => api.getPatientTpb(token!, id!),
+    enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
+  });
+
+  const { data: tpbRisk, isLoading: tpbRiskLoading } = useQuery({
+    queryKey: ["patient-tpb-risk", id],
+    queryFn: () => api.getPatientTpbRisk(token!, id!),
+    enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
   const { data: tenantSettings } = useQuery({
@@ -89,6 +110,26 @@ export function PatientDetailPage() {
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
+  });
+
+  const triggerTpbMutation = useMutation({
+    mutationFn: () => api.triggerPatientTpb(token!, id!),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+      queryClient.invalidateQueries({ queryKey: ["patient-tpb", id] });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar TCP"),
+  });
+
+  const previewTpbMutation = useMutation({
+    mutationFn: () => api.previewTpbIntervention(token!, id!),
+    onSuccess: (result) => {
+      toast.info(result.text, { duration: 8000 });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao simular intervenção"),
   });
 
   const triggerCsatMutation = useMutation({
@@ -282,16 +323,18 @@ export function PatientDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant={canWrite ? "default" : "outline"}
-            asChild
-          >
-            <Link to={`/whatsapp/conversas?patientId=${id}`}>
-              <MessageCircle className="size-4" />
-              {canWrite ? "Enviar mensagem" : "Ver conversa"}
-            </Link>
-          </Button>
+          {hasFeature(FEATURE_KEYS.whatsappConversations) && (
+            <Button
+              size="sm"
+              variant={canWrite ? "default" : "outline"}
+              asChild
+            >
+              <Link to={`/whatsapp/conversas?patientId=${id}`}>
+                <MessageCircle className="size-4" />
+                {canWrite ? "Enviar mensagem" : "Ver conversa"}
+              </Link>
+            </Button>
+          )}
           {canWrite && patient.status === "Onboarding" && (
             <Button
               size="sm"
@@ -303,7 +346,7 @@ export function PatientDetailPage() {
               {triggerOnboardingResumeMutation.isPending ? "Enviando…" : "Continuar cadastro"}
             </Button>
           )}
-          {canWrite && patient.status !== "Onboarding" && patient.status !== "OptedOut" && (
+          {canWrite && hasFeature(FEATURE_KEYS.satisfactionCsat) && patient.status !== "Onboarding" && patient.status !== "OptedOut" && (
             <Button
               size="sm"
               variant="outline"
@@ -420,20 +463,75 @@ export function PatientDetailPage() {
         </Card>
       </div>
 
-      {token && id && <PatientAiInsightCard token={token} patientId={id} />}
+      {achievements && achievements.items.some((a) => a.unlocked) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-amber-600" />
+              Conquistas
+            </CardTitle>
+            <CardDescription>Marcos de adesão desbloqueados no WhatsApp</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {achievements.items
+                .filter((a) => a.unlocked)
+                .map((a) => (
+                  <li
+                    key={a.key}
+                    className="rounded-lg border bg-muted/30 px-3 py-2 text-sm"
+                  >
+                    <p className="font-medium">{a.displayName}</p>
+                    <p className="text-xs text-muted-foreground">{a.description}</p>
+                    {a.unlockedAt && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatDateTime(a.unlockedAt)}
+                      </p>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
+        <PatientAiInsightCard token={token} patientId={id} />
+      )}
+
+      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
+        <PatientKokoroAssistantCard
+          token={token}
+          patientId={id}
+          canWrite={canWrite}
+          onTriggerTpb={() => triggerTpbMutation.mutate()}
+        />
+      )}
 
       <Tabs defaultValue="timeline">
         <TabsList>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="careplan">Plano de cuidado</TabsTrigger>
-          <TabsTrigger value="morisky">
-            MMAS-8
-            {(moriskyHistory?.assessments.length ?? 0) > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
-                {moriskyHistory!.assessments.length}
-              </span>
-            )}
-          </TabsTrigger>
+          {hasFeature(FEATURE_KEYS.scalesMorisky) && (
+            <TabsTrigger value="morisky">
+              MMAS-8
+              {(moriskyHistory?.assessments.length ?? 0) > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+                  {moriskyHistory!.assessments.length}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
+          {hasFeature(FEATURE_KEYS.scalesTpb) && (
+            <TabsTrigger value="tpb">
+              TCP
+              {(tpbHistory?.assessments.length ?? 0) > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+                  {tpbHistory!.assessments.length}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="timeline">
@@ -549,6 +647,21 @@ export function PatientDetailPage() {
             moriskyEnabled={tenantSettings?.moriskyEnabled}
             onTrigger={() => triggerMoriskyMutation.mutate()}
             isTriggering={triggerMoriskyMutation.isPending}
+          />
+        </TabsContent>
+
+        <TabsContent value="tpb">
+          <PatientTpbTab
+            assessments={tpbHistory?.assessments}
+            risk={tpbRisk}
+            isLoading={tpbLoading}
+            riskLoading={tpbRiskLoading}
+            canTrigger={canWrite}
+            tpbEnabled={tenantSettings?.tpbEnabled}
+            onTrigger={() => triggerTpbMutation.mutate()}
+            isTriggering={triggerTpbMutation.isPending}
+            onPreviewIntervention={canWrite ? () => previewTpbMutation.mutate() : undefined}
+            isPreviewing={previewTpbMutation.isPending}
           />
         </TabsContent>
       </Tabs>

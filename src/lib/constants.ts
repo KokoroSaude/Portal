@@ -11,8 +11,14 @@ export const FEATURE_KEYS = {
   reportsOperations: "reports.operations",
   reportsBySender: "reports.by_sender",
   reportsExportAdvanced: "reports.export.advanced",
+  reportsPdf: "reports.pdf",
   usersManage: "users.manage",
   whatsappSendersManage: "whatsapp.senders.manage",
+  scalesMorisky: "scales.morisky",
+  scalesTpb: "scales.tpb",
+  aiCopilot: "ai.copilot",
+  satisfactionCsat: "satisfaction.csat",
+  whatsappConversations: "whatsapp.conversations",
 } as const;
 
 export const ROLE_LABELS: Record<string, string> = {
@@ -86,4 +92,33 @@ export const MORISKY_TRIGGER_LABELS: Record<string, string> = {
   Periodic: "Periódica",
   AdherenceDrop: "Queda de adesão",
   Manual: "Manual",
+};
+
+export const TPB_CONSTRUCT_LABELS: Record<string, string> = {
+  Attitude: "Atitude",
+  SubjectiveNorm: "Norma subjetiva",
+  PerceivedControl: "Controle percebido",
+  Intention: "Intenção",
+  attitude: "Atitude",
+  subjective_norm: "Norma subjetiva",
+  perceived_control: "Controle percebido",
+  intention: "Intenção",
+  norm: "Norma subjetiva",
+  control: "Controle percebido",
+};
+
+export const TPB_TRIGGER_LABELS: Record<string, string> = {
+  Onboarding: "Onboarding",
+  Periodic: "Periódica",
+  AdherenceDrop: "Queda de adesão",
+  Manual: "Manual",
+};
+
+export const TPB_RISK_LABELS: Record<string, string> = {
+  Alto: "Alto",
+  Médio: "Médio",
+  Baixo: "Baixo",
+  high: "Alto",
+  medium: "Médio",
+  low: "Baixo",
 };

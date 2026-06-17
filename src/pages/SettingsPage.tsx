@@ -281,6 +281,126 @@ export function SettingsPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Nudge comportamental</CardTitle>
+              <CardDescription>
+                Reforço positivo variado, normas sociais nos marcos e limite de mensagens de empatia.
+                {" "}
+                <a
+                  href="https://kokorosaude.com.br/nudge"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Ver princípios
+                </a>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="nudgesEnabled">Nudges ativos</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Master switch para reforço, variáveis de progresso e telemetria.
+                  </p>
+                </div>
+                <Switch
+                  id="nudgesEnabled"
+                  checked={form.nudgesEnabled ?? true}
+                  onCheckedChange={(checked) => update("nudgesEnabled", checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="positiveReinforcementPoolEnabled">Pool de reforço positivo</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Rotaciona 6 variantes após check-in SIM (sem repetir a última).
+                  </p>
+                </div>
+                <Switch
+                  id="positiveReinforcementPoolEnabled"
+                  checked={form.positiveReinforcementPoolEnabled ?? true}
+                  onCheckedChange={(checked) => update("positiveReinforcementPoolEnabled", checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="socialNormNudgesEnabled">Normas sociais (cohort)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Frases ascendentes nos marcos D14/D30 quando há amostra suficiente.
+                  </p>
+                </div>
+                <Switch
+                  id="socialNormNudgesEnabled"
+                  checked={form.socialNormNudgesEnabled ?? false}
+                  onCheckedChange={(checked) => update("socialNormNudgesEnabled", checked)}
+                />
+              </div>
+              <div className="space-y-2 max-w-xs">
+                <Label htmlFor="maxEmpathyBlocksPerWeek">Máx. blocos de empatia / semana</Label>
+                <Input
+                  id="maxEmpathyBlocksPerWeek"
+                  type="number"
+                  min={1}
+                  max={7}
+                  value={form.maxEmpathyBlocksPerWeek ?? 3}
+                  onChange={(e) => update("maxEmpathyBlocksPerWeek", Number(e.target.value))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Gamificação</CardTitle>
+              <CardDescription>
+                Progresso visível no WhatsApp, conquistas e resumo diário opcional.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="progressMenuEnabled">Menu &quot;Meu progresso&quot;</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibe sequência, adesão e próximo marco no menu ativo do WhatsApp.
+                  </p>
+                </div>
+                <Switch
+                  id="progressMenuEnabled"
+                  checked={form.progressMenuEnabled ?? true}
+                  onCheckedChange={(checked) => update("progressMenuEnabled", checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="achievementsEnabled">Conquistas</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Badges automáticos após check-ins (streak, comeback, marcos).
+                  </p>
+                </div>
+                <Switch
+                  id="achievementsEnabled"
+                  checked={form.achievementsEnabled ?? true}
+                  onCheckedChange={(checked) => update("achievementsEnabled", checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="dailySummaryEnabled">Resumo diário (21h)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Envia resumo do dia para pacientes ativos com check-in no dia.
+                  </p>
+                </div>
+                <Switch
+                  id="dailySummaryEnabled"
+                  checked={form.dailySummaryEnabled ?? false}
+                  onCheckedChange={(checked) => update("dailySummaryEnabled", checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Cadastro pendente no WhatsApp</CardTitle>
               <CardDescription>
                 Para quem começou o cadastro pelo WhatsApp e parou no meio — sem terminar nome,

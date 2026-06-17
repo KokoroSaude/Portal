@@ -1,0 +1,150 @@
+import { useMutation } from "@tanstack/react-query";
+import { Sparkles, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TPB_CONSTRUCT_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
+import { api, ApiClientError } from "@/lib/api";
+import { formatPercent } from "@/lib/utils";
+import type { PatientAiBrief, PatientAiSuggestions } from "@/types/api";
+
+type Props = {
+  token: string;
+  patientId: string;
+  canWrite?: boolean;
+  onTriggerTpb?: () => void;
+};
+
+export function PatientKokoroAssistantCard({ token, patientId, canWrite, onTriggerTpb }: Props) {
+  const brief = useMutation({
+    mutationFn: () => api.getPatientAiBrief(token, patientId),
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Não foi possível gerar o resumo.");
+    },
+  });
+
+  const suggestions = useMutation({
+    mutationFn: () => api.getPatientAiSuggestions(token, patientId),
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Não foi possível carregar sugestões.");
+    },
+  });
+
+  const data = brief.data as PatientAiBrief | undefined;
+  const sugData = suggestions.data as PatientAiSuggestions | undefined;
+
+  function loadAll() {
+    brief.mutate();
+    suggestions.mutate();
+  }
+
+  const loading = brief.isPending || suggestions.isPending;
+
+  return (
+    <Card className="border-primary/20 bg-primary/[0.03]">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Sparkles className="size-5 text-primary" />
+            Assistente Kokoro
+          </CardTitle>
+          <CardDescription>
+            Resumo com adesão, TCP, MMAS-8 e risco preditivo — com sugestões de ação.
+          </CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadAll} disabled={loading}>
+          {loading ? "Carregando…" : "Atualizar assistente"}
+        </Button>
+      </CardHeader>
+
+      {data && (
+        <CardContent className="space-y-4 border-t pt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={data.source === "ai" ? "default" : "secondary"}>
+              Resumo: {data.source === "ai" ? "IA" : "Regras"}
+            </Badge>
+            {data.context.risk && (
+              <Badge variant="outline">
+                Risco: {TPB_RISK_LABELS[data.context.risk.riskLabel] ?? data.context.risk.riskLabel}
+              </Badge>
+            )}
+          </div>
+
+          <p className="text-sm leading-relaxed">{data.summary}</p>
+
+          <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border bg-background/60 p-3">
+              <p className="text-xs text-muted-foreground">Adesão 30d</p>
+              <p className="font-semibold">{formatPercent(data.context.adherenceRate30d)}</p>
+            </div>
+            <div className="rounded-lg border bg-background/60 p-3">
+              <p className="text-xs text-muted-foreground">Misses seguidos</p>
+              <p className="font-semibold">{data.context.consecutiveMisses}</p>
+            </div>
+            {data.context.tpbIntentionScore != null && (
+              <div className="rounded-lg border bg-background/60 p-3">
+                <p className="text-xs text-muted-foreground">Intenção TCP</p>
+                <p className="font-semibold">{data.context.tpbIntentionScore.toFixed(1)}/5</p>
+              </div>
+            )}
+            {data.context.moriskyScore != null && (
+              <div className="rounded-lg border bg-background/60 p-3">
+                <p className="text-xs text-muted-foreground">MMAS-8</p>
+                <p className="font-semibold">{data.context.moriskyScore}</p>
+              </div>
+            )}
+          </div>
+
+          {data.context.tpbConstructScores && Object.keys(data.context.tpbConstructScores).length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Construtos TCP
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(data.context.tpbConstructScores).map(([k, v]) => (
+                  <Badge key={k} variant="outline">
+                    {TPB_CONSTRUCT_LABELS[k] ?? k}: {v.toFixed(1)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.highlights.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {data.highlights.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      )}
+
+      {sugData && sugData.suggestions.length > 0 && (
+        <CardContent className="space-y-3 border-t pt-4">
+          <div className="flex items-center gap-2">
+            <Zap className="size-4 text-primary" />
+            <p className="text-sm font-medium">Sugestões</p>
+            <Badge variant="secondary" className="text-xs">
+              {sugData.source === "ai" ? "IA" : "Regras"}
+            </Badge>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {sugData.suggestions.map((s) => (
+              <div key={s.id} className="rounded-xl border bg-background/80 p-4">
+                <p className="font-medium">{s.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>
+                {canWrite && s.actionType === "trigger_tpb" && onTriggerTpb && (
+                  <Button size="sm" variant="outline" className="mt-3 w-full" onClick={onTriggerTpb}>
+                    Disparar TCP
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}

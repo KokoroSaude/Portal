@@ -143,6 +143,45 @@ export interface MessageEngagement {
   adherenceRate: number | null;
 }
 
+export interface NudgeEngagementRow {
+  groupKey: string;
+  groupLabel: string;
+  sent: number;
+  respondedWithin2h: number;
+  respondedWithin24h: number;
+  responseRate2h: number;
+  responseRate24h: number;
+}
+
+export interface NudgeEngagementReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  byNudgeType: NudgeEngagementRow[];
+  byTemplate: NudgeEngagementRow[];
+}
+
+export interface NudgeLintIssue {
+  code: string;
+  message: string;
+  severity: "Warning" | "Error";
+}
+
+export interface UpsertTemplateResponse {
+  saved?: boolean;
+  warnings?: NudgeLintIssue[];
+}
+
+export interface KnowledgeDocument {
+  id: string;
+  title: string;
+  fileName: string;
+  contentType: string;
+  fileSizeBytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EngagementReport {
   tenantId: string;
   from: string;
@@ -463,9 +502,34 @@ export interface TenantSettings {
   moriskyPeriodicDays: number | null;
   moriskyTriggerAfterMisses: number | null;
   moriskyCooldownDays: number;
+  tpbEnabled: boolean;
+  tpbOnOnboarding: boolean;
+  tpbPeriodicDays: number | null;
+  tpbTriggerAfterMisses: number | null;
+  tpbCooldownDays: number;
   onboardingResumeEnabled: boolean;
   onboardingResumeAfterDays: number;
   onboardingResumeCooldownHours: number;
+  nudgesEnabled?: boolean;
+  socialNormNudgesEnabled?: boolean;
+  positiveReinforcementPoolEnabled?: boolean;
+  maxEmpathyBlocksPerWeek?: number;
+  achievementsEnabled?: boolean;
+  dailySummaryEnabled?: boolean;
+  progressMenuEnabled?: boolean;
+}
+
+export interface PatientAchievementItem {
+  key: string;
+  displayName: string;
+  description: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+}
+
+export interface PatientAchievements {
+  patientId: string;
+  items: PatientAchievementItem[];
 }
 
 export interface OnboardingBulkTriggerResult {
@@ -650,6 +714,176 @@ export interface AdminMoriskyReport {
   byTrigger: MoriskyTriggerCount[];
   byTenant: AdminMoriskyTenantSlice[];
   patientRanking: AdminMoriskyPatientRank[];
+}
+
+export interface TpbQuestionDefinition {
+  id: string;
+  order: number;
+  construct: string;
+  text: string;
+  enabled: boolean;
+  reverseScored: boolean;
+}
+
+export interface TpbScaleDefinition {
+  introText: string;
+  thankYouText: string;
+  invalidText: string;
+  questions: TpbQuestionDefinition[];
+}
+
+export interface TpbScaleViewResponse {
+  scale: TpbScaleDefinition;
+  hasTenantOverride: boolean;
+}
+
+export interface TpbQuestionAnswer {
+  questionId: string;
+  order: number;
+  construct: string;
+  text: string;
+  score: number;
+  scoreLabel: string;
+  changedFromPrevious: number | null;
+  previousScore: number | null;
+}
+
+export interface TpbAssessmentDetail {
+  id: string;
+  trigger: string;
+  intentionScore: number;
+  constructScores: Record<string, number>;
+  completedAt: string;
+  intentionDeltaFromPrevious: number | null;
+  answers: TpbQuestionAnswer[];
+}
+
+export interface PatientTpbHistory {
+  assessments: TpbAssessmentDetail[];
+}
+
+export interface TpbManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+}
+
+export interface TpbBulkSkipItem {
+  patientId: string;
+  patientName: string | null;
+  reason: string;
+}
+
+export interface TpbBulkTriggerResult {
+  requested: number;
+  sent: number;
+  skipped: number;
+  skippedSamples: TpbBulkSkipItem[];
+}
+
+export interface PatientTpbRisk {
+  riskScore: number;
+  riskLabel: string;
+  topFactors: string[];
+  modelVersion: string;
+  computedAt: string;
+}
+
+export interface PreviewTpbInterventionResult {
+  text: string;
+  source: string;
+  weakestConstruct: string | null;
+  constructScores: Record<string, number> | null;
+}
+
+export interface TpbConstructAvg {
+  construct: string;
+  avgScore: number;
+}
+
+export interface TpbTrendPoint {
+  date: string;
+  avgIntentionScore: number;
+  count: number;
+}
+
+export interface TpbTriggerCount {
+  trigger: string;
+  count: number;
+  avgIntentionScore: number;
+}
+
+export interface TpbPatientRank {
+  patientId: string;
+  patientName: string | null;
+  phone: string;
+  intentionScore: number;
+  constructScores: Record<string, number>;
+  checkinAdherenceRate: number | null;
+  completedAt: string;
+}
+
+export interface TpbReport {
+  from: string;
+  to: string;
+  totalAssessments: number;
+  avgIntentionScore: number;
+  checkinAdherenceRate: number;
+  byConstruct: TpbConstructAvg[];
+  trend: TpbTrendPoint[];
+  byTrigger: TpbTriggerCount[];
+  patientRanking: TpbPatientRank[];
+}
+
+export interface TpbRiskDistribution {
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TpbRiskReport {
+  totalScored: number;
+  avgRiskScore: number;
+  distribution: TpbRiskDistribution[];
+  lastComputedAt: string | null;
+}
+
+export interface PatientAiBriefRisk {
+  riskScore: number;
+  riskLabel: string;
+  topFactors: string[];
+  modelVersion: string;
+}
+
+export interface PatientAiBriefContext {
+  adherenceRate30d: number;
+  consecutiveMisses: number;
+  tpbConstructScores: Record<string, number> | null;
+  tpbIntentionScore: number | null;
+  moriskyScore: number | null;
+  moriskyLevel: string | null;
+  risk: PatientAiBriefRisk | null;
+}
+
+export interface PatientAiBrief {
+  summary: string;
+  highlights: string[];
+  actions: string[];
+  source: string;
+  generatedAt: string;
+  context: PatientAiBriefContext;
+}
+
+export interface AiSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  actionType: string;
+}
+
+export interface PatientAiSuggestions {
+  suggestions: AiSuggestion[];
+  source: string;
 }
 
 export interface TenantSubscription {

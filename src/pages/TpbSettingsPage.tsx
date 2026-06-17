@@ -21,26 +21,26 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
-import { MORISKY_LEVEL_LABELS, FEATURE_KEYS } from "@/lib/constants";
+import { TPB_CONSTRUCT_LABELS, FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
 
-type MoriskyTriggers = Pick<
+type TpbTriggers = Pick<
   TenantSettings,
-  | "moriskyEnabled"
-  | "moriskyOnOnboarding"
-  | "moriskyPeriodicDays"
-  | "moriskyTriggerAfterMisses"
-  | "moriskyCooldownDays"
+  | "tpbEnabled"
+  | "tpbOnOnboarding"
+  | "tpbPeriodicDays"
+  | "tpbTriggerAfterMisses"
+  | "tpbCooldownDays"
 >;
 
-export function MoriskySettingsPage() {
+export function TpbSettingsPage() {
   const { token, isAdmin, hasFeature } = useAuth();
   const queryClient = useQueryClient();
-  const [triggers, setTriggers] = useState<MoriskyTriggers | null>(null);
+  const [triggers, setTriggers] = useState<TpbTriggers | null>(null);
 
   const scaleQuery = useQuery({
-    queryKey: ["morisky-scale"],
-    queryFn: () => api.getMoriskyScale(token!),
+    queryKey: ["tpb-scale"],
+    queryFn: () => api.getTpbScale(token!),
     enabled: !!token && isAdmin,
   });
 
@@ -54,11 +54,11 @@ export function MoriskySettingsPage() {
     if (settingsQuery.data) {
       const s = settingsQuery.data;
       setTriggers({
-        moriskyEnabled: s.moriskyEnabled,
-        moriskyOnOnboarding: s.moriskyOnOnboarding,
-        moriskyPeriodicDays: s.moriskyPeriodicDays,
-        moriskyTriggerAfterMisses: s.moriskyTriggerAfterMisses,
-        moriskyCooldownDays: s.moriskyCooldownDays,
+        tpbEnabled: s.tpbEnabled,
+        tpbOnOnboarding: s.tpbOnOnboarding,
+        tpbPeriodicDays: s.tpbPeriodicDays,
+        tpbTriggerAfterMisses: s.tpbTriggerAfterMisses,
+        tpbCooldownDays: s.tpbCooldownDays,
       });
     }
   }, [settingsQuery.data]);
@@ -66,7 +66,7 @@ export function MoriskySettingsPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const bulkTriggerMutation = useMutation({
-    mutationFn: () => api.triggerMoriskyBulk(token!, { allActive: true }),
+    mutationFn: () => api.triggerTpbBulk(token!, { allActive: true }),
     onSuccess: (result) => {
       setBulkOpen(false);
       if (result.sent === 0 && result.requested === 0) {
@@ -74,40 +74,43 @@ export function MoriskySettingsPage() {
         return;
       }
       toast.success(
-        `MMAS-8 enviado para ${result.sent} de ${result.requested} paciente(s)` +
+        `TCP enviado para ${result.sent} de ${result.requested} paciente(s)` +
           (result.skipped > 0 ? ` (${result.skipped} ignorado(s))` : ""),
       );
     },
     onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar MMAS-8"),
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar TCP"),
   });
 
   const saveMutation = useMutation({
     mutationFn: () =>
       api.updateSettings(token!, {
-        moriskyEnabled: triggers!.moriskyEnabled,
-        moriskyOnOnboarding: triggers!.moriskyOnOnboarding,
-        moriskyPeriodicDays: triggers!.moriskyPeriodicDays ?? 0,
-        moriskyTriggerAfterMisses: triggers!.moriskyTriggerAfterMisses ?? 0,
-        moriskyCooldownDays: triggers!.moriskyCooldownDays,
+        tpbEnabled: triggers!.tpbEnabled,
+        tpbOnOnboarding: triggers!.tpbOnOnboarding,
+        tpbPeriodicDays: triggers!.tpbPeriodicDays ?? 0,
+        tpbTriggerAfterMisses: triggers!.tpbTriggerAfterMisses ?? 0,
+        tpbCooldownDays: triggers!.tpbCooldownDays,
       }),
     onSuccess: () => {
-      toast.success("Gatilhos MMAS-8 salvos");
+      toast.success("Gatilhos TCP salvos");
       queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),
   });
 
-  function patchTriggers(patch: Partial<MoriskyTriggers>) {
+  function patchTriggers(patch: Partial<TpbTriggers>) {
     setTriggers((prev) => (prev ? { ...prev, ...patch } : prev));
   }
 
-  if (!hasFeature(FEATURE_KEYS.scalesMorisky)) {
+  if (!hasFeature(FEATURE_KEYS.scalesTpb)) {
     return (
       <>
-        <PageHeader title="Escala MMAS-8 (Morisky)" description="Instrumento validado de adesão medicamentosa." />
+        <PageHeader
+          title="TCP (Teoria do Comportamento Planejado)"
+          description="Escala de intenção e construtos comportamentais."
+        />
         <FeatureLocked
-          title="MMAS-8 não disponível"
+          title="TCP não disponível"
           description="Este recurso não está incluído no seu plano atual."
         />
       </>
@@ -119,7 +122,7 @@ export function MoriskySettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Acesso restrito</CardTitle>
-          <CardDescription>Apenas administradores podem ver a escala MMAS-8.</CardDescription>
+          <CardDescription>Apenas administradores podem ver a escala TCP.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -135,104 +138,108 @@ export function MoriskySettingsPage() {
   }
 
   const scale = scaleQuery.data?.scale;
+  const hasOverride = scaleQuery.data?.hasTenantOverride ?? false;
   const questions = [...(scale?.questions ?? [])].sort((a, b) => a.order - b.order);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Escala MMAS-8 (Morisky)"
-        description="Instrumento validado de adesão medicamentosa — perguntas fixas, gatilhos configuráveis."
+        title="TCP (Teoria do Comportamento Planejado)"
+        description="Escala de intenção e construtos comportamentais — gatilhos configuráveis."
       />
 
       <Card className="border-primary/20 bg-primary/[0.03]">
         <CardContent className="pt-6 text-sm text-muted-foreground">
-          As 8 perguntas, pontuação e faixas seguem o padrão MMAS-8 e não podem ser alteradas.
-          Configure apenas <strong>quando</strong> a escala é enviada aos pacientes.
+          A escala TCP mede atitude, norma subjetiva, controle percebido e intenção de adesão.
+          Configure <strong>quando</strong> a avaliação é enviada aos pacientes.
+          {hasOverride && (
+            <span className="ml-2">
+              <Badge variant="secondary">Escala personalizada</Badge>
+            </span>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Gatilhos de envio</CardTitle>
-          <CardDescription>Quando a avaliação MMAS-8 é aplicada via WhatsApp</CardDescription>
+          <CardDescription>Quando a avaliação TCP é aplicada via WhatsApp</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-1">
-              <Label htmlFor="moriskyEnabled">Habilitar MMAS-8</Label>
+              <Label htmlFor="tpbEnabled">Habilitar TCP</Label>
               <p className="text-sm text-muted-foreground">
-                Ativa a escala Morisky para pacientes desta organização.
+                Ativa a escala TCP para pacientes desta organização.
               </p>
             </div>
             <Switch
-              id="moriskyEnabled"
-              checked={triggers.moriskyEnabled}
-              onCheckedChange={(checked) => patchTriggers({ moriskyEnabled: checked })}
+              id="tpbEnabled"
+              checked={triggers.tpbEnabled}
+              onCheckedChange={(checked) => patchTriggers({ tpbEnabled: checked })}
             />
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-1">
-              <Label htmlFor="moriskyOnOnboarding">Após onboarding</Label>
+              <Label htmlFor="tpbOnOnboarding">Após onboarding</Label>
               <p className="text-sm text-muted-foreground">
                 Envia ao concluir o cadastro do paciente.
               </p>
             </div>
             <Switch
-              id="moriskyOnOnboarding"
-              checked={triggers.moriskyOnOnboarding}
-              onCheckedChange={(checked) => patchTriggers({ moriskyOnOnboarding: checked })}
-              disabled={!triggers.moriskyEnabled}
+              id="tpbOnOnboarding"
+              checked={triggers.tpbOnOnboarding}
+              onCheckedChange={(checked) => patchTriggers({ tpbOnOnboarding: checked })}
+              disabled={!triggers.tpbEnabled}
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="moriskyPeriodicDays">Reaplicar a cada (dias)</Label>
+              <Label htmlFor="tpbPeriodicDays">Reaplicar a cada (dias)</Label>
               <Input
-                id="moriskyPeriodicDays"
+                id="tpbPeriodicDays"
                 type="number"
                 min={0}
                 placeholder="Desligado"
-                value={triggers.moriskyPeriodicDays ?? ""}
-                disabled={!triggers.moriskyEnabled}
+                value={triggers.tpbPeriodicDays ?? ""}
+                disabled={!triggers.tpbEnabled}
                 onChange={(e) =>
                   patchTriggers({
-                    moriskyPeriodicDays:
-                      e.target.value === "" ? null : Number(e.target.value),
+                    tpbPeriodicDays: e.target.value === "" ? null : Number(e.target.value),
                   })
                 }
               />
               <p className="text-xs text-muted-foreground">Deixe vazio para desativar.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="moriskyTriggerAfterMisses">Após misses consecutivos</Label>
+              <Label htmlFor="tpbTriggerAfterMisses">Após misses consecutivos</Label>
               <Input
-                id="moriskyTriggerAfterMisses"
+                id="tpbTriggerAfterMisses"
                 type="number"
                 min={0}
                 placeholder="Desligado"
-                value={triggers.moriskyTriggerAfterMisses ?? ""}
-                disabled={!triggers.moriskyEnabled}
+                value={triggers.tpbTriggerAfterMisses ?? ""}
+                disabled={!triggers.tpbEnabled}
                 onChange={(e) =>
                   patchTriggers({
-                    moriskyTriggerAfterMisses:
-                      e.target.value === "" ? null : Number(e.target.value),
+                    tpbTriggerAfterMisses: e.target.value === "" ? null : Number(e.target.value),
                   })
                 }
               />
               <p className="text-xs text-muted-foreground">Check-ins perdidos seguidos.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="moriskyCooldownDays">Intervalo mínimo (dias)</Label>
+              <Label htmlFor="tpbCooldownDays">Intervalo mínimo (dias)</Label>
               <Input
-                id="moriskyCooldownDays"
+                id="tpbCooldownDays"
                 type="number"
                 min={1}
-                value={triggers.moriskyCooldownDays}
-                disabled={!triggers.moriskyEnabled}
+                value={triggers.tpbCooldownDays}
+                disabled={!triggers.tpbEnabled}
                 onChange={(e) =>
-                  patchTriggers({ moriskyCooldownDays: Number(e.target.value) || 14 })
+                  patchTriggers({ tpbCooldownDays: Number(e.target.value) || 30 })
                 }
               />
               <p className="text-xs text-muted-foreground">
@@ -252,21 +259,21 @@ export function MoriskySettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">Disparo manual</CardTitle>
           <CardDescription>
-            Envie o MMAS-8 fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
+            Envie o TCP fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
             específico ou toda a base ativa.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Na ficha do paciente (aba MMAS-8) ou na lista de pacientes (seleção múltipla), use{" "}
-            <strong className="text-foreground">Enviar MMAS-8</strong>. O intervalo mínimo não se
+            Na ficha do paciente (aba TCP) ou na lista de pacientes (seleção múltipla), use{" "}
+            <strong className="text-foreground">Enviar TCP</strong>. O intervalo mínimo não se
             aplica a disparos manuais.
           </p>
           <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                disabled={!triggers.moriskyEnabled || bulkTriggerMutation.isPending}
+                disabled={!triggers.tpbEnabled || bulkTriggerMutation.isPending}
               >
                 <ClipboardList className="size-4" />
                 Enviar para todos os pacientes ativos
@@ -274,7 +281,7 @@ export function MoriskySettingsPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Enviar MMAS-8 para todos os ativos?</DialogTitle>
+                <DialogTitle>Enviar TCP para todos os ativos?</DialogTitle>
                 <DialogDescription>
                   Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp. Quem já
                   estiver respondendo ou com check-in pendente será ignorado.
@@ -301,7 +308,7 @@ export function MoriskySettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Mensagens do fluxo</CardTitle>
-              <CardDescription>Textos enviados no WhatsApp (padrão MMAS-8)</CardDescription>
+              <CardDescription>Textos enviados no WhatsApp</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
@@ -322,7 +329,7 @@ export function MoriskySettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Perguntas ({questions.length})</CardTitle>
-              <CardDescription>Ordem e textos oficiais MMAS-8</CardDescription>
+              <CardDescription>Escala Likert 1–5 por construto</CardDescription>
             </CardHeader>
             <CardContent>
               <ol className="space-y-3">
@@ -335,33 +342,26 @@ export function MoriskySettingsPage() {
                       {q.order}
                     </span>
                     <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {TPB_CONSTRUCT_LABELS[q.construct] ?? q.construct}
+                        </Badge>
+                        {q.reverseScored && (
+                          <Badge variant="secondary" className="text-xs">
+                            Pontuação invertida
+                          </Badge>
+                        )}
+                        {!q.enabled && (
+                          <Badge variant="secondary" className="text-xs">
+                            Desabilitada
+                          </Badge>
+                        )}
+                      </div>
                       <p>{q.text}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {q.yesScoresPoint ? "Sim = 1 pt (aderente)" : "Não = 1 pt (aderente)"}
-                      </p>
                     </div>
                   </li>
                 ))}
               </ol>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Classificação</CardTitle>
-              <CardDescription>Faixas de score MMAS-8</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              {scale.levels.map((level) => (
-                <div key={level.level} className="rounded-lg border p-4">
-                  <Badge variant="secondary" className="mb-2">
-                    {MORISKY_LEVEL_LABELS[level.level] ?? level.level}
-                  </Badge>
-                  <p className="text-sm text-muted-foreground">
-                    Score {level.minScore}–{level.maxScore}
-                  </p>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </>

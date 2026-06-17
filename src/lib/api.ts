@@ -26,11 +26,23 @@ import type {
   MoriskyReport,
   OnboardingBulkTriggerResult,
   OnboardingManualTriggerResult,
+  PatientAiBrief,
+  PatientAiSuggestions,
+  PatientTpbHistory,
+  PatientTpbRisk,
+  PreviewTpbInterventionResult,
+  TpbBulkTriggerResult,
+  TpbManualTriggerResult,
+  TpbReport,
+  TpbRiskReport,
+  TpbScaleDefinition,
+  TpbScaleViewResponse,
   AdherenceTrendPoint,
   CarePlanUpdate,
   CreateTenantResponse,
   CreatePatientResponse,
   EngagementReport,
+  NudgeEngagementReport,
   OperationsReport,
   PatientAdherenceRank,
   PatientFunnel,
@@ -44,6 +56,7 @@ import type {
   OnboardingJourney,
   Patient,
   PatientMoriskyHistory,
+  PatientAchievements,
   PagedResult,
   SimulatorMessage,
   SimulatorPatient,
@@ -53,6 +66,8 @@ import type {
   TenantFeature,
   TenantSettings,
   TenantSubscription,
+  UpsertTemplateResponse,
+  KnowledgeDocument,
   TenantUser,
   TimelineEvent,
   UserInfo,
@@ -232,6 +247,9 @@ export const api = {
   getPatientMorisky: (token: string, patientId: string) =>
     request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
 
+  getPatientAchievements: (token: string, patientId: string) =>
+    request<PatientAchievements>(`/api/patients/${patientId}/achievements`, { token }),
+
   triggerPatientMorisky: (token: string, patientId: string) =>
     request<MoriskyManualTriggerResult>(`/api/patients/${patientId}/morisky/trigger`, {
       method: "POST",
@@ -305,6 +323,17 @@ export const api = {
       token,
     }),
 
+  getReportInsights: (
+    token: string,
+    reportKey: string,
+    from?: string,
+    to?: string,
+  ) =>
+    request<ReportInsight>(`/api/reports/${reportKey}/insights${qs({ from, to })}`, {
+      method: "POST",
+      token,
+    }),
+
   getEngagementInsights: (token: string, from?: string, to?: string) =>
     request<ReportInsight>(`/api/reports/engagement/insights${qs({ from, to })}`, {
       method: "POST",
@@ -316,6 +345,9 @@ export const api = {
 
   getEngagementReport: (token: string, from?: string, to?: string, patientId?: string) =>
     request<EngagementReport>(`/api/reports/engagement${qs({ from, to, patientId })}`, { token }),
+
+  getNudgeEngagementReport: (token: string, from?: string, to?: string) =>
+    request<NudgeEngagementReport>(`/api/reports/nudge-engagement${qs({ from, to })}`, { token }),
 
   getAdherenceTrend: (token: string, from?: string, to?: string) =>
     request<AdherenceTrendPoint[]>(`/api/reports/adherence/trend${qs({ from, to })}`, { token }),
@@ -343,6 +375,63 @@ export const api = {
 
   getMoriskyScale: (token: string) =>
     request<MoriskyScaleViewResponse>("/api/morisky/scale", { token }),
+
+  getTpbScale: (token: string) =>
+    request<TpbScaleViewResponse>("/api/tpb/scale", { token }),
+
+  updateTpbScale: (token: string, scale: TpbScaleDefinition) =>
+    request<void>("/api/tpb/scale", { method: "PUT", token, body: scale }),
+
+  resetTpbScale: (token: string) =>
+    request<void>("/api/tpb/scale", { method: "DELETE", token }),
+
+  getPatientTpb: (token: string, patientId: string) =>
+    request<PatientTpbHistory>(`/api/patients/${patientId}/tpb`, { token }),
+
+  triggerPatientTpb: (token: string, patientId: string) =>
+    request<TpbManualTriggerResult>(`/api/patients/${patientId}/tpb/trigger`, {
+      method: "POST",
+      token,
+    }),
+
+  triggerTpbBulk: (
+    token: string,
+    payload: { patientIds?: string[]; allActive?: boolean; status?: string },
+  ) =>
+    request<TpbBulkTriggerResult>("/api/tpb/trigger", {
+      method: "POST",
+      token,
+      body: { ignoreCooldown: true, ...payload },
+    }),
+
+  previewTpbIntervention: (
+    token: string,
+    patientId: string,
+    templateBase?: string,
+  ) =>
+    request<PreviewTpbInterventionResult>("/api/tpb/intervention/preview", {
+      method: "POST",
+      token,
+      body: { patientId, templateBase },
+    }),
+
+  getPatientTpbRisk: (token: string, patientId: string) =>
+    request<PatientTpbRisk>(`/api/patients/${patientId}/tpb-risk`, { token }),
+
+  getTpbReport: (token: string, from?: string, to?: string) =>
+    request<TpbReport>(`/api/reports/tpb${qs({ from, to })}`, { token }),
+
+  getTpbRiskReport: (token: string) =>
+    request<TpbRiskReport>("/api/reports/tpb-risk", { token }),
+
+  getPatientAiBrief: (token: string, patientId: string) =>
+    request<PatientAiBrief>(`/api/patients/${patientId}/ai-brief`, { token }),
+
+  getPatientAiSuggestions: (token: string, patientId: string) =>
+    request<PatientAiSuggestions>(`/api/patients/${patientId}/ai-suggestions`, {
+      method: "POST",
+      token,
+    }),
 
   exportPatientsCsv: async (token: string, status?: string, from?: string, to?: string) => {
     const res = await fetch(
@@ -448,7 +537,7 @@ export const api = {
     request<MessageTemplate[]>(`/api/templates${qs({ tone })}`, { token }),
 
   upsertTemplate: (token: string, key: string, content: string, description?: string, tone?: string) =>
-    request<void>(`/api/templates/${encodeURIComponent(key)}`, {
+    request<UpsertTemplateResponse | void>(`/api/templates/${encodeURIComponent(key)}`, {
       method: "PUT",
       token,
       body: { content, description, tone },
@@ -456,6 +545,30 @@ export const api = {
 
   resetTemplate: (token: string, key: string, tone?: string) =>
     request<void>(`/api/templates/${encodeURIComponent(key)}${qs({ tone })}`, { method: "DELETE", token }),
+
+  listKnowledgeDocuments: (token: string) =>
+    request<KnowledgeDocument[]>("/api/knowledge", { token }),
+
+  uploadKnowledgeDocument: async (token: string, file: File, title?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (title) form.append("title", title);
+    const res = await fetch(`${API_BASE}/api/knowledge`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : undefined;
+    if (!res.ok) {
+      const err = data as { error?: string } | undefined;
+      throw new ApiClientError(err?.error ?? `Erro ${res.status}`, res.status, data);
+    }
+    return data as KnowledgeDocument;
+  },
+
+  deleteKnowledgeDocument: (token: string, id: string) =>
+    request<void>(`/api/knowledge/${id}`, { method: "DELETE", token }),
 
   getOnboardingJourney: (token: string) =>
     request<OnboardingJourney>("/api/journey/onboarding", { token }),

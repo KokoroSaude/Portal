@@ -13,6 +13,9 @@ import {
   MoriskyLevelChart,
   MoriskyTrendChart,
   MoriskyTriggerChart,
+  TpbConstructChart,
+  TpbTrendChart,
+  TpbTriggerChart,
   PatientFunnelChart,
   ResponseByDayChart,
   SimpleBarChart,
@@ -36,10 +39,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
-import { FEATURE_KEYS, MORISKY_LEVEL_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { FEATURE_KEYS, MORISKY_LEVEL_LABELS, PATIENT_STATUS_LABELS, TPB_CONSTRUCT_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
-import type { MessageEngagement } from "@/types/api";
+import type { MessageEngagement, NudgeEngagementRow } from "@/types/api";
 
 function defaultRange() {
   const to = new Date();
@@ -123,6 +126,12 @@ export function ReportsPage() {
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsAdvanced),
   });
 
+  const nudgeEngagement = useQuery({
+    queryKey: ["nudge-engagement-report", range],
+    queryFn: () => api.getNudgeEngagementReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.reportsAdvanced),
+  });
+
   const funnel = useQuery({
     queryKey: ["patient-funnel"],
     queryFn: () => api.getPatientFunnel(token!),
@@ -162,7 +171,19 @@ export function ReportsPage() {
   const morisky = useQuery({
     queryKey: ["morisky-report", range],
     queryFn: () => api.getMoriskyReport(token!, range.from, range.to),
-    enabled: !!token && hasFeature(FEATURE_KEYS.reportsBasic),
+    enabled: !!token && hasFeature(FEATURE_KEYS.scalesMorisky),
+  });
+
+  const tpb = useQuery({
+    queryKey: ["tpb-report", range],
+    queryFn: () => api.getTpbReport(token!, range.from, range.to),
+    enabled: !!token && hasFeature(FEATURE_KEYS.scalesTpb),
+  });
+
+  const tpbRisk = useQuery({
+    queryKey: ["tpb-risk-report"],
+    queryFn: () => api.getTpbRiskReport(token!),
+    enabled: !!token && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
   const handleExportPdf = async () => {
@@ -195,6 +216,9 @@ export function ReportsPage() {
         operations: operations.data,
         senders: senders.data,
         comparison: comparison.data,
+        morisky: morisky.data,
+        tpb: tpb.data,
+        tpbRisk: tpbRisk.data,
       });
       downloadReportPdf(doc);
       toast.success("PDF exportado com sucesso.");
@@ -223,14 +247,16 @@ export function ReportsPage() {
         title="Relatórios"
         description="Adesão, engajamento e operação do programa de medicamentos"
         actions={
-          <Button
-            variant="outline"
-            onClick={handleExportPdf}
-            disabled={exportingPdf || adherence.isLoading || !adherence.data}
-          >
-            <FileDown className="size-4" />
-            {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
-          </Button>
+          hasFeature(FEATURE_KEYS.reportsPdf) ? (
+            <Button
+              variant="outline"
+              onClick={handleExportPdf}
+              disabled={exportingPdf || adherence.isLoading || !adherence.data}
+            >
+              <FileDown className="size-4" />
+              {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -241,6 +267,9 @@ export function ReportsPage() {
           <TabsTrigger value="adherence">Adesão</TabsTrigger>
           <TabsTrigger value="engagement" disabled={!hasFeature(FEATURE_KEYS.reportsAdvanced)}>
             Engajamento
+          </TabsTrigger>
+          <TabsTrigger value="nudge" disabled={!hasFeature(FEATURE_KEYS.reportsAdvanced)}>
+            Nudge
           </TabsTrigger>
           {hasFeature(FEATURE_KEYS.reportsCohort) && (
             <TabsTrigger value="cohort">Funil e ranking</TabsTrigger>
@@ -254,7 +283,12 @@ export function ReportsPage() {
           {hasFeature(FEATURE_KEYS.reportsCohort) && (
             <TabsTrigger value="comparison">Comparativo</TabsTrigger>
           )}
-          <TabsTrigger value="morisky">MMAS-8</TabsTrigger>
+          {hasFeature(FEATURE_KEYS.scalesMorisky) && (
+            <TabsTrigger value="morisky">MMAS-8</TabsTrigger>
+          )}
+          {hasFeature(FEATURE_KEYS.scalesTpb) && (
+            <TabsTrigger value="tpb">TCP</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="adherence" className="space-y-6">
@@ -262,7 +296,9 @@ export function ReportsPage() {
             <Skeleton className="h-48 w-full" />
           ) : adherence.data ? (
             <>
-              {token && <ReportAiInsightCard token={token} from={range.from} to={range.to} />}
+              {token && (
+                <ReportAiInsightCard token={token} from={range.from} to={range.to} />
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard title="Taxa de adesão" value={formatPercent(adherence.data.adherenceRate)} />
@@ -326,7 +362,47 @@ export function ReportsPage() {
           ) : null}
         </TabsContent>
 
+        <TabsContent value="nudge">
+          {!hasFeature(FEATURE_KEYS.reportsAdvanced) ? (
+            <FeatureLocked
+              title="Relatório de nudge"
+              description="Recurso indisponível no momento."
+            />
+          ) : nudgeEngagement.isError && nudgeEngagement.error instanceof ApiClientError ? (
+            <p className="text-destructive">{nudgeEngagement.error.message}</p>
+          ) : nudgeEngagement.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : nudgeEngagement.data ? (
+            <div className="space-y-6">
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="nudge"
+                />
+              )}
+              <NudgeEngagementTable
+                title="Por tipo de nudge"
+                rows={nudgeEngagement.data.byNudgeType}
+              />
+              <NudgeEngagementTable
+                title="Por template / variante"
+                rows={nudgeEngagement.data.byTemplate}
+              />
+            </div>
+          ) : null}
+        </TabsContent>
+
         <TabsContent value="cohort" className="space-y-6">
+          {token && (
+            <ReportAiInsightCard
+              token={token}
+              from={range.from}
+              to={range.to}
+              variant="cohort"
+            />
+          )}
           <div className="grid gap-6 lg:grid-cols-2">
             {funnel.isLoading ? (
               <Skeleton className="h-80" />
@@ -351,6 +427,14 @@ export function ReportsPage() {
             <Skeleton className="h-48" />
           ) : operations.data ? (
             <>
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="operations"
+                />
+              )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard title="Lembretes enviados" value={operations.data.reminders.sent} />
                 <MetricCard
@@ -391,6 +475,16 @@ export function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="senders">
+          {token && (
+            <div className="mb-6">
+              <ReportAiInsightCard
+                token={token}
+                from={range.from}
+                to={range.to}
+                variant="senders"
+              />
+            </div>
+          )}
           <SendersPerformanceTable rows={senders.data ?? []} loading={senders.isLoading} />
         </TabsContent>
 
@@ -399,6 +493,14 @@ export function ReportsPage() {
             <Skeleton className="h-48 w-full" />
           ) : morisky.data ? (
             <>
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="morisky"
+                />
+              )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard title="Avaliações" value={morisky.data.totalAssessments} />
                 <MetricCard
@@ -481,11 +583,145 @@ export function ReportsPage() {
           ) : null}
         </TabsContent>
 
+        <TabsContent value="tpb" className="space-y-6">
+          {tpb.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : tpb.data ? (
+            <>
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="tpb"
+                />
+              )}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard title="Avaliações" value={tpb.data.totalAssessments} />
+                <MetricCard
+                  title="Intenção média"
+                  value={`${tpb.data.avgIntentionScore.toFixed(1)}/5`}
+                />
+                <MetricCard
+                  title="Adesão check-in"
+                  value={formatPercent(tpb.data.checkinAdherenceRate)}
+                />
+                <MetricCard
+                  title="Pacientes com risco"
+                  value={tpbRisk.data?.totalScored ?? "—"}
+                />
+              </div>
+
+              {tpbRisk.data && tpbRisk.data.totalScored > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-serif text-lg">Risco preditivo na carteira</CardTitle>
+                    <CardDescription>
+                      Modelo de risco de não adesão — {tpbRisk.data.totalScored} paciente(s) pontuados
+                      {tpbRisk.data.lastComputedAt && (
+                        <> · atualizado em {new Date(tpbRisk.data.lastComputedAt).toLocaleDateString("pt-BR")}</>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 sm:grid-cols-3">
+                    {tpbRisk.data.distribution.map((d) => (
+                      <div key={d.label} className="rounded-lg border p-4">
+                        <Badge variant="secondary" className="mb-2">
+                          {TPB_RISK_LABELS[d.label] ?? d.label}
+                        </Badge>
+                        <p className="font-serif text-2xl">{d.count}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatPercent(d.percentage)} da carteira
+                        </p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {tpb.data.totalAssessments > 0 ? (
+                <>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <TpbTrendChart data={tpb.data.trend} />
+                    {tpb.data.byConstruct.length > 0 && (
+                      <TpbConstructChart data={tpb.data.byConstruct} />
+                    )}
+                    {tpb.data.byTrigger.length > 0 && (
+                      <TpbTriggerChart data={tpb.data.byTrigger} />
+                    )}
+                  </div>
+
+                  {tpb.data.patientRanking.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="font-serif text-lg">Ranking de pacientes</CardTitle>
+                        <CardDescription>Últimas avaliações TCP no período</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Paciente</TableHead>
+                              <TableHead>Intenção</TableHead>
+                              <TableHead>Construtos</TableHead>
+                              <TableHead>Data</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tpb.data.patientRanking.map((row) => (
+                              <TableRow key={`${row.patientId}-${row.completedAt}`}>
+                                <TableCell>
+                                  <Link
+                                    to={`/pacientes/${row.patientId}`}
+                                    className="font-medium text-primary hover:underline"
+                                  >
+                                    {row.patientName ?? maskPhone(row.phone)}
+                                  </Link>
+                                </TableCell>
+                                <TableCell>{row.intentionScore.toFixed(1)}/5</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {Object.entries(row.constructScores)
+                                    .map(
+                                      ([k, v]) =>
+                                        `${TPB_CONSTRUCT_LABELS[k] ?? k}: ${v.toFixed(1)}`,
+                                    )
+                                    .join(" · ")}
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {new Date(row.completedAt).toLocaleDateString("pt-BR")}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma avaliação TCP concluída no período. Habilite os gatilhos em TCP ou dispare
+                  manualmente na ficha do paciente.
+                </p>
+              )}
+            </>
+          ) : null}
+        </TabsContent>
+
         <TabsContent value="comparison">
           {comparison.isLoading ? (
             <Skeleton className="h-40" />
           ) : comparison.data ? (
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-6">
+              {token && (
+                <ReportAiInsightCard
+                  token={token}
+                  from={range.from}
+                  to={range.to}
+                  variant="comparison"
+                />
+              )}
+              <div className="grid gap-4 sm:grid-cols-3">
               <ComparisonCard
                 label="Período atual"
                 rate={comparison.data.current.adherenceRate}
@@ -511,6 +747,7 @@ export function ReportsPage() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
             </div>
           ) : null}
         </TabsContent>
@@ -777,6 +1014,46 @@ function SendersPerformanceTable({
                   <TableCell>{s.activePatients}</TableCell>
                   <TableCell>{s.checkinsTotal}</TableCell>
                   <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function NudgeEngagementTable({ title, rows }: { title: string; rows: NudgeEngagementRow[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem nudges enviados no período.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Grupo</TableHead>
+                <TableHead>Enviados</TableHead>
+                <TableHead>Resp. 2h</TableHead>
+                <TableHead>Taxa 2h</TableHead>
+                <TableHead>Resp. 24h</TableHead>
+                <TableHead>Taxa 24h</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.groupKey}>
+                  <TableCell className="font-medium">{r.groupLabel}</TableCell>
+                  <TableCell>{r.sent}</TableCell>
+                  <TableCell>{r.respondedWithin2h}</TableCell>
+                  <TableCell>{formatPercent(r.responseRate2h)}</TableCell>
+                  <TableCell>{r.respondedWithin24h}</TableCell>
+                  <TableCell>{formatPercent(r.responseRate24h)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
