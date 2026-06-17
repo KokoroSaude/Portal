@@ -342,8 +342,11 @@ export const api = {
       token,
     }),
 
-  getPatientInsight: (token: string, patientId: string) =>
-    request<ReportInsight>(`/api/patients/${patientId}/insight`, { method: "POST", token }),
+  getPatientInsight: (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") =>
+    request<ReportInsight>(`/api/patients/${patientId}/insight${qs({ mode: mode === "auto" ? undefined : mode })}`, {
+      method: "POST",
+      token,
+    }),
 
   getEngagementReport: (token: string, from?: string, to?: string, patientId?: string) =>
     request<EngagementReport>(`/api/reports/engagement${qs({ from, to, patientId })}`, { token }),
@@ -426,8 +429,11 @@ export const api = {
   getTpbRiskReport: (token: string) =>
     request<TpbRiskReport>("/api/reports/tpb-risk", { token }),
 
-  getPatientAiBrief: (token: string, patientId: string) =>
-    request<PatientAiBrief>(`/api/patients/${patientId}/ai-brief`, { token }),
+  getPatientAiBrief: (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") =>
+    request<PatientAiBrief>(
+      `/api/patients/${patientId}/ai-brief${qs({ mode: mode === "auto" ? undefined : mode })}`,
+      { token },
+    ),
 
   getPatientAiSuggestions: (token: string, patientId: string) =>
     request<PatientAiSuggestions>(`/api/patients/${patientId}/ai-suggestions`, {

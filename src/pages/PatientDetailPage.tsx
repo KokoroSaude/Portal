@@ -7,6 +7,10 @@ import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
 import { PatientKokoroAssistantCard } from "@/components/patients/PatientKokoroAssistantCard";
+import {
+  PatientInsightPreviewModeToggle,
+  type InsightPreviewMode,
+} from "@/components/patients/PatientInsightPreviewModeToggle";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { Button } from "@/components/ui/button";
@@ -43,8 +47,9 @@ const EVENT_LABELS: Record<string, string> = {
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, canWrite, hasFeature, isPlatform } = useAuth();
+  const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const [insightPreviewMode, setInsightPreviewMode] = useState<InsightPreviewMode>("auto");
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -514,12 +519,23 @@ export function PatientDetailPage() {
         </Card>
       )}
 
+      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && isAdmin && (
+        <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
+          <span>Preview resumo (admin)</span>
+          <PatientInsightPreviewModeToggle
+            value={insightPreviewMode}
+            onChange={setInsightPreviewMode}
+          />
+        </div>
+      )}
+
       {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
         <PatientAiInsightCard
           token={token}
           patientId={id}
           tenantSettings={tenantSettings}
           platformConfiguredOverride={platformConfiguredOverride}
+          previewMode={insightPreviewMode}
         />
       )}
 
@@ -530,6 +546,7 @@ export function PatientDetailPage() {
           canWrite={canWrite}
           tenantSettings={tenantSettings}
           platformConfiguredOverride={platformConfiguredOverride}
+          previewMode={insightPreviewMode}
           onTriggerTpb={() => triggerTpbMutation.mutate()}
         />
       )}

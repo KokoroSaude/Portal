@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
+import type { InsightPreviewMode } from "@/components/patients/PatientInsightPreviewModeToggle";
 import { aiSourceLabel, getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
 import type { ReportInsight, TenantSettings } from "@/types/api";
@@ -14,6 +16,7 @@ type Props = {
   patientId: string;
   tenantSettings?: TenantSettings | null;
   platformConfiguredOverride?: boolean;
+  previewMode?: InsightPreviewMode;
 };
 
 export function PatientAiInsightCard({
@@ -21,9 +24,12 @@ export function PatientAiInsightCard({
   patientId,
   tenantSettings,
   platformConfiguredOverride,
+  previewMode = "auto",
 }: Props) {
+  const aiReady = getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready";
+
   const insight = useMutation({
-    mutationFn: () => api.getPatientInsight(token, patientId),
+    mutationFn: () => api.getPatientInsight(token, patientId, previewMode),
     onError: (err) => {
       const msg = err instanceof ApiClientError ? err.message : "Não foi possível gerar o resumo.";
       toast.error(msg);
@@ -31,6 +37,11 @@ export function PatientAiInsightCard({
   });
 
   const data = insight.data as ReportInsight | undefined;
+
+  useEffect(() => {
+    if (data) insight.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when admin preview mode changes
+  }, [previewMode]);
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
@@ -64,15 +75,13 @@ export function PatientAiInsightCard({
               variant={
                 data.source === "ai"
                   ? "default"
-                  : getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready" &&
-                      data.source === "rules"
+                  : previewMode === "auto" && aiReady && data.source === "rules"
                     ? "warning"
                     : "secondary"
               }
             >
               {aiSourceLabel(data.source, {
-                aiReady:
-                  getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready",
+                aiReady: previewMode === "auto" && aiReady,
                 kind: "insight",
               })}
             </Badge>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
+import type { InsightPreviewMode } from "@/components/patients/PatientInsightPreviewModeToggle";
 import { TPB_CONSTRUCT_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
 import { aiSourceLabel, getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
@@ -17,6 +19,7 @@ type Props = {
   canWrite?: boolean;
   tenantSettings?: TenantSettings | null;
   platformConfiguredOverride?: boolean;
+  previewMode?: InsightPreviewMode;
   onTriggerTpb?: () => void;
 };
 
@@ -26,10 +29,11 @@ export function PatientKokoroAssistantCard({
   canWrite,
   tenantSettings,
   platformConfiguredOverride,
+  previewMode = "auto",
   onTriggerTpb,
 }: Props) {
   const brief = useMutation({
-    mutationFn: () => api.getPatientAiBrief(token, patientId),
+    mutationFn: () => api.getPatientAiBrief(token, patientId, previewMode),
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Não foi possível gerar o resumo.");
     },
@@ -52,6 +56,11 @@ export function PatientKokoroAssistantCard({
 
   const loading = brief.isPending || suggestions.isPending;
   const aiReady = getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready";
+
+  useEffect(() => {
+    if (brief.data) brief.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when admin preview mode changes
+  }, [previewMode]);
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
@@ -90,13 +99,13 @@ export function PatientKokoroAssistantCard({
               variant={
                 data.source === "ai"
                   ? "default"
-                  : aiReady && data.source === "rules"
+                  : previewMode === "auto" && aiReady && data.source === "rules"
                     ? "warning"
                     : "secondary"
               }
               title={`Gerado em ${formatDateTime(data.generatedAt)}`}
             >
-              Resumo: {aiSourceLabel(data.source, { aiReady, kind: "insight" })}
+              Resumo: {aiSourceLabel(data.source, { aiReady: previewMode === "auto" && aiReady, kind: "insight" })}
             </Badge>
             {data.context.risk && (
               <Badge variant="outline">
