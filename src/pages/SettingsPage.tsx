@@ -2,9 +2,20 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { RefreshCw, Star } from "lucide-react";
+import { RefreshCw, Sparkles, Star } from "lucide-react";
+import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
+import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,21 +27,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
-import { LOCALE_LABELS, VOICE_TONES } from "@/lib/constants";
 import { normalizeVoiceToneSelectValue } from "@/lib/adminTemplateTones";
+import { LOCALE_LABELS, VOICE_TONES, FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
 
 export function SettingsPage() {
@@ -257,6 +259,35 @@ export function SettingsPage() {
                   </Select>
                 </div>
               </div>
+
+              {hasFeature(FEATURE_KEYS.aiCopilot) && settings && (
+                <div className="space-y-2 rounded-lg border border-dashed bg-muted/20 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Sparkles className="size-4 text-primary" />
+                    <p className="text-sm font-medium">Status da IA neste tenant</p>
+                    <PatientAiAvailabilityBadge settings={settings} canConfigureTenant />
+                  </div>
+                  {settings.aiFeatures?.platformConfigured === false && (
+                    <p className="text-sm text-amber-900">
+                      A chave do provedor (Claude ou OpenAI) ainda não está configurada na plataforma
+                      Kokoro. Enquanto isso, o assistente usa apenas regras — mesmo com o toggle ligado.
+                    </p>
+                  )}
+                  {getAiAvailability(settings) === "disabled" && settings.aiFeatures?.platformConfigured !== false && (
+                    <p className="text-sm text-muted-foreground">
+                      A plataforma está pronta. Ligue o toggle abaixo e clique em{" "}
+                      <strong>Salvar alterações</strong> para ativar IA no WhatsApp e nos resumos.
+                    </p>
+                  )}
+                  {getAiAvailability(settings) === "ready" && (
+                    <p className="text-sm text-muted-foreground">
+                      Tudo certo para IA. Na ficha do paciente, use{" "}
+                      <strong>Atualizar assistente</strong> — o badge deve mostrar{" "}
+                      <strong>Resumo: IA</strong>.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-1">

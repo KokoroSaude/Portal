@@ -153,6 +153,12 @@ export function AdminPlatformAiCard() {
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
           {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
         </Button>
+        {!data?.isConfigured && (
+          <p className="text-sm text-amber-900">
+            Para ativar: escolha o provedor, cole a chave correspondente no campo abaixo e salve.
+            Só trocar o provedor sem colar a chave não configura o LLM.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
