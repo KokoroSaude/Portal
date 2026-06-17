@@ -1010,6 +1010,14 @@ export interface PlatformAiTestResult {
   error: string | null;
 }
 
+export interface PatientInsightPromptPreview {
+  feature: string;
+  systemPrompt: string;
+  userMessage: string;
+  provider: string;
+  model: string;
+}
+
 export interface AdminPlatformUser {
   id: string;
   name: string;

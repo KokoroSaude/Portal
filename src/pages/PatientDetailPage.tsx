@@ -11,6 +11,7 @@ import {
   PatientInsightPreviewModeToggle,
   type InsightPreviewMode,
 } from "@/components/patients/PatientInsightPreviewModeToggle";
+import { PatientInsightPromptDialog } from "@/components/patients/PatientInsightPromptDialog";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { Button } from "@/components/ui/button";
@@ -526,6 +527,7 @@ export function PatientDetailPage() {
             value={insightPreviewMode}
             onChange={setInsightPreviewMode}
           />
+          <PatientInsightPromptDialog token={token} patientId={id} />
         </div>
       )}
 

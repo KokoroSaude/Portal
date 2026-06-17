@@ -29,6 +29,7 @@ import type {
   OnboardingManualTriggerResult,
   PatientAiBrief,
   PatientAiSuggestions,
+  PatientInsightPromptPreview,
   PatientTpbHistory,
   PatientTpbRisk,
   PreviewTpbInterventionResult,
@@ -347,6 +348,9 @@ export const api = {
       method: "POST",
       token,
     }),
+
+  getPatientInsightPrompt: (token: string, patientId: string) =>
+    request<PatientInsightPromptPreview>(`/api/patients/${patientId}/insight/prompt`, { token }),
 
   getEngagementReport: (token: string, from?: string, to?: string, patientId?: string) =>
     request<EngagementReport>(`/api/reports/engagement${qs({ from, to, patientId })}`, { token }),
