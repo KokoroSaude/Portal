@@ -87,10 +87,16 @@ export function PatientKokoroAssistantCard({
         <CardContent className="space-y-4 border-t pt-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge
-              variant={data.source === "ai" ? "default" : "secondary"}
+              variant={
+                data.source === "ai"
+                  ? "default"
+                  : aiReady && data.source === "rules"
+                    ? "warning"
+                    : "secondary"
+              }
               title={`Gerado em ${formatDateTime(data.generatedAt)}`}
             >
-              Resumo: {aiSourceLabel(data.source)}
+              Resumo: {aiSourceLabel(data.source, { aiReady, kind: "insight" })}
             </Badge>
             {data.context.risk && (
               <Badge variant="outline">
@@ -154,8 +160,17 @@ export function PatientKokoroAssistantCard({
           <div className="flex items-center gap-2">
             <Zap className="size-4 text-primary" />
             <p className="text-sm font-medium">Sugestões</p>
-            <Badge variant={sugData.source === "rules" ? "secondary" : "default"} className="text-xs">
-              {aiSourceLabel(sugData.source)}
+            <Badge
+              variant={
+                sugData.source === "rules" && !aiReady
+                  ? "secondary"
+                  : sugData.source === "deterministic"
+                    ? "outline"
+                    : "default"
+              }
+              className="text-xs"
+            >
+              {aiSourceLabel(sugData.source, { aiReady, kind: "suggestions" })}
             </Badge>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">

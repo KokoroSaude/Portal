@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
-import { aiSourceLabel } from "@/lib/ai-status";
+import { aiSourceLabel, getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
 import type { ReportInsight, TenantSettings } from "@/types/api";
 
@@ -60,8 +60,21 @@ export function PatientAiInsightCard({
       {data && (
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
-            <Badge variant={data.source === "ai" ? "default" : "secondary"}>
-              {aiSourceLabel(data.source)}
+            <Badge
+              variant={
+                data.source === "ai"
+                  ? "default"
+                  : getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready" &&
+                      data.source === "rules"
+                    ? "warning"
+                    : "secondary"
+              }
+            >
+              {aiSourceLabel(data.source, {
+                aiReady:
+                  getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready",
+                kind: "insight",
+              })}
             </Badge>
           </div>
           <p className="text-sm leading-relaxed text-foreground">{data.summary}</p>

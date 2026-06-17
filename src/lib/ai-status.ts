@@ -19,9 +19,16 @@ export function getAiAvailability(
   return "ready";
 }
 
-export function aiSourceLabel(source: string): string {
+export function aiSourceLabel(
+  source: string,
+  opts?: { aiReady?: boolean; kind?: "insight" | "suggestions" },
+): string {
   if (source === "ai") return "IA";
   if (source === "mixed") return "IA + Regras";
+  if (source === "deterministic") return "Prioridades";
+  if (opts?.aiReady && opts.kind === "insight" && source === "rules") {
+    return "Regras (LLM indisponível)";
+  }
   return "Regras";
 }
 
