@@ -16,10 +16,18 @@ type Props = {
   patientId: string;
   canWrite?: boolean;
   tenantSettings?: TenantSettings | null;
+  platformConfiguredOverride?: boolean;
   onTriggerTpb?: () => void;
 };
 
-export function PatientKokoroAssistantCard({ token, patientId, canWrite, tenantSettings, onTriggerTpb }: Props) {
+export function PatientKokoroAssistantCard({
+  token,
+  patientId,
+  canWrite,
+  tenantSettings,
+  platformConfiguredOverride,
+  onTriggerTpb,
+}: Props) {
   const brief = useMutation({
     mutationFn: () => api.getPatientAiBrief(token, patientId),
     onError: (err) => {
@@ -43,7 +51,7 @@ export function PatientKokoroAssistantCard({ token, patientId, canWrite, tenantS
   }
 
   const loading = brief.isPending || suggestions.isPending;
-  const aiReady = getAiAvailability(tenantSettings) === "ready";
+  const aiReady = getAiAvailability(tenantSettings, platformConfiguredOverride) === "ready";
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
@@ -56,7 +64,10 @@ export function PatientKokoroAssistantCard({ token, patientId, canWrite, tenantS
           <CardDescription>
             Resumo com adesão, TCP, MMAS-8 e risco preditivo — com sugestões de ação.
           </CardDescription>
-          <PatientAiAvailabilityBadge settings={tenantSettings} />
+          <PatientAiAvailabilityBadge
+            settings={tenantSettings}
+            platformConfiguredOverride={platformConfiguredOverride}
+          />
         </div>
         <Button variant="outline" size="sm" onClick={loadAll} disabled={loading}>
           {loading ? "Carregando…" : "Atualizar assistente"}

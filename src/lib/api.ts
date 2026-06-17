@@ -79,6 +79,7 @@ import type {
   WhatsappSender,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
+import { normalizeTenantSettings } from "@/lib/normalize-settings";
 
 export class ApiClientError extends Error {
   status: number;
@@ -523,7 +524,8 @@ export const api = {
       { method: "POST", token, body },
     ),
 
-  getSettings: (token: string) => request<TenantSettings>("/api/settings", { token }),
+  getSettings: async (token: string) =>
+    normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),
 
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>
     request<void>("/api/settings", { method: "PUT", token, body: payload }),

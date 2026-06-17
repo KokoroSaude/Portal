@@ -23,6 +23,8 @@ const LABEL: Record<AiAvailabilityStatus, string> = {
 type Props = {
   settings?: TenantSettings | null;
   isLoading?: boolean;
+  isError?: boolean;
+  platformConfiguredOverride?: boolean;
   isPlatformAdmin?: boolean;
   canConfigureTenant?: boolean;
 };
@@ -30,6 +32,8 @@ type Props = {
 export function PatientAiAvailabilityBadge({
   settings,
   isLoading,
+  isError,
+  platformConfiguredOverride,
   isPlatformAdmin = false,
   canConfigureTenant = false,
 }: Props) {
@@ -42,7 +46,16 @@ export function PatientAiAvailabilityBadge({
     );
   }
 
-  const status = getAiAvailability(settings);
+  if (isError) {
+    return (
+      <Badge variant="warning" title="Não foi possível carregar as configurações de IA deste tenant.">
+        <Sparkles className="mr-1 size-3" />
+        IA: erro
+      </Badge>
+    );
+  }
+
+  const status = getAiAvailability(settings, platformConfiguredOverride);
   const hint = aiAvailabilityHint(status, isPlatformAdmin);
 
   const badge = (

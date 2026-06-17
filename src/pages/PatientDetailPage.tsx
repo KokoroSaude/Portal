@@ -97,11 +97,19 @@ export function PatientDetailPage() {
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
-  const { data: tenantSettings, isLoading: settingsLoading } = useQuery({
+  const { data: tenantSettings, isLoading: settingsLoading, isError: settingsError } = useQuery({
     queryKey: ["settings"],
     queryFn: () => api.getSettings(token!),
     enabled: !!token && hasFeature(FEATURE_KEYS.aiCopilot),
   });
+
+  const { data: platformAi } = useQuery({
+    queryKey: ["admin-platform-ai"],
+    queryFn: () => api.adminGetPlatformAi(token!),
+    enabled: !!token && isPlatform && hasFeature(FEATURE_KEYS.aiCopilot),
+  });
+
+  const platformConfiguredOverride = platformAi?.isConfigured;
 
   const triggerMoriskyMutation = useMutation({
     mutationFn: () => api.triggerPatientMorisky(token!, id!),
@@ -279,6 +287,8 @@ export function PatientDetailPage() {
               <PatientAiAvailabilityBadge
                 settings={tenantSettings}
                 isLoading={settingsLoading}
+                isError={settingsError}
+                platformConfiguredOverride={platformConfiguredOverride}
                 isPlatformAdmin={isPlatform}
                 canConfigureTenant={canWrite}
               />
@@ -505,7 +515,12 @@ export function PatientDetailPage() {
       )}
 
       {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
-        <PatientAiInsightCard token={token} patientId={id} tenantSettings={tenantSettings} />
+        <PatientAiInsightCard
+          token={token}
+          patientId={id}
+          tenantSettings={tenantSettings}
+          platformConfiguredOverride={platformConfiguredOverride}
+        />
       )}
 
       {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
@@ -514,6 +529,7 @@ export function PatientDetailPage() {
           patientId={id}
           canWrite={canWrite}
           tenantSettings={tenantSettings}
+          platformConfiguredOverride={platformConfiguredOverride}
           onTriggerTpb={() => triggerTpbMutation.mutate()}
         />
       )}

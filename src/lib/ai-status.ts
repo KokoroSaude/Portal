@@ -2,9 +2,20 @@ import type { TenantSettings } from "@/types/api";
 
 export type AiAvailabilityStatus = "ready" | "disabled" | "unconfigured";
 
-export function getAiAvailability(settings?: TenantSettings | null): AiAvailabilityStatus {
-  if (!settings?.aiFeatures?.platformConfigured) return "unconfigured";
+export function getAiAvailability(
+  settings?: TenantSettings | null,
+  platformConfiguredOverride?: boolean,
+): AiAvailabilityStatus {
+  if (!settings) return "unconfigured";
+
+  const platformConfigured =
+    platformConfiguredOverride ?? settings.aiFeatures?.platformConfigured;
+
+  // Só bloqueia quando a API afirma explicitamente que a plataforma não está pronta.
+  if (platformConfigured === false) return "unconfigured";
+
   if (!settings.aiEnabled) return "disabled";
+
   return "ready";
 }
 

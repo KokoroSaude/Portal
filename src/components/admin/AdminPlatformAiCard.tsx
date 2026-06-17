@@ -57,6 +57,7 @@ export function AdminPlatformAiCard() {
       setOpenAiApiKey("");
       setAnthropicApiKey("");
       queryClient.invalidateQueries({ queryKey: ["admin-platform-ai"] });
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),
   });

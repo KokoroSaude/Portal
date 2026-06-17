@@ -13,9 +13,15 @@ type Props = {
   token: string;
   patientId: string;
   tenantSettings?: TenantSettings | null;
+  platformConfiguredOverride?: boolean;
 };
 
-export function PatientAiInsightCard({ token, patientId, tenantSettings }: Props) {
+export function PatientAiInsightCard({
+  token,
+  patientId,
+  tenantSettings,
+  platformConfiguredOverride,
+}: Props) {
   const insight = useMutation({
     mutationFn: () => api.getPatientInsight(token, patientId),
     onError: (err) => {
@@ -37,7 +43,10 @@ export function PatientAiInsightCard({ token, patientId, tenantSettings }: Props
           <CardDescription>
             Visão consolidada de adesão, engajamento e atividade recente.
           </CardDescription>
-          <PatientAiAvailabilityBadge settings={tenantSettings} />
+          <PatientAiAvailabilityBadge
+            settings={tenantSettings}
+            platformConfiguredOverride={platformConfiguredOverride}
+          />
         </div>
         <Button
           variant="outline"
