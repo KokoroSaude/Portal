@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Save, Star, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
+import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
 import { PatientKokoroAssistantCard } from "@/components/patients/PatientKokoroAssistantCard";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
@@ -42,7 +43,7 @@ const EVENT_LABELS: Record<string, string> = {
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, canWrite, hasFeature } = useAuth();
+  const { token, canWrite, hasFeature, isPlatform } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -96,10 +97,10 @@ export function PatientDetailPage() {
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
-  const { data: tenantSettings } = useQuery({
+  const { data: tenantSettings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: () => api.getSettings(token!),
-    enabled: !!token && canWrite,
+    enabled: !!token && hasFeature(FEATURE_KEYS.aiCopilot),
   });
 
   const triggerMoriskyMutation = useMutation({
@@ -274,6 +275,14 @@ export function PatientDetailPage() {
           <h1 className="font-serif text-3xl">{patient.name ?? "Sem nome"}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <PatientStatusBadge status={patient.status} />
+            {hasFeature(FEATURE_KEYS.aiCopilot) && (
+              <PatientAiAvailabilityBadge
+                settings={tenantSettings}
+                isLoading={settingsLoading}
+                isPlatformAdmin={isPlatform}
+                canConfigureTenant={canWrite}
+              />
+            )}
             <span className="font-mono text-sm text-muted-foreground">{maskPhone(patient.phone)}</span>
             {canWrite && (
               <Dialog open={phoneOpen} onOpenChange={setPhoneOpen}>
@@ -496,7 +505,7 @@ export function PatientDetailPage() {
       )}
 
       {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
-        <PatientAiInsightCard token={token} patientId={id} />
+        <PatientAiInsightCard token={token} patientId={id} tenantSettings={tenantSettings} />
       )}
 
       {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
@@ -504,6 +513,7 @@ export function PatientDetailPage() {
           token={token}
           patientId={id}
           canWrite={canWrite}
+          tenantSettings={tenantSettings}
           onTriggerTpb={() => triggerTpbMutation.mutate()}
         />
       )}

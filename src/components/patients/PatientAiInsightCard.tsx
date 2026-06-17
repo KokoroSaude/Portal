@@ -4,15 +4,18 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
+import { aiSourceLabel } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
-import type { ReportInsight } from "@/types/api";
+import type { ReportInsight, TenantSettings } from "@/types/api";
 
 type Props = {
   token: string;
   patientId: string;
+  tenantSettings?: TenantSettings | null;
 };
 
-export function PatientAiInsightCard({ token, patientId }: Props) {
+export function PatientAiInsightCard({ token, patientId, tenantSettings }: Props) {
   const insight = useMutation({
     mutationFn: () => api.getPatientInsight(token, patientId),
     onError: (err) => {
@@ -26,7 +29,7 @@ export function PatientAiInsightCard({ token, patientId }: Props) {
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="space-y-2">
           <CardTitle className="flex items-center gap-2 font-serif text-lg">
             <Sparkles className="size-5 text-primary" />
             Resumo do paciente
@@ -34,6 +37,7 @@ export function PatientAiInsightCard({ token, patientId }: Props) {
           <CardDescription>
             Visão consolidada de adesão, engajamento e atividade recente.
           </CardDescription>
+          <PatientAiAvailabilityBadge settings={tenantSettings} />
         </div>
         <Button
           variant="outline"
@@ -48,7 +52,7 @@ export function PatientAiInsightCard({ token, patientId }: Props) {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant={data.source === "ai" ? "default" : "secondary"}>
-              {data.source === "ai" ? "IA" : "Regras"}
+              {aiSourceLabel(data.source)}
             </Badge>
           </div>
           <p className="text-sm leading-relaxed text-foreground">{data.summary}</p>

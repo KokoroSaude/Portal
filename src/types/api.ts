@@ -487,6 +487,15 @@ export interface AdminInteractionEventsResult {
   offset: number;
 }
 
+export interface AiPlatformFeatures {
+  platformConfigured: boolean;
+  insightsEnabled: boolean;
+  outboundPersonalizationEnabled: boolean;
+  milestonePersonalizationEnabled: boolean;
+  interventionsEnabled: boolean;
+  checkinFallbackEnabled: boolean;
+}
+
 export interface TenantSettings {
   sendWindowStart: string;
   sendWindowEnd: string;
@@ -496,6 +505,7 @@ export interface TenantSettings {
   voiceTone: string | number;
   locale: string;
   aiEnabled: boolean;
+  aiFeatures?: AiPlatformFeatures;
   voiceMessagesEnabled: boolean;
   moriskyEnabled: boolean;
   moriskyOnOnboarding: boolean;

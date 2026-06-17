@@ -4,19 +4,22 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { TPB_CONSTRUCT_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
+import { aiSourceLabel, getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
-import { formatPercent } from "@/lib/utils";
-import type { PatientAiBrief, PatientAiSuggestions } from "@/types/api";
+import { formatDateTime, formatPercent } from "@/lib/utils";
+import type { PatientAiBrief, PatientAiSuggestions, TenantSettings } from "@/types/api";
 
 type Props = {
   token: string;
   patientId: string;
   canWrite?: boolean;
+  tenantSettings?: TenantSettings | null;
   onTriggerTpb?: () => void;
 };
 
-export function PatientKokoroAssistantCard({ token, patientId, canWrite, onTriggerTpb }: Props) {
+export function PatientKokoroAssistantCard({ token, patientId, canWrite, tenantSettings, onTriggerTpb }: Props) {
   const brief = useMutation({
     mutationFn: () => api.getPatientAiBrief(token, patientId),
     onError: (err) => {
@@ -40,11 +43,12 @@ export function PatientKokoroAssistantCard({ token, patientId, canWrite, onTrigg
   }
 
   const loading = brief.isPending || suggestions.isPending;
+  const aiReady = getAiAvailability(tenantSettings) === "ready";
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="space-y-2">
           <CardTitle className="flex items-center gap-2 font-serif text-lg">
             <Sparkles className="size-5 text-primary" />
             Assistente Kokoro
@@ -52,17 +56,30 @@ export function PatientKokoroAssistantCard({ token, patientId, canWrite, onTrigg
           <CardDescription>
             Resumo com adesão, TCP, MMAS-8 e risco preditivo — com sugestões de ação.
           </CardDescription>
+          <PatientAiAvailabilityBadge settings={tenantSettings} />
         </div>
         <Button variant="outline" size="sm" onClick={loadAll} disabled={loading}>
           {loading ? "Carregando…" : "Atualizar assistente"}
         </Button>
       </CardHeader>
 
+      {!data && !loading && !aiReady && (
+        <CardContent className="border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            Ative a IA nas configurações do tenant e configure a chave da plataforma para gerar resumos
+            com LLM. Enquanto isso, o assistente usará apenas regras determinísticas.
+          </p>
+        </CardContent>
+      )}
+
       {data && (
         <CardContent className="space-y-4 border-t pt-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={data.source === "ai" ? "default" : "secondary"}>
-              Resumo: {data.source === "ai" ? "IA" : "Regras"}
+            <Badge
+              variant={data.source === "ai" ? "default" : "secondary"}
+              title={`Gerado em ${formatDateTime(data.generatedAt)}`}
+            >
+              Resumo: {aiSourceLabel(data.source)}
             </Badge>
             {data.context.risk && (
               <Badge variant="outline">
@@ -126,8 +143,8 @@ export function PatientKokoroAssistantCard({ token, patientId, canWrite, onTrigg
           <div className="flex items-center gap-2">
             <Zap className="size-4 text-primary" />
             <p className="text-sm font-medium">Sugestões</p>
-            <Badge variant="secondary" className="text-xs">
-              {sugData.source === "ai" ? "IA" : "Regras"}
+            <Badge variant={sugData.source === "rules" ? "secondary" : "default"} className="text-xs">
+              {aiSourceLabel(sugData.source)}
             </Badge>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
