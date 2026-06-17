@@ -996,6 +996,16 @@ export interface AdminPlatformAiSettings {
   anthropicKeyHint: string | null;
 }
 
+export interface PlatformAiTestResult {
+  isConfigured: boolean;
+  llmResponded: boolean;
+  parsedOk: boolean;
+  provider: string;
+  model: string;
+  message: string | null;
+  error: string | null;
+}
+
 export interface AdminPlatformUser {
   id: string;
   name: string;

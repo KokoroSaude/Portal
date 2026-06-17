@@ -62,6 +62,18 @@ export function AdminPlatformAiCard() {
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),
   });
 
+  const testMutation = useMutation({
+    mutationFn: () => api.adminTestPlatformAi(token!),
+    onSuccess: (result) => {
+      if (result.parsedOk) {
+        toast.success(result.message ?? "Conexão com LLM ok.");
+        return;
+      }
+      toast.error(result.error ?? "Teste de IA falhou.");
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao testar IA"),
+  });
+
   const effectiveModel = model.trim() || DEFAULT_MODELS[provider] || "";
 
   return (
@@ -150,9 +162,19 @@ export function AdminPlatformAiCard() {
           </p>
         </div>
 
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
-          {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
+            {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => testMutation.mutate()}
+            disabled={testMutation.isPending || isLoading || !data?.isConfigured}
+          >
+            {testMutation.isPending ? "Testando…" : "Testar conexão LLM"}
+          </Button>
+        </div>
         {!data?.isConfigured && (
           <p className="text-sm text-amber-900">
             Para ativar: escolha o provedor, cole a chave correspondente no campo abaixo e salve.

@@ -3,6 +3,7 @@ import type {
   AdminOnboardingFlow,
   AdminPlatformUser,
   AdminPlatformAiSettings,
+  PlatformAiTestResult,
   AdminProductMetrics,
   AdminAdherenceReport,
   AdminEngagementReport,
@@ -736,6 +737,9 @@ export const api = {
     },
   ) =>
     request<void>("/api/admin/platform/ai", { method: "PUT", token, body: payload }),
+
+  adminTestPlatformAi: (token: string) =>
+    request<PlatformAiTestResult>("/api/admin/platform/ai/test", { method: "POST", token }),
 
   adminUpdateTenantStatus: (token: string, tenantId: string, isActive: boolean) =>
     request<void>(`/api/admin/tenants/${tenantId}/status`, {
