@@ -20,6 +20,8 @@ import { api, ApiClientError } from "@/lib/api";
 const DEFAULT_MODELS: Record<string, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-3-5-haiku-latest",
+  gemini: "gemini-2.5-flash",
+  groq: "llama-3.3-70b-versatile",
 };
 
 export function AdminPlatformAiCard() {
@@ -29,6 +31,8 @@ export function AdminPlatformAiCard() {
   const [model, setModel] = useState("");
   const [openAiApiKey, setOpenAiApiKey] = useState("");
   const [anthropicApiKey, setAnthropicApiKey] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [groqApiKey, setGroqApiKey] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-platform-ai"],
@@ -49,13 +53,19 @@ export function AdminPlatformAiCard() {
         model: model.trim() || null,
         openAiApiKey: openAiApiKey.trim() || null,
         anthropicApiKey: anthropicApiKey.trim() || null,
+        geminiApiKey: geminiApiKey.trim() || null,
+        groqApiKey: groqApiKey.trim() || null,
         updateOpenAiApiKey: openAiApiKey.trim().length > 0,
         updateAnthropicApiKey: anthropicApiKey.trim().length > 0,
+        updateGeminiApiKey: geminiApiKey.trim().length > 0,
+        updateGroqApiKey: groqApiKey.trim().length > 0,
       }),
     onSuccess: () => {
       toast.success("Configuração de IA salva");
       setOpenAiApiKey("");
       setAnthropicApiKey("");
+      setGeminiApiKey("");
+      setGroqApiKey("");
       queryClient.invalidateQueries({ queryKey: ["admin-platform-ai"] });
       queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
@@ -98,6 +108,14 @@ export function AdminPlatformAiCard() {
             Anthropic {data?.anthropicConfigured ? "ok" : "sem chave"}
             {data?.anthropicKeyHint ? ` · ${data.anthropicKeyHint}` : ""}
           </Badge>
+          <Badge variant={data?.geminiConfigured ? "default" : "secondary"}>
+            Gemini {data?.geminiConfigured ? "ok" : "sem chave"}
+            {data?.geminiKeyHint ? ` · ${data.geminiKeyHint}` : ""}
+          </Badge>
+          <Badge variant={data?.groqConfigured ? "default" : "secondary"}>
+            Groq {data?.groqConfigured ? "ok" : "sem chave"}
+            {data?.groqKeyHint ? ` · ${data.groqKeyHint}` : ""}
+          </Badge>
           {data && (
             <Badge variant={data.isConfigured ? "success" : "warning"}>
               {data.isConfigured ? "Provedor ativo pronto" : "Falta chave do provedor selecionado"}
@@ -113,6 +131,8 @@ export function AdminPlatformAiCard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="gemini">Gemini (Google — tier gratuito)</SelectItem>
+                <SelectItem value="groq">Llama via Groq (tier gratuito)</SelectItem>
                 <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
                 <SelectItem value="openai">GPT (OpenAI)</SelectItem>
               </SelectContent>
@@ -133,6 +153,30 @@ export function AdminPlatformAiCard() {
 
         <div className="space-y-4 rounded-lg border p-4">
           <p className="text-sm font-medium">Chaves de API</p>
+          <div className="space-y-2">
+            <Label htmlFor="gemini-key">Gemini (Google AI Studio)</Label>
+            <Input
+              id="gemini-key"
+              type="password"
+              autoComplete="off"
+              placeholder={data?.geminiKeyHint ? `Salva: ${data.geminiKeyHint}` : "Cole a nova chave"}
+              value={geminiApiKey}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="groq-key">Groq (gsk_…)</Label>
+            <Input
+              id="groq-key"
+              type="password"
+              autoComplete="off"
+              placeholder={data?.groqKeyHint ? `Salva: ${data.groqKeyHint}` : "Cole a nova chave"}
+              value={groqApiKey}
+              onChange={(e) => setGroqApiKey(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="anthropic-key">Anthropic (sk-ant-…)</Label>
             <Input

@@ -992,8 +992,12 @@ export interface AdminPlatformAiSettings {
   isConfigured: boolean;
   openAiConfigured: boolean;
   anthropicConfigured: boolean;
+  geminiConfigured: boolean;
+  groqConfigured: boolean;
   openAiKeyHint: string | null;
   anthropicKeyHint: string | null;
+  geminiKeyHint: string | null;
+  groqKeyHint: string | null;
 }
 
 export interface PlatformAiTestResult {
@@ -1086,8 +1090,12 @@ export interface WhatsappDiagnostics {
     isConfigured: boolean;
     openAiConfigured: boolean;
     anthropicConfigured: boolean;
+    geminiConfigured: boolean;
+    groqConfigured: boolean;
     openAiKeyHint: string | null;
     anthropicKeyHint: string | null;
+    geminiKeyHint: string | null;
+    groqKeyHint: string | null;
   };
   senders: Array<{
     id: string;

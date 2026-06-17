@@ -171,6 +171,22 @@ export function WhatsappDiagnosticsPanel() {
                           : "Anthropic sem chave"
                       }
                     />
+                    <MetaFlag
+                      ok={data.platformAi.geminiConfigured}
+                      label={
+                        data.platformAi.geminiKeyHint
+                          ? `Gemini (${data.platformAi.geminiKeyHint})`
+                          : "Gemini sem chave"
+                      }
+                    />
+                    <MetaFlag
+                      ok={data.platformAi.groqConfigured}
+                      label={
+                        data.platformAi.groqKeyHint
+                          ? `Groq (${data.platformAi.groqKeyHint})`
+                          : "Groq sem chave"
+                      }
+                    />
                     {!data.platformAi.isConfigured && (
                       <p className="flex items-center gap-2 text-sm text-amber-600">
                         <AlertCircle className="size-4 shrink-0" />
@@ -185,6 +201,16 @@ export function WhatsappDiagnosticsPanel() {
                     {data.platformAi.provider === "openai" && !data.platformAi.openAiConfigured && (
                       <p className="text-xs text-destructive">
                         Provedor OpenAI, mas a chave OpenAI não está disponível no servidor.
+                      </p>
+                    )}
+                    {data.platformAi.provider === "gemini" && !data.platformAi.geminiConfigured && (
+                      <p className="text-xs text-destructive">
+                        Provedor Gemini, mas a chave Gemini não está disponível no servidor.
+                      </p>
+                    )}
+                    {data.platformAi.provider === "groq" && !data.platformAi.groqConfigured && (
+                      <p className="text-xs text-destructive">
+                        Provedor Groq, mas a chave Groq não está disponível no servidor.
                       </p>
                     )}
                   </>

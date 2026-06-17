@@ -732,8 +732,12 @@ export const api = {
       model?: string | null;
       openAiApiKey?: string | null;
       anthropicApiKey?: string | null;
+      geminiApiKey?: string | null;
+      groqApiKey?: string | null;
       updateOpenAiApiKey?: boolean;
       updateAnthropicApiKey?: boolean;
+      updateGeminiApiKey?: boolean;
+      updateGroqApiKey?: boolean;
     },
   ) =>
     request<void>("/api/admin/platform/ai", { method: "PUT", token, body: payload }),
