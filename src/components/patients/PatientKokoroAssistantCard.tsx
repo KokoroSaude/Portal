@@ -92,6 +92,33 @@ export function PatientKokoroAssistantCard({
         </CardContent>
       )}
 
+      {!data && !loading && aiReady && (
+        <CardContent className="space-y-2 border-t pt-4">
+          {brief.isError ? (
+            <p className="text-sm text-destructive">
+              {brief.error instanceof ApiClientError
+                ? brief.error.message
+                : "Não foi possível carregar o assistente."}
+              {" "}
+              Tente <strong>Atualizar assistente</strong> de novo.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Clique em <strong>Atualizar assistente</strong> para gerar o resumo com TCP, MMAS-8 e sugestões.
+            </p>
+          )}
+        </CardContent>
+      )}
+
+      {data && brief.isError && (
+        <CardContent className="border-t pt-4">
+          <p className="text-sm text-amber-800">
+            Última atualização falhou
+            {brief.error instanceof ApiClientError ? `: ${brief.error.message}` : ""}. Exibindo resultado anterior.
+          </p>
+        </CardContent>
+      )}
+
       {data && (
         <CardContent className="space-y-4 border-t pt-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -105,7 +132,7 @@ export function PatientKokoroAssistantCard({
               }
               title={`Gerado em ${formatDateTime(data.generatedAt)}`}
             >
-              Resumo: {aiSourceLabel(data.source, { aiReady: previewMode === "auto" && aiReady, kind: "insight" })}
+              Resumo: {aiSourceLabel(data.source, { aiReady: previewMode === "auto" && aiReady, kind: "insight", previewMode })}
             </Badge>
             {data.context.risk && (
               <Badge variant="outline">

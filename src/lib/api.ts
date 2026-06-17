@@ -433,11 +433,17 @@ export const api = {
   getTpbRiskReport: (token: string) =>
     request<TpbRiskReport>("/api/reports/tpb-risk", { token }),
 
-  getPatientAiBrief: (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") =>
-    request<PatientAiBrief>(
-      `/api/patients/${patientId}/ai-brief${qs({ mode: mode === "auto" ? undefined : mode })}`,
-      { method: "POST", token },
-    ),
+  getPatientAiBrief: async (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") => {
+    const path = `/api/patients/${patientId}/ai-brief${qs({ mode: mode === "auto" ? undefined : mode })}`;
+    try {
+      return await request<PatientAiBrief>(path, { method: "POST", token });
+    } catch (err) {
+      if (err instanceof ApiClientError && err.status === 405) {
+        return request<PatientAiBrief>(path, { token });
+      }
+      throw err;
+    }
+  },
 
   getPatientAiSuggestions: (token: string, patientId: string) =>
     request<PatientAiSuggestions>(`/api/patients/${patientId}/ai-suggestions`, {

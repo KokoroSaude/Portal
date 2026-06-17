@@ -68,6 +68,16 @@ export function PatientAiInsightCard({
           {insight.isPending ? "Gerando…" : "Gerar resumo"}
         </Button>
       </CardHeader>
+      {insight.isError && previewMode === "ai" && (
+        <CardContent className="border-t pt-4">
+          <p className="text-sm text-destructive">
+            {insight.error instanceof ApiClientError
+              ? insight.error.message
+              : "LLM indisponível no modo preview IA."}
+          </p>
+        </CardContent>
+      )}
+
       {data && (
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
@@ -83,6 +93,7 @@ export function PatientAiInsightCard({
               {aiSourceLabel(data.source, {
                 aiReady: previewMode === "auto" && aiReady,
                 kind: "insight",
+                previewMode,
               })}
             </Badge>
           </div>
