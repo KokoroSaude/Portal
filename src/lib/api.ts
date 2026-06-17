@@ -432,7 +432,7 @@ export const api = {
   getPatientAiBrief: (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") =>
     request<PatientAiBrief>(
       `/api/patients/${patientId}/ai-brief${qs({ mode: mode === "auto" ? undefined : mode })}`,
-      { token },
+      { method: "POST", token },
     ),
 
   getPatientAiSuggestions: (token: string, patientId: string) =>
