@@ -1049,6 +1049,7 @@ export interface AdminMetaTemplateItem {
   rejectionReason: string | null;
   validationErrors: string[];
   canSubmit: boolean;
+  isCustom?: boolean;
 }
 
 export interface AdminMetaTemplateList {

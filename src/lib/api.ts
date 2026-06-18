@@ -1,4 +1,5 @@
 import type {
+  AdminMetaTemplateItem,
   AdminMetaTemplateList,
   AdminMetaTemplateSubmitResult,
   AdminMessageTemplate,
@@ -954,6 +955,53 @@ export const api = {
       token,
       body: { tenantId: tenantId ?? null, customBody },
     }),
+
+  adminCreateMetaTemplate: (
+    token: string,
+    payload: {
+      tenantId?: string | null;
+      canonicalKey: string;
+      metaName: string;
+      body: string;
+      category: string;
+      variables: { name: string; example: string }[];
+      buttons?: string[];
+    },
+  ) =>
+    request<AdminMetaTemplateItem>("/api/admin/meta/templates/custom", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  adminUpdateMetaTemplate: (
+    token: string,
+    canonicalKey: string,
+    payload: {
+      tenantId?: string | null;
+      metaName?: string;
+      body?: string;
+      category?: string;
+      variables?: { name: string; example: string }[];
+      buttons?: string[];
+    },
+  ) =>
+    request<AdminMetaTemplateItem>(
+      `/api/admin/meta/templates/custom/${encodeURIComponent(canonicalKey)}`,
+      { method: "PUT", token, body: payload },
+    ),
+
+  adminDeleteMetaTemplate: (
+    token: string,
+    canonicalKey: string,
+    tenantId?: string | null,
+  ) => {
+    const qs = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : "";
+    return request<void>(
+      `/api/admin/meta/templates/custom/${encodeURIComponent(canonicalKey)}${qs}`,
+      { method: "DELETE", token },
+    );
+  },
 
   simulatorStatus: (token: string) =>
     request<SimulatorStatus>("/api/admin/simulator/status", { token }),

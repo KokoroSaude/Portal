@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Send } from "lucide-react";
+import { RefreshCw, Send, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,14 @@ export function AdminMetaTemplatesPage() {
   const [editBody, setEditBody] = useState<AdminMetaTemplateItem | null>(null);
   const [metaName, setMetaName] = useState("");
   const [customBody, setCustomBody] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({
+    keySuffix: "",
+    metaName: "",
+    body: "",
+    category: "UTILITY",
+    variables: [{ name: "nome", example: "Maria" }],
+  });
 
   const resolvedTenantId = tenantId === "platform" ? undefined : tenantId;
 
@@ -124,11 +132,46 @@ export function AdminMetaTemplatesPage() {
         resolvedTenantId ?? null,
       ),
     onSuccess: () => {
-      toast.success("Corpo personalizado salvo");
+      toast.success(editBody?.isCustom ? "Template atualizado" : "Corpo personalizado salvo");
       setEditBody(null);
       queryClient.invalidateQueries({ queryKey: ["admin-meta-templates"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar corpo"),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.adminCreateMetaTemplate(token!, {
+        tenantId: resolvedTenantId ?? null,
+        canonicalKey: `custom.${newTemplate.keySuffix.trim().toLowerCase().replace(/\s+/g, "_")}`,
+        metaName: newTemplate.metaName.trim(),
+        body: newTemplate.body.trim(),
+        category: newTemplate.category,
+        variables: newTemplate.variables.filter((v) => v.name.trim()),
+      }),
+    onSuccess: () => {
+      toast.success("Template cadastrado — revise e submeta na Meta");
+      setCreateOpen(false);
+      setNewTemplate({
+        keySuffix: "",
+        metaName: "",
+        body: "",
+        category: "UTILITY",
+        variables: [{ name: "nome", example: "Maria" }],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin-meta-templates"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao cadastrar"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (canonicalKey: string) =>
+      api.adminDeleteMetaTemplate(token!, canonicalKey, resolvedTenantId ?? null),
+    onSuccess: () => {
+      toast.success("Template removido do cadastro local");
+      void queryClient.invalidateQueries({ queryKey: ["admin-meta-templates"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
   });
 
   const summary = useMemo(() => {
@@ -196,6 +239,10 @@ export function AdminMetaTemplatesPage() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo template
+        </Button>
         <Button
           onClick={() => submitMutation.mutate({ onlyMissing: true, onlyRejected: false })}
           disabled={submitMutation.isPending || !data?.metaConfigured}
@@ -238,6 +285,8 @@ export function AdminMetaTemplatesPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={statusVariant(item.syncStatus)}>{statusLabel(item.syncStatus)}</Badge>
                     <Badge variant="outline">{item.priority}</Badge>
+                    {item.isCustom && <Badge variant="secondary">Personalizado</Badge>}
+                    {item.category && <Badge variant="outline">{item.category}</Badge>}
                   </div>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{item.effectiveBody}</p>
@@ -288,6 +337,25 @@ export function AdminMetaTemplatesPage() {
                   >
                     Submeter
                   </Button>
+                  {item.isCustom && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            "Excluir este template do cadastro local? O modelo na Meta (se já submetido) não é removido automaticamente.",
+                          )
+                        ) {
+                          return;
+                        }
+                        deleteMutation.mutate(item.canonicalKey);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -349,8 +417,9 @@ export function AdminMetaTemplatesPage() {
             <DialogTitle>Editar corpo Meta</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Use variáveis nomeadas ({`{{nome}}`}). O corpo não pode começar nem terminar com variável.
-            Deixe vazio para restaurar o texto padrão do catálogo.
+            {editBody?.isCustom
+              ? "Template personalizado — edite o corpo respeitando as variáveis cadastradas."
+              : "Use variáveis nomeadas (`{{nome}}`). O corpo não pode começar nem terminar com variável. Deixe vazio para restaurar o texto padrão do catálogo."}
           </p>
           <Textarea
             rows={8}
@@ -358,11 +427,127 @@ export function AdminMetaTemplatesPage() {
             onChange={(e) => setCustomBody(e.target.value)}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCustomBody(editBody?.body ?? "")}>
-              Restaurar padrão
-            </Button>
+            {!editBody?.isCustom && (
+              <Button variant="outline" onClick={() => setCustomBody(editBody?.body ?? "")}>
+                Restaurar padrão
+              </Button>
+            )}
             <Button onClick={() => bodyMutation.mutate()} disabled={bodyMutation.isPending}>
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Novo template Meta</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Templates personalizados usam chave <code>custom.*</code> e podem ser enviados à Meta como os do
+            catálogo Kokoro. Variáveis no corpo: <code>{`{{nome}}`}</code> — não podem ficar no início nem no fim.
+          </p>
+          <div className="grid gap-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="custom-key">Chave Kokoro</Label>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">custom.</span>
+                  <Input
+                    id="custom-key"
+                    placeholder="campanha_verao"
+                    value={newTemplate.keySuffix}
+                    onChange={(e) => setNewTemplate((t) => ({ ...t, keySuffix: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="custom-meta-name">Nome na Meta</Label>
+                <Input
+                  id="custom-meta-name"
+                  placeholder="kokoro_campanha_verao"
+                  value={newTemplate.metaName}
+                  onChange={(e) => setNewTemplate((t) => ({ ...t, metaName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select
+                value={newTemplate.category}
+                onValueChange={(v) => setNewTemplate((t) => ({ ...t, category: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UTILITY">UTILITY (transacional)</SelectItem>
+                  <SelectItem value="MARKETING">MARKETING (promoções)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="custom-body">Corpo</Label>
+              <Textarea
+                id="custom-body"
+                rows={6}
+                value={newTemplate.body}
+                onChange={(e) => setNewTemplate((t) => ({ ...t, body: e.target.value }))}
+                placeholder="Olá, {{nome}}! Temos uma novidade para você..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Variáveis</Label>
+              {newTemplate.variables.map((variable, index) => (
+                <div key={index} className="flex flex-wrap gap-2">
+                  <Input
+                    placeholder="nome"
+                    value={variable.name}
+                    onChange={(e) => {
+                      const variables = [...newTemplate.variables];
+                      variables[index] = { ...variables[index], name: e.target.value };
+                      setNewTemplate((t) => ({ ...t, variables }));
+                    }}
+                  />
+                  <Input
+                    className="flex-1"
+                    placeholder="Exemplo"
+                    value={variable.example}
+                    onChange={(e) => {
+                      const variables = [...newTemplate.variables];
+                      variables[index] = { ...variables[index], example: e.target.value };
+                      setNewTemplate((t) => ({ ...t, variables }));
+                    }}
+                  />
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setNewTemplate((t) => ({
+                    ...t,
+                    variables: [...t.variables, { name: "", example: "" }],
+                  }))
+                }
+              >
+                Adicionar variável
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={
+                createMutation.isPending ||
+                !newTemplate.keySuffix.trim() ||
+                !newTemplate.metaName.trim() ||
+                !newTemplate.body.trim()
+              }
+            >
+              Cadastrar
             </Button>
           </DialogFooter>
         </DialogContent>
