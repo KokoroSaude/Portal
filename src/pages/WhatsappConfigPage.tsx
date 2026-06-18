@@ -55,22 +55,6 @@ export function WhatsappConfigPage() {
               </div>
             )}
 
-            <details className="text-xs text-muted-foreground">
-              <summary className="cursor-pointer hover:text-foreground">
-                Cadastro manual ou suporte técnico
-              </summary>
-              <div className="mt-2 space-y-1 pl-1">
-                <p>
-                  O webhook de recebimento de mensagens é <strong>único para toda a plataforma Kokoro</strong>{" "}
-                  — não precisa configurar por clínica. Ao usar <strong>Conectar com Meta</strong>, a Kokoro
-                  inscreve sua WABA automaticamente.
-                </p>
-                <p>
-                  No cadastro manual, peça ao suporte Kokoro ou configure a WABA no Meta Business; o callback
-                  da plataforma já aponta para a API Kokoro.
-                </p>
-              </div>
-            </details>
           </CardContent>
         </Card>
       )}
