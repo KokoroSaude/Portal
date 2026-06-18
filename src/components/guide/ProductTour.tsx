@@ -82,8 +82,13 @@ export function ProductTour() {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-      <div className="fixed inset-0 z-[199]" aria-hidden />
+    <div
+      className="pointer-events-none fixed inset-0 z-[200]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tour-title"
+    >
+      <div className="pointer-events-none fixed inset-0 z-[199]" aria-hidden />
 
       {/* Spotlight */}
       {rect ? (
@@ -97,14 +102,14 @@ export function ProductTour() {
           }}
         />
       ) : (
-        <div className="fixed inset-0 bg-slate-900/88" />
+        <div className="pointer-events-none fixed inset-0 bg-slate-900/88" />
       )}
 
       {/* Tooltip card */}
       <div
         ref={tooltipRef}
         className={cn(
-          "fixed z-[201] w-[min(100vw-2rem,26rem)] rounded-2xl border border-slate-700/80",
+          "pointer-events-auto fixed z-[201] w-[min(100vw-2rem,26rem)] rounded-2xl border border-slate-700/80",
           "bg-slate-900/95 p-5 text-slate-100 shadow-2xl backdrop-blur-sm",
         )}
         style={{ top: tooltipTop, left: tooltipLeft }}

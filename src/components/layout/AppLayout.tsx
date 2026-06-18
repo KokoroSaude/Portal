@@ -28,12 +28,12 @@ export function AppLayout() {
       <div className="min-h-[100dvh] bg-background">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden h-[100dvh] overflow-hidden transition-[width] duration-200 ease-in-out lg:block",
+            "fixed inset-y-0 left-0 z-40 hidden h-[100dvh] overflow-hidden transition-[width] duration-200 ease-in-out lg:flex lg:flex-col",
             sidebarCollapsed ? "w-16" : "w-64",
           )}
         >
           <AppSidebar
-            className="h-full w-full shadow-sm"
+            className="min-h-0 w-full flex-1 shadow-sm"
             collapsed={sidebarCollapsed}
             collapsible
             onToggleCollapsed={toggleSidebar}
