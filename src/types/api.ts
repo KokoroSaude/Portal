@@ -1181,6 +1181,24 @@ export interface WhatsappSender {
   phoneId: string;
   isActive: boolean;
   createdAt: string;
+  connectionSource: "Manual" | "EmbeddedSignup";
+  connectedAt: string | null;
+  hasEmbeddedToken: boolean;
+}
+
+export interface MetaEmbeddedSignupConfig {
+  enabled: boolean;
+  appId: string | null;
+  configId: string | null;
+}
+
+export interface MetaEmbeddedSignupCompleteResult {
+  senderId: string;
+  wabaId: string;
+  phoneId: string;
+  phoneNumber: string;
+  displayName: string;
+  webhookConfigured: boolean;
 }
 
 export interface WhatsappDiagnosticEvent {
@@ -1216,8 +1234,14 @@ export interface WhatsappDiagnostics {
     hasAccessToken: boolean;
     hasPhoneId: boolean;
     hasVerifyToken: boolean;
+    hasAppId?: boolean;
+    hasEmbeddedSignupConfig?: boolean;
     apiVersion: string;
     simulatorMode: boolean;
+    embeddedSignup?: {
+      enabled: boolean;
+      hasWebhookCallback: boolean;
+    };
   };
   platformAi?: {
     provider: string;
@@ -1240,6 +1264,9 @@ export interface WhatsappDiagnostics {
     wabaId: string;
     phoneId: string;
     isActive: boolean;
+    connectionSource?: string;
+    connectedAt?: string | null;
+    hasEmbeddedToken?: boolean;
   }>;
   events: WhatsappDiagnosticEvent[];
 }

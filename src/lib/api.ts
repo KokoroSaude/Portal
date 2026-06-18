@@ -90,6 +90,8 @@ import type {
   WhatsappConversationThread,
   WhatsappDiagnostics,
   WhatsappSender,
+  MetaEmbeddedSignupConfig,
+  MetaEmbeddedSignupCompleteResult,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -645,6 +647,21 @@ export const api = {
 
   deleteSender: (token: string, senderId: string) =>
     request<void>(`/api/senders/${senderId}`, { method: "DELETE", token }),
+
+  getMetaEmbeddedSignupConfig: (token: string) =>
+    request<MetaEmbeddedSignupConfig>("/api/meta/embedded-signup/config", {
+      token,
+    }),
+
+  completeMetaEmbeddedSignup: (
+    token: string,
+    payload: { code: string; wabaId?: string; phoneId?: string; phoneNumber?: string; displayName?: string },
+  ) =>
+    request<MetaEmbeddedSignupCompleteResult>("/api/meta/embedded-signup/complete", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
 
   getWhatsAppDiagnostics: (token: string, limit = 50) =>
     request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),

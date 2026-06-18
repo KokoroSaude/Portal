@@ -136,6 +136,27 @@ export function WhatsappDiagnosticsPanel() {
                 <MetaFlag ok={data.meta.hasAccessToken} label="Access Token" />
                 <MetaFlag ok={data.meta.hasPhoneId} label="Phone ID padrão" />
                 <MetaFlag ok={data.meta.hasVerifyToken} label="Verify Token" />
+                {data.meta.hasAppId !== undefined && (
+                  <MetaFlag ok={!!data.meta.hasAppId} label="App ID (Embedded Signup)" />
+                )}
+                {data.meta.hasEmbeddedSignupConfig !== undefined && (
+                  <MetaFlag
+                    ok={!!data.meta.hasEmbeddedSignupConfig}
+                    label="Config ID Embedded Signup"
+                  />
+                )}
+                {data.meta.embeddedSignup && (
+                  <>
+                    <MetaFlag
+                      ok={data.meta.embeddedSignup.enabled}
+                      label="Embedded Signup habilitado"
+                    />
+                    <MetaFlag
+                      ok={data.meta.embeddedSignup.hasWebhookCallback}
+                      label="Callback webhook configurável"
+                    />
+                  </>
+                )}
                 {data.meta.simulatorMode && (
                   <p className="flex items-center gap-2 text-sm text-amber-600">
                     <AlertCircle className="size-4" />
@@ -239,6 +260,51 @@ export function WhatsappDiagnosticsPanel() {
                 </ul>
               </div>
             </div>
+
+            {data.senders.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Remetentes ({data.senders.length})</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Conexão</TableHead>
+                      <TableHead>Token Meta</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.senders.map((sender) => (
+                      <TableRow key={sender.id}>
+                        <TableCell className="font-medium">{sender.displayName}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              sender.connectionSource === "EmbeddedSignup" ? "default" : "outline"
+                            }
+                          >
+                            {sender.connectionSource === "EmbeddedSignup"
+                              ? "Via Meta"
+                              : "Manual"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <MetaFlag
+                            ok={!!sender.hasEmbeddedToken}
+                            label={sender.hasEmbeddedToken ? "Por tenant" : "Token global"}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={sender.isActive ? "success" : "muted"}>
+                            {sender.isActive ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Eventos ({data.events.length})</p>

@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingsSendersTab } from "@/components/settings/SettingsSendersTab";
+import { MetaEmbeddedSignupConnect } from "@/components/whatsapp/MetaEmbeddedSignupConnect";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,8 +66,13 @@ export function WhatsappConfigPage() {
       {
         id: "webhook",
         title: "Webhook Meta",
-        description: "Aponte o callback URL e o verify token no app Meta Developers.",
-        done: Boolean(activeSender?.wabaId && activeSender?.phoneId),
+        description: activeSender?.connectionSource === "EmbeddedSignup"
+          ? "Configurado automaticamente ao conectar com a Meta."
+          : "Aponte o callback URL e o verify token no app Meta Developers.",
+        done:
+          activeSender?.connectionSource === "EmbeddedSignup"
+            ? Boolean(activeSender?.wabaId && activeSender?.phoneId)
+            : Boolean(activeSender?.wabaId && activeSender?.phoneId),
       },
     ],
     [activeSender],
@@ -161,6 +167,16 @@ export function WhatsappConfigPage() {
               </Button>
             </div>
           </div>
+
+          {canManageSenders && (
+            <div className="space-y-2 rounded-xl border border-primary/30 bg-background p-4">
+              <p className="text-sm font-medium">Conectar número na Meta</p>
+              <p className="text-xs text-muted-foreground">
+                Recomendado: verifique o celular e vincule WABA + Phone ID pelo fluxo oficial da Meta.
+              </p>
+              <MetaEmbeddedSignupConnect />
+            </div>
+          )}
 
           {!canManageSenders && (
             <p className="text-sm text-muted-foreground">

@@ -35,6 +35,20 @@ import { matchesGridSearch } from "@/lib/gridSearch";
 import type { WhatsappSender } from "@/types/api";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 
+function senderConnectionLabel(sender: WhatsappSender): string {
+  if (sender.connectionSource === "EmbeddedSignup") return "Meta";
+  return "Manual";
+}
+
+function SenderConnectionBadge({ sender }: { sender: WhatsappSender }) {
+  const viaMeta = sender.connectionSource === "EmbeddedSignup";
+  return (
+    <Badge variant={viaMeta ? "default" : "outline"}>
+      {viaMeta ? "Conectado via Meta" : "Manual"}
+    </Badge>
+  );
+}
+
 export function SettingsSendersTab() {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
@@ -137,6 +151,7 @@ export function SettingsSendersTab() {
         s.wabaId,
         s.phoneId,
         s.isActive ? "ativo" : "inativo",
+        senderConnectionLabel(s),
       ),
     );
   }, [data, query]);
@@ -156,19 +171,19 @@ export function SettingsSendersTab() {
         <div>
           <CardTitle>Números cadastrados</CardTitle>
           <CardDescription>
-            Cada remetente precisa do WABA ID e Phone ID da Meta para receber webhooks e enviar mensagens.
+            Conecte pela Meta (recomendado) ou cadastre WABA ID e Phone ID manualmente como fallback.
           </CardDescription>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button variant="outline">
               <Plus className="size-4" />
-              Novo número
+              Inserir IDs manualmente
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Cadastrar remetente WhatsApp</DialogTitle>
+              <DialogTitle>Cadastro manual de remetente</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-2">
@@ -226,6 +241,7 @@ export function SettingsSendersTab() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>WABA / Phone ID</TableHead>
+                <TableHead>Conexão</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead />
@@ -234,7 +250,7 @@ export function SettingsSendersTab() {
             <TableBody>
               {filteredSenders.length === 0 && (
                 <GridEmptyRow
-                  colSpan={6}
+                  colSpan={7}
                   message={
                     query.trim()
                       ? "Nenhum remetente corresponde à busca."
@@ -248,6 +264,9 @@ export function SettingsSendersTab() {
                   <TableCell className="font-mono text-sm">{maskPhone(s.phoneNumber)}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {s.wabaId} / {s.phoneId}
+                  </TableCell>
+                  <TableCell>
+                    <SenderConnectionBadge sender={s} />
                   </TableCell>
                   <TableCell>
                     <Badge variant={s.isActive ? "success" : "muted"}>
