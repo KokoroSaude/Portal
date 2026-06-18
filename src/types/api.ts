@@ -528,6 +528,7 @@ export interface TenantSettings {
   dailySummaryEnabled?: boolean;
   progressMenuEnabled?: boolean;
   requirePreRegisteredPatients?: boolean;
+  defaultPromoMessage?: string | null;
 }
 
 export interface PatientAchievementItem {
@@ -1036,6 +1037,7 @@ export interface AdminMetaTemplateItem {
   canonicalKey: string;
   defaultMetaName: string;
   priority: string;
+  category?: string;
   body: string;
   customBody: string | null;
   effectiveBody: string;
@@ -1195,7 +1197,9 @@ export interface WhatsappMessagingWindow {
   expiresAt: string | null;
   isOpen: boolean;
   templateConfigured: boolean;
+  promotionTemplateConfigured?: boolean;
   canSendTemplate: boolean;
+  canSendPromotionTemplate?: boolean;
 }
 
 export interface WhatsappConversationMessage {
@@ -1254,4 +1258,36 @@ export interface WhatsappConversationThread {
   messages: WhatsappConversationMessage[];
   messagingWindow?: WhatsappMessagingWindow;
   scheduling?: WhatsappConversationScheduling;
+}
+
+export interface PromoDefaults {
+  defaultMessage: string | null;
+  promotionTemplateConfigured: boolean;
+}
+
+export interface PromoCampaignListItem {
+  id: string;
+  message: string;
+  segment: string;
+  status: string;
+  totalRecipients: number;
+  sentCount: number;
+  failedCount: number;
+  skippedCount: number;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface PromoCampaignRecipient {
+  patientId: string;
+  patientName: string | null;
+  phone: string;
+  status: string;
+  errorMessage: string | null;
+  sentAt: string | null;
+}
+
+export interface PromoCampaignDetail extends PromoCampaignListItem {
+  recipients: PromoCampaignRecipient[];
 }

@@ -6,6 +6,9 @@ import type {
   AdminPlatformUser,
   AdminPlatformAiSettings,
   PlatformAiTestResult,
+  PromoCampaignDetail,
+  PromoCampaignListItem,
+  PromoDefaults,
   AdminProductMetrics,
   AdminAdherenceReport,
   AdminEngagementReport,
@@ -561,12 +564,37 @@ export const api = {
   sendWhatsAppOperatorReply: (
     token: string,
     patientId: string,
-    body: { text: string; useTemplate?: boolean; requestCsat?: boolean },
+    body: { text: string; useTemplate?: boolean; usePromotionTemplate?: boolean; requestCsat?: boolean },
   ) =>
     request<{ messageId: string; wamId: string | null }>(
       `/api/whatsapp/conversations/${patientId}/reply`,
       { method: "POST", token, body },
     ),
+
+  getPromoDefaults: (token: string) =>
+    request<PromoDefaults>("/api/promotions/defaults", { token }),
+
+  listPromoCampaigns: (token: string, limit = 20) =>
+    request<PromoCampaignListItem[]>(`/api/promotions/campaigns?limit=${limit}`, { token }),
+
+  getPromoCampaign: (token: string, campaignId: string) =>
+    request<PromoCampaignDetail>(`/api/promotions/campaigns/${campaignId}`, { token }),
+
+  createPromoCampaign: (
+    token: string,
+    body: { message: string; segment?: string },
+  ) =>
+    request<{ campaignId: string; totalRecipients: number }>("/api/promotions/campaigns", {
+      method: "POST",
+      token,
+      body,
+    }),
+
+  sendPromoCampaign: (token: string, campaignId: string) =>
+    request<{ status: string }>(`/api/promotions/campaigns/${campaignId}/send`, {
+      method: "POST",
+      token,
+    }),
 
   getSettings: async (token: string) =>
     normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),

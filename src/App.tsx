@@ -20,6 +20,10 @@ const WhatsappConversationsPage = lazyPage(
   () => import("@/pages/WhatsappConversationsPage"),
   "WhatsappConversationsPage",
 );
+const PromoCampaignsPage = lazyPage(
+  () => import("@/pages/PromoCampaignsPage"),
+  "PromoCampaignsPage",
+);
 const WhatsappConfigPage = lazyPage(() => import("@/pages/WhatsappConfigPage"), "WhatsappConfigPage");
 const LoginPage = lazyPage(() => import("@/pages/LoginPage"), "LoginPage");
 const PatientDetailPage = lazyPage(() => import("@/pages/PatientDetailPage"), "PatientDetailPage");
@@ -106,6 +110,7 @@ export default function App() {
                     <Route path="jornada" element={<JourneyPage />} />
                     <Route path="whatsapp" element={<Navigate to="/whatsapp/conversas" replace />} />
                     <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
+                    <Route path="whatsapp/promocoes" element={<PromoCampaignsPage />} />
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="morisky" element={<MoriskySettingsPage />} />
                     <Route path="tcp" element={<TpbSettingsPage />} />

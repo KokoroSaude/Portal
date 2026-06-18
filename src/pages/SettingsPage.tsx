@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -99,6 +100,7 @@ export function SettingsPage() {
         onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
         onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
         requirePreRegisteredPatients: settings.requirePreRegisteredPatients ?? false,
+        defaultPromoMessage: settings.defaultPromoMessage ?? "",
       });
     }
   }, [settings]);
@@ -312,6 +314,21 @@ export function SettingsPage() {
                   id="requirePreRegisteredPatients"
                   checked={form.requirePreRegisteredPatients ?? false}
                   onCheckedChange={(checked) => update("requirePreRegisteredPatients", checked)}
+                />
+              </div>
+
+              <div className="space-y-2 rounded-lg border p-4">
+                <Label htmlFor="defaultPromoMessage">Texto padrão de promoção</Label>
+                <p className="text-sm text-muted-foreground">
+                  Pré-preenche o inbox e campanhas de promoção (variável{" "}
+                  <code className="text-xs">mensagem</code> do template Meta).
+                </p>
+                <Textarea
+                  id="defaultPromoMessage"
+                  rows={3}
+                  value={form.defaultPromoMessage ?? ""}
+                  onChange={(e) => update("defaultPromoMessage", e.target.value)}
+                  placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
                 />
               </div>
 

@@ -265,6 +265,18 @@ export function WhatsappConversationsPanel() {
     refetchInterval: 10_000,
   });
 
+  const promoDefaults = useQuery({
+    queryKey: ["promo-defaults"],
+    queryFn: () => api.getPromoDefaults(token!),
+    enabled: !!token,
+  });
+
+  useEffect(() => {
+    if (promoDefaults.data?.defaultMessage && !replyText) {
+      setReplyText(promoDefaults.data.defaultMessage);
+    }
+  }, [promoDefaults.data?.defaultMessage, replyText]);
+
   useEffect(() => {
     if (patientIdFromUrl) {
       setSelectedPatientId(patientIdFromUrl);
@@ -320,13 +332,21 @@ export function WhatsappConversationsPanel() {
       patientId,
       text,
       useTemplate = false,
+      usePromotionTemplate = false,
       requestCsat: askCsat = false,
     }: {
       patientId: string;
       text: string;
       useTemplate?: boolean;
+      usePromotionTemplate?: boolean;
       requestCsat?: boolean;
-    }) => api.sendWhatsAppOperatorReply(token!, patientId, { text, useTemplate, requestCsat: askCsat }),
+    }) =>
+      api.sendWhatsAppOperatorReply(token!, patientId, {
+        text,
+        useTemplate,
+        usePromotionTemplate,
+        requestCsat: askCsat,
+      }),
     onSuccess: () => {
       toast.success("Mensagem enviada");
       setReplyText("");
@@ -368,6 +388,7 @@ export function WhatsappConversationsPanel() {
   const messagingWindow = thread.data?.messagingWindow ?? selectedConversation?.messagingWindow;
   const canSendRegularMessage = messagingWindow?.isOpen ?? true;
   const canSendTemplateMessage = !canSendRegularMessage && !!messagingWindow?.canSendTemplate;
+  const canSendPromotionTemplate = !!messagingWindow?.canSendPromotionTemplate;
   const displayedMessages = onlyPharmacyMessages
     ? (thread.data?.messages ?? []).filter((m) => m.contentSource === "operator")
     : (thread.data?.messages ?? []);
@@ -545,14 +566,17 @@ export function WhatsappConversationsPanel() {
                         >
                           {canSendRegularMessage
                             ? `Janela de 24h aberta${messagingWindow.expiresAt ? ` até ${formatDateTime(messagingWindow.expiresAt)}` : ""}.`
-                            : "Janela de 24h expirada. Use template Meta para responder fora da janela."}
+                            : "Janela de 24h expirada. Use template Meta para responder ou enviar promoção."}
                         </div>
                       )}
                       <Textarea
-                        placeholder="Responder como farmácia…"
+                        placeholder="Responder como farmácia ou texto da promoção…"
                         value={replyText}
                         rows={3}
-                        disabled={sendOperatorReply.isPending || !canSendRegularMessage}
+                        disabled={
+                          sendOperatorReply.isPending ||
+                          (!canSendRegularMessage && !canSendTemplateMessage && !canSendPromotionTemplate)
+                        }
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim() && canSendRegularMessage) {
@@ -578,6 +602,23 @@ export function WhatsappConversationsPanel() {
                         </div>
                       )}
                       <div className="flex justify-end gap-2">
+                        {canSendPromotionTemplate && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={!replyText.trim() || sendOperatorReply.isPending}
+                            onClick={() =>
+                              sendOperatorReply.mutate({
+                                patientId: selectedPatientId,
+                                text: replyText.trim(),
+                                usePromotionTemplate: true,
+                              })
+                            }
+                          >
+                            Enviar promoção
+                          </Button>
+                        )}
                         {canSendTemplateMessage && (
                           <Button
                             type="button"
