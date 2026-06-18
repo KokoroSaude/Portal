@@ -447,7 +447,8 @@ export function AppSidebar({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative grid h-full max-h-full min-h-0 overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "grid-rows-[auto_auto_minmax(0,1fr)_auto]",
         className,
       )}
     >
@@ -494,7 +495,8 @@ export function AppSidebar({
 
       <nav
         className={cn(
-          "relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain",
+          "relative z-10 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y",
+          "[scrollbar-gutter:stable]",
           collapsed ? "p-2" : "p-4",
         )}
       >

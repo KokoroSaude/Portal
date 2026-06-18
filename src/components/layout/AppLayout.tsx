@@ -28,12 +28,12 @@ export function AppLayout() {
       <div className="flex h-[100dvh] overflow-hidden bg-background">
         <aside
           className={cn(
-            "hidden h-full min-h-0 shrink-0 transition-[width] duration-200 ease-in-out lg:flex",
+            "hidden h-full min-h-0 shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out lg:flex lg:flex-col",
             sidebarCollapsed ? "w-16" : "w-64",
           )}
         >
           <AppSidebar
-            className="w-full shadow-sm"
+            className="min-h-0 w-full flex-1 shadow-sm"
             collapsed={sidebarCollapsed}
             collapsible
             onToggleCollapsed={toggleSidebar}
@@ -73,7 +73,7 @@ export function AppLayout() {
 
         <MobileNavDrawer open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <AppSidebar
-            className="h-full w-full"
+            className="min-h-0 h-full w-full"
             onNavigate={closeMobileNav}
             onLogout={handleLogout}
           />
