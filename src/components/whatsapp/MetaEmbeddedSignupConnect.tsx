@@ -110,7 +110,7 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
   }, []);
 
   const completeMutation = useMutation({
-    mutationFn: (payload: { code: string; wabaId?: string; phoneId?: string }) =>
+    mutationFn: (payload: { code: string; wabaId?: string; phoneId?: string; redirectUri: string }) =>
       api.completeMetaEmbeddedSignup(token!, payload),
     onSuccess: (result) => {
       if (pendingCodeRef.current) {
@@ -135,7 +135,7 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
       completingRef.current = true;
       pendingCodeRef.current = code;
       completeMutation.mutate(
-        { code, wabaId, phoneId },
+        { code, wabaId, phoneId, redirectUri: buildRedirectUri() },
         { onSettled: () => { completingRef.current = false; } },
       );
     },

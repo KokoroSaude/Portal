@@ -657,7 +657,14 @@ export const api = {
 
   completeMetaEmbeddedSignup: (
     token: string,
-    payload: { code: string; wabaId?: string; phoneId?: string; phoneNumber?: string; displayName?: string },
+    payload: {
+      code: string;
+      wabaId?: string;
+      phoneId?: string;
+      phoneNumber?: string;
+      displayName?: string;
+      redirectUri?: string;
+    },
   ) =>
     request<MetaEmbeddedSignupCompleteResult>("/api/meta/embedded-signup/complete", {
       method: "POST",
