@@ -34,32 +34,85 @@ type MetaEmbeddedSignupConnectProps = {
   onConnected?: (result: MetaEmbeddedSignupCompleteResult) => void;
 };
 
+const SDK_LOAD_TIMEOUT_MS = 20_000;
+
 function loadFacebookSdk(appId: string): Promise<void> {
   if (window.FB) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
-    const existing = document.getElementById("facebook-jssdk");
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      return;
-    }
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      window.clearInterval(poll);
+      window.clearTimeout(timeout);
+      fn();
+    };
 
-    window.fbAsyncInit = () => {
+    const tryResolve = () => {
+      if (window.FB) {
+        finish(resolve);
+        return true;
+      }
+      return false;
+    };
+
+    const poll = window.setInterval(() => {
+      tryResolve();
+    }, 150);
+
+    const timeout = window.setTimeout(() => {
+      finish(() =>
+        reject(
+          new Error(
+            "SDK da Meta não carregou. Verifique bloqueador de anúncios e se portal.kokorosaude.com.br está em Domínios permitidos no Meta Developers.",
+          ),
+        ),
+      );
+    }, SDK_LOAD_TIMEOUT_MS);
+
+    const initSdk = () => {
+      if (tryResolve()) return;
       window.FB?.init({
         appId,
         cookie: true,
         xfbml: true,
         version: "v20.0",
       });
-      resolve();
+      tryResolve();
     };
+
+    const previousAsyncInit = window.fbAsyncInit;
+    window.fbAsyncInit = () => {
+      previousAsyncInit?.();
+      initSdk();
+    };
+
+    const existing = document.getElementById("facebook-jssdk");
+    if (existing) {
+      existing.addEventListener(
+        "load",
+        () => {
+          initSdk();
+        },
+        { once: true },
+      );
+      existing.addEventListener(
+        "error",
+        () => finish(() => reject(new Error("Não foi possível carregar o SDK da Meta."))),
+        { once: true },
+      );
+      return;
+    }
 
     const script = document.createElement("script");
     script.id = "facebook-jssdk";
     script.src = "https://connect.facebook.net/pt_BR/sdk.js";
     script.async = true;
     script.defer = true;
-    script.onerror = () => reject(new Error("Não foi possível carregar o SDK da Meta."));
+    script.onload = () => initSdk();
+    script.onerror = () =>
+      finish(() => reject(new Error("Não foi possível carregar o SDK da Meta.")));
     document.body.appendChild(script);
   });
 }
@@ -68,6 +121,8 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [sdkReady, setSdkReady] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
+  const [sdkLoading, setSdkLoading] = useState(false);
   const signupDataRef = useRef<{ wabaId?: string; phoneId?: string }>({});
 
   const { data: config, isLoading: configLoading } = useQuery({
@@ -76,13 +131,26 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
     enabled: !!token,
   });
 
+  const loadSdk = useCallback(async (appId: string) => {
+    setSdkLoading(true);
+    setSdkError(null);
+    setSdkReady(false);
+    try {
+      await loadFacebookSdk(appId);
+      setSdkReady(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao carregar SDK Meta";
+      setSdkError(message);
+      toast.error(message);
+    } finally {
+      setSdkLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!config?.enabled || !config.appId) return;
-
-    loadFacebookSdk(config.appId)
-      .then(() => setSdkReady(true))
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Erro ao carregar SDK Meta"));
-  }, [config?.appId, config?.enabled]);
+    void loadSdk(config.appId);
+  }, [config?.appId, config?.enabled, loadSdk]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -176,25 +244,49 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
     );
   }
 
+  const buttonDisabled = !sdkReady || completeMutation.isPending || sdkLoading;
+
   return (
     <div className="space-y-2">
-      <Button
-        type="button"
-        onClick={handleConnect}
-        disabled={!sdkReady || completeMutation.isPending}
-      >
-        {completeMutation.isPending ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Conectando…
-          </>
-        ) : (
-          "Conectar com Meta"
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" onClick={handleConnect} disabled={buttonDisabled}>
+          {completeMutation.isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Conectando…
+            </>
+          ) : sdkLoading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Carregando SDK…
+            </>
+          ) : (
+            "Conectar com Meta"
+          )}
+        </Button>
+        {sdkError && config.appId && (
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadSdk(config.appId!)}>
+            Tentar novamente
+          </Button>
         )}
-      </Button>
-      <p className="text-xs text-muted-foreground">
-        Abre o fluxo oficial da Meta para verificar seu celular e vincular WABA + Phone ID automaticamente.
-      </p>
+      </div>
+      {sdkLoading && (
+        <p className="text-xs text-muted-foreground">Carregando SDK da Meta…</p>
+      )}
+      {sdkError && (
+        <p className="text-xs text-destructive">{sdkError}</p>
+      )}
+      {!sdkLoading && !sdkError && sdkReady && (
+        <p className="text-xs text-muted-foreground">
+          Abre o fluxo oficial da Meta para verificar seu celular e vincular WABA + Phone ID automaticamente.
+        </p>
+      )}
+      {!sdkLoading && !sdkReady && !sdkError && (
+        <p className="text-xs text-muted-foreground">
+          Aguardando SDK da Meta. Se o botão continuar desabilitado, confira domínios permitidos no Meta
+          Developers e desative bloqueadores de popup/anúncios nesta página.
+        </p>
+      )}
     </div>
   );
 }
