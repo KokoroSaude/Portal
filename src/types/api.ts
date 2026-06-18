@@ -1404,6 +1404,7 @@ export interface PromoCampaignListItem {
   failedCount: number;
   skippedCount: number;
   createdAt: string;
+  scheduledAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
 }

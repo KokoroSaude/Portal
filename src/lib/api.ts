@@ -760,6 +760,18 @@ export const api = {
       token,
     }),
 
+  schedulePromoCampaign: (token: string, campaignId: string, scheduledAt: string) =>
+    request<{ status: string; scheduledAt: string }>(
+      `/api/promotions/campaigns/${campaignId}/schedule`,
+      { method: "POST", token, body: { scheduledAt } },
+    ),
+
+  cancelScheduledPromoCampaign: (token: string, campaignId: string) =>
+    request<{ status: string }>(`/api/promotions/campaigns/${campaignId}/cancel-schedule`, {
+      method: "POST",
+      token,
+    }),
+
   getSettings: async (token: string) =>
     normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),
 

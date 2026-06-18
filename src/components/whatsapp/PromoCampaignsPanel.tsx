@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, RefreshCw, Send } from "lucide-react";
+import { CalendarClock, Megaphone, RefreshCw, Send, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -32,11 +33,49 @@ function statusVariant(status: string): "default" | "secondary" | "outline" | "w
       return "secondary";
     case "Sending":
       return "default";
+    case "Scheduled":
+      return "default";
     case "Failed":
       return "warning";
     default:
       return "outline";
   }
+}
+
+function statusLabel(status: string): string {
+  switch (status) {
+    case "Draft":
+      return "Rascunho";
+    case "Scheduled":
+      return "Agendada";
+    case "Sending":
+      return "Enviando";
+    case "Completed":
+      return "Concluída";
+    case "Failed":
+      return "Falhou";
+    case "Cancelled":
+      return "Cancelada";
+    default:
+      return status;
+  }
+}
+
+function toDatetimeLocalValue(date: Date): string {
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function defaultScheduleLocal(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return toDatetimeLocalValue(d);
+}
+
+function localDatetimeToUtcIso(local: string): string {
+  return new Date(local).toISOString();
 }
 
 export function PromoCampaignsPanel() {
@@ -46,6 +85,7 @@ export function PromoCampaignsPanel() {
   const [segment, setSegment] = useState<string>("ActivePatients");
   const [segmentMedicationId, setSegmentMedicationId] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [scheduleAtLocal, setScheduleAtLocal] = useState(defaultScheduleLocal);
 
   const defaults = useQuery({
     queryKey: ["promo-defaults"],
@@ -64,8 +104,15 @@ export function PromoCampaignsPanel() {
     queryFn: () => api.listPromoCampaigns(token!),
     enabled: !!token,
     refetchInterval: (query) => {
-      const hasSending = (query.state.data ?? []).some((c) => c.status === "Sending");
-      return hasSending ? 5_000 : false;
+      const data = query.state.data ?? [];
+      const hasSending = data.some((c) => c.status === "Sending");
+      const hasScheduledSoon = data.some(
+        (c) =>
+          c.status === "Scheduled" &&
+          c.scheduledAt &&
+          new Date(c.scheduledAt).getTime() - Date.now() < 5 * 60_000,
+      );
+      return hasSending || hasScheduledSoon ? 5_000 : false;
     },
   });
 
@@ -73,7 +120,10 @@ export function PromoCampaignsPanel() {
     queryKey: ["promo-campaign", selectedId],
     queryFn: () => api.getPromoCampaign(token!, selectedId!),
     enabled: !!token && !!selectedId,
-    refetchInterval: (query) => (query.state.data?.status === "Sending" ? 5_000 : false),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "Sending" || status === "Scheduled" ? 5_000 : false;
+    },
   });
 
   useEffect(() => {
@@ -81,6 +131,17 @@ export function PromoCampaignsPanel() {
       setMessage(defaults.data.defaultMessage);
     }
   }, [defaults.data?.defaultMessage, message]);
+
+  useEffect(() => {
+    if (detail.data?.status === "Draft") {
+      setScheduleAtLocal(defaultScheduleLocal());
+    }
+  }, [detail.data?.status, selectedId]);
+
+  const invalidateCampaign = () => {
+    void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
+    void queryClient.invalidateQueries({ queryKey: ["promo-campaign", selectedId] });
+  };
 
   const createCampaign = useMutation({
     mutationFn: () =>
@@ -103,11 +164,31 @@ export function PromoCampaignsPanel() {
     mutationFn: (campaignId: string) => api.sendPromoCampaign(token!, campaignId),
     onSuccess: () => {
       toast.success("Envio iniciado em segundo plano");
-      void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
-      void queryClient.invalidateQueries({ queryKey: ["promo-campaign", selectedId] });
+      invalidateCampaign();
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar campanha"),
+  });
+
+  const scheduleCampaign = useMutation({
+    mutationFn: ({ campaignId, scheduledAt }: { campaignId: string; scheduledAt: string }) =>
+      api.schedulePromoCampaign(token!, campaignId, scheduledAt),
+    onSuccess: (result) => {
+      toast.success(`Campanha agendada para ${formatDateTime(result.scheduledAt)}`);
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao agendar campanha"),
+  });
+
+  const cancelSchedule = useMutation({
+    mutationFn: (campaignId: string) => api.cancelScheduledPromoCampaign(token!, campaignId),
+    onSuccess: () => {
+      toast.success("Agendamento cancelado — campanha voltou para rascunho");
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao cancelar agendamento"),
   });
 
   const list = campaigns.data ?? [];
@@ -224,9 +305,14 @@ export function PromoCampaignsPanel() {
                     <p className="truncate text-sm font-medium">{campaign.message}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(campaign.createdAt)} · {campaign.segment}
+                      {campaign.status === "Scheduled" && campaign.scheduledAt && (
+                        <> · envio {formatDateTime(campaign.scheduledAt)}</>
+                      )}
                     </p>
                   </div>
-                  <Badge variant={statusVariant(campaign.status)}>{campaign.status}</Badge>
+                  <Badge variant={statusVariant(campaign.status)}>
+                    {statusLabel(campaign.status)}
+                  </Badge>
                   <span className="text-xs text-muted-foreground">
                     {campaign.sentCount}/{campaign.totalRecipients} enviados
                   </span>
@@ -244,24 +330,73 @@ export function PromoCampaignsPanel() {
               <CardTitle>Detalhes</CardTitle>
               {detail.data && (
                 <CardDescription className="mt-1">
+                  {detail.data.status === "Scheduled" && detail.data.scheduledAt && (
+                    <>
+                      Agendada para {formatDateTime(detail.data.scheduledAt)} ·{" "}
+                    </>
+                  )}
                   {detail.data.sentCount} enviados · {detail.data.failedCount} falhas ·{" "}
                   {detail.data.skippedCount} ignorados
                 </CardDescription>
               )}
             </div>
             {detail.data?.status === "Draft" && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={scheduleCampaign.isPending || !templateReady || !scheduleAtLocal}
+                  onClick={() =>
+                    scheduleCampaign.mutate({
+                      campaignId: selectedId,
+                      scheduledAt: localDatetimeToUtcIso(scheduleAtLocal),
+                    })
+                  }
+                >
+                  <CalendarClock className="size-4" />
+                  Agendar envio
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={sendCampaign.isPending || !templateReady}
+                  onClick={() => sendCampaign.mutate(selectedId)}
+                >
+                  <Send className="size-4" />
+                  Enviar agora
+                </Button>
+              </div>
+            )}
+            {detail.data?.status === "Scheduled" && (
               <Button
                 type="button"
                 size="sm"
-                disabled={sendCampaign.isPending || !templateReady}
-                onClick={() => sendCampaign.mutate(selectedId)}
+                variant="outline"
+                disabled={cancelSchedule.isPending}
+                onClick={() => cancelSchedule.mutate(selectedId)}
               >
-                <Send className="size-4" />
-                Disparar envio
+                <XCircle className="size-4" />
+                Cancelar agendamento
               </Button>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {detail.data?.status === "Draft" && (
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <Label htmlFor="promo-schedule-at">Data e hora do envio</Label>
+                <Input
+                  id="promo-schedule-at"
+                  type="datetime-local"
+                  value={scheduleAtLocal}
+                  onChange={(e) => setScheduleAtLocal(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Horário local do seu navegador. Fora da janela de envio da clínica, o disparo
+                  aguarda o próximo horário permitido.
+                </p>
+              </div>
+            )}
             {detail.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : detail.data ? (
