@@ -23,6 +23,7 @@ import type { PromoCampaignListItem } from "@/types/api";
 const SEGMENTS = [
   { value: "ActivePatients", label: "Pacientes ativos" },
   { value: "AllEligible", label: "Todos elegíveis (exceto onboarding e opt-out)" },
+  { value: "PatientsOnMedication", label: "Pacientes em um medicamento (catálogo)" },
 ] as const;
 
 function statusVariant(status: string): "default" | "secondary" | "outline" | "warning" {
@@ -43,12 +44,19 @@ export function PromoCampaignsPanel() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [segment, setSegment] = useState<string>("ActivePatients");
+  const [segmentMedicationId, setSegmentMedicationId] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const defaults = useQuery({
     queryKey: ["promo-defaults"],
     queryFn: () => api.getPromoDefaults(token!),
     enabled: !!token,
+  });
+
+  const medications = useQuery({
+    queryKey: ["medications-catalog"],
+    queryFn: () => api.listMedications(token!),
+    enabled: !!token && segment === "PatientsOnMedication",
   });
 
   const campaigns = useQuery({
@@ -75,7 +83,13 @@ export function PromoCampaignsPanel() {
   }, [defaults.data?.defaultMessage, message]);
 
   const createCampaign = useMutation({
-    mutationFn: () => api.createPromoCampaign(token!, { message: message.trim(), segment }),
+    mutationFn: () =>
+      api.createPromoCampaign(token!, {
+        message: message.trim(),
+        segment,
+        segmentMedicationId:
+          segment === "PatientsOnMedication" ? segmentMedicationId || undefined : undefined,
+      }),
     onSuccess: (result) => {
       toast.success(`Campanha criada — ${result.totalRecipients} destinatário(s)`);
       setSelectedId(result.campaignId);
@@ -134,6 +148,23 @@ export function PromoCampaignsPanel() {
               </SelectContent>
             </Select>
           </div>
+          {segment === "PatientsOnMedication" && (
+            <div className="space-y-2">
+              <Label>Medicamento do catálogo</Label>
+              <Select value={segmentMedicationId} onValueChange={setSegmentMedicationId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o medicamento..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(medications.data ?? []).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.canonicalName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="promo-message">Texto da promoção (variável mensagem)</Label>
             <Textarea
@@ -146,7 +177,12 @@ export function PromoCampaignsPanel() {
           </div>
           <Button
             type="button"
-            disabled={!message.trim() || !templateReady || createCampaign.isPending}
+            disabled={
+              !message.trim() ||
+              !templateReady ||
+              createCampaign.isPending ||
+              (segment === "PatientsOnMedication" && !segmentMedicationId)
+            }
             onClick={() => createCampaign.mutate()}
           >
             Criar rascunho

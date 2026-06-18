@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,21 @@ export function PatientCarePlansTab({ patientId, token, canWrite }: PatientCareP
   const queryClient = useQueryClient();
   const [plans, setPlans] = useState<EditableCarePlan[]>([]);
   const [newPlan, setNewPlan] = useState<CarePlanUpsert>(EMPTY_PLAN);
+
+  const catalog = useQuery({
+    queryKey: ["medications-catalog"],
+    queryFn: () => api.listMedications(token),
+    enabled: !!token,
+  });
+
+  const catalogOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const item of catalog.data ?? []) {
+      names.add(item.canonicalName);
+      for (const alias of item.aliases) names.add(alias);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [catalog.data]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["patient-care-plans", patientId],
@@ -170,6 +185,7 @@ export function PatientCarePlansTab({ patientId, token, canWrite }: PatientCareP
                     onChange={(e) => updatePlan(index, { medication: e.target.value })}
                     disabled={!canWrite}
                     placeholder="Ex: Puram T4, Paroxetina"
+                    list="medication-catalog-suggestions"
                   />
                 </div>
                 <div className="space-y-2">
@@ -232,6 +248,7 @@ export function PatientCarePlansTab({ patientId, token, canWrite }: PatientCareP
                   value={newPlan.medication}
                   onChange={(e) => setNewPlan((p) => ({ ...p, medication: e.target.value }))}
                   placeholder="Ex: Puram T4"
+                  list="medication-catalog-suggestions"
                 />
               </div>
               <div className="space-y-2">
@@ -262,6 +279,12 @@ export function PatientCarePlansTab({ patientId, token, canWrite }: PatientCareP
           </CardContent>
         </Card>
       )}
+
+      <datalist id="medication-catalog-suggestions">
+        {catalogOptions.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
     </div>
   );
 }

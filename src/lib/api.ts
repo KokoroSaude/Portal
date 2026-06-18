@@ -57,6 +57,10 @@ import type {
   PatientFunnel,
   PeriodComparison,
   ReportInsight,
+  MedicationCatalogItem,
+  MedicationProgramListItem,
+  MedicationProgramReport,
+  MedicationSuggestion,
   SenderPerformance,
   JourneyStep,
   LoginResponse,
@@ -410,6 +414,100 @@ export const api = {
   getSenderPerformance: (token: string, from?: string, to?: string) =>
     request<SenderPerformance[]>(`/api/reports/senders${qs({ from, to })}`, { token }),
 
+  getMedicationProgramReport: (
+    token: string,
+    params: {
+      medication?: string;
+      medicationId?: string;
+      from?: string;
+      to?: string;
+      atRiskThreshold?: number;
+    },
+  ) =>
+    request<MedicationProgramReport>(
+      `/api/reports/medication-program${qs({
+        medication: params.medication,
+        medicationId: params.medicationId,
+        from: params.from,
+        to: params.to,
+        atRiskThreshold: params.atRiskThreshold,
+      })}`,
+      { token },
+    ),
+
+  getMedicationSuggestions: (token: string, q?: string, limit = 20) =>
+    request<MedicationSuggestion[]>(
+      `/api/reports/medication-suggestions${qs({ q, limit })}`,
+      { token },
+    ),
+
+  listMedications: (token: string) =>
+    request<MedicationCatalogItem[]>("/api/medications", { token }),
+
+  createMedication: (
+    token: string,
+    payload: { canonicalName: string; dcbCode?: string; aliases?: string[] },
+  ) =>
+    request<{ id: string }>("/api/medications", { method: "POST", token, body: payload }),
+
+  updateMedication: (
+    token: string,
+    medicationId: string,
+    payload: {
+      canonicalName?: string;
+      dcbCode?: string;
+      isActive?: boolean;
+      aliases?: string[];
+    },
+  ) => request<void>(`/api/medications/${medicationId}`, { method: "PUT", token, body: payload }),
+
+  backfillMedicationIds: (token: string) =>
+    request<{ updated: number; unmatched: number }>("/api/medications/backfill", {
+      method: "POST",
+      token,
+    }),
+
+  listMedicationPrograms: (token: string) =>
+    request<MedicationProgramListItem[]>("/api/medication-programs", { token }),
+
+  createMedicationProgram: (
+    token: string,
+    payload: {
+      name: string;
+      medicationId: string;
+      atRiskMissedThreshold?: number;
+      targetAdherenceRate?: number;
+    },
+  ) =>
+    request<{ id: string }>("/api/medication-programs", { method: "POST", token, body: payload }),
+
+  updateMedicationProgram: (
+    token: string,
+    programId: string,
+    payload: {
+      name?: string;
+      isActive?: boolean;
+      atRiskMissedThreshold?: number;
+      targetAdherenceRate?: number;
+    },
+  ) =>
+    request<void>(`/api/medication-programs/${programId}`, {
+      method: "PATCH",
+      token,
+      body: payload,
+    }),
+
+  getMedicationProgramDashboard: (
+    token: string,
+    programId: string,
+    from?: string,
+    to?: string,
+  ) =>
+    request<MedicationProgramReport>(
+      `/api/medication-programs/${programId}/dashboard${qs({ from, to })}`,
+      { token },
+    ),
+
   getPeriodComparison: (token: string, from?: string, to?: string) =>
     request<PeriodComparison>(`/api/reports/comparison${qs({ from, to })}`, { token }),
 
@@ -482,9 +580,16 @@ export const api = {
       token,
     }),
 
-  exportPatientsCsv: async (token: string, status?: string, from?: string, to?: string) => {
+  exportPatientsCsv: async (
+    token: string,
+    status?: string,
+    from?: string,
+    to?: string,
+    medicationId?: string,
+    programId?: string,
+  ) => {
     const res = await fetch(
-      `${API_BASE}/api/reports/patients/export${qs({ status, from, to })}`,
+      `${API_BASE}/api/reports/patients/export${qs({ status, from, to, medicationId, programId })}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (!res.ok) {
@@ -583,7 +688,7 @@ export const api = {
 
   createPromoCampaign: (
     token: string,
-    body: { message: string; segment?: string },
+    body: { message: string; segment?: string; segmentMedicationId?: string },
   ) =>
     request<{ campaignId: string; totalRecipients: number }>("/api/promotions/campaigns", {
       method: "POST",

@@ -30,6 +30,15 @@ const PatientDetailPage = lazyPage(() => import("@/pages/PatientDetailPage"), "P
 const PatientsPage = lazyPage(() => import("@/pages/PatientsPage"), "PatientsPage");
 const ProfilePage = lazyPage(() => import("@/pages/ProfilePage"), "ProfilePage");
 const ReportsPage = lazyPage(() => import("@/pages/ReportsPage"), "ReportsPage");
+const MedicationProgramPage = lazyPage(
+  () => import("@/pages/MedicationProgramPage"),
+  "MedicationProgramPage",
+);
+const MedicationProgramsPage = lazyPage(
+  () => import("@/pages/MedicationProgramsPage"),
+  "MedicationProgramsPage",
+);
+const MedicationsPage = lazyPage(() => import("@/pages/MedicationsPage"), "MedicationsPage");
 const SettingsPage = lazyPage(() => import("@/pages/SettingsPage"), "SettingsPage");
 const MoriskySettingsPage = lazyPage(
   () => import("@/pages/MoriskySettingsPage"),
@@ -105,6 +114,9 @@ export default function App() {
                     <Route path="pacientes" element={<PatientsPage />} />
                     <Route path="pacientes/:id" element={<PatientDetailPage />} />
                     <Route path="relatorios" element={<ReportsPage />} />
+                    <Route path="relatorios/programa-medicamento" element={<MedicationProgramPage />} />
+                    <Route path="programas" element={<MedicationProgramsPage />} />
+                    <Route path="medicamentos" element={<MedicationsPage />} />
                     <Route path="templates" element={<TemplatesPage />} />
                     <Route path="conhecimento" element={<KnowledgePage />} />
                     <Route path="jornada" element={<JourneyPage />} />

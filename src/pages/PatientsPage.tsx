@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -548,7 +549,12 @@ export function PatientsPage() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">{maskPhone(p.phone)}</TableCell>
                       <TableCell>
-                        <PatientStatusBadge status={p.status} />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <PatientStatusBadge status={p.status} />
+                          {(p.consecutiveMissedCheckins ?? 0) >= 3 && (
+                            <Badge variant="warning">Risco adesão</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{p.medication ?? "—"}</TableCell>
                       <TableCell>{formatDateTime(p.lastCheckinAt)}</TableCell>

@@ -48,6 +48,7 @@ export interface Patient {
   phone: string;
   status: string;
   medication: string | null;
+  consecutiveMissedCheckins?: number;
   lastCheckinAt: string | null;
   createdAt: string;
 }
@@ -255,6 +256,67 @@ export interface SenderPerformance {
   checkinsTotal: number;
   checkinsTaken: number;
   adherenceRate: number;
+}
+
+export interface MedicationSuggestion {
+  label: string;
+  medicationId: string | null;
+}
+
+export interface MedicationProgramAtRiskPatient {
+  patientId: string;
+  name: string | null;
+  status: string;
+  senderId: string | null;
+  senderName: string | null;
+  consecutiveMissedCheckins: number;
+  periodMissed: number;
+  periodTotal: number;
+  periodAdherenceRate: number;
+}
+
+export interface MedicationProgramSenderRow {
+  senderId: string;
+  displayName: string;
+  phoneNumber: string;
+  activePatients: number;
+  checkinsTotal: number;
+  checkinsTaken: number;
+  adherenceRate: number;
+}
+
+export interface MedicationProgramReport {
+  medicationLabel: string;
+  medicationId: string | null;
+  activePatients: number;
+  activeCarePlans: number;
+  totalCheckins: number;
+  taken: number;
+  missed: number;
+  adherenceRate: number;
+  trend: AdherenceTrendPoint[];
+  bySender: MedicationProgramSenderRow[];
+  atRiskPatients: MedicationProgramAtRiskPatient[];
+  ranking: PatientAdherenceRank[];
+}
+
+export interface MedicationCatalogItem {
+  id: string;
+  canonicalName: string;
+  dcbCode: string | null;
+  isActive: boolean;
+  aliases: string[];
+}
+
+export interface MedicationProgramListItem {
+  id: string;
+  name: string;
+  medicationId: string;
+  medicationName: string;
+  isActive: boolean;
+  atRiskMissedThreshold: number;
+  targetAdherenceRate: number | null;
+  createdAt: string;
 }
 
 export interface PeriodMetrics {
@@ -969,6 +1031,7 @@ export interface CarePlan {
   id: string;
   patientId: string;
   medication: string;
+  medicationId?: string | null;
   dosage: string;
   scheduledTimes: string;
   isActive: boolean;
