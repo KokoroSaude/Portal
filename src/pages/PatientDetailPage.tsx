@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Save, Star, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Star, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
@@ -12,6 +12,7 @@ import {
   type InsightPreviewMode,
 } from "@/components/patients/PatientInsightPreviewModeToggle";
 import { PatientInsightPromptDialog } from "@/components/patients/PatientInsightPromptDialog";
+import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
-import type { CarePlanUpdate, TimelineEvent } from "@/types/api";
+import type { TimelineEvent } from "@/types/api";
 
 const EVENT_LABELS: Record<string, string> = {
   message_inbound: "Mensagem recebida",
@@ -60,12 +60,6 @@ export function PatientDetailPage() {
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
   const timelinePageSize = 20;
-  const [carePlan, setCarePlan] = useState<CarePlanUpdate>({
-    medication: "",
-    dosage: "1 comprimido",
-    scheduledTimes: "08:00",
-    instructions: "",
-  });
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -202,23 +196,6 @@ export function PatientDetailPage() {
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao retomar");
-    },
-  });
-
-  useEffect(() => {
-    if (patient?.medication) {
-      setCarePlan((cp) => ({ ...cp, medication: patient.medication ?? "" }));
-    }
-  }, [patient?.medication]);
-
-  const carePlanMutation = useMutation({
-    mutationFn: () => api.updateCarePlan(token!, id!, carePlan),
-    onSuccess: () => {
-      toast.success("Plano de cuidado atualizado");
-      queryClient.invalidateQueries({ queryKey: ["patient", id] });
-    },
-    onError: (err) => {
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar plano");
     },
   });
 
@@ -633,55 +610,7 @@ export function PatientDetailPage() {
         </TabsContent>
 
         <TabsContent value="careplan">
-          <Card>
-            <CardHeader>
-              <CardTitle>Plano de cuidado</CardTitle>
-              <CardDescription>Medicamento, dosagem e horários de lembrete</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Medicamento</Label>
-                  <Input
-                    value={carePlan.medication}
-                    onChange={(e) => setCarePlan((c) => ({ ...c, medication: e.target.value }))}
-                    disabled={!canWrite}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Dosagem</Label>
-                  <Input
-                    value={carePlan.dosage}
-                    onChange={(e) => setCarePlan((c) => ({ ...c, dosage: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Horários (HH:mm separados por vírgula)</Label>
-                  <Input
-                    placeholder="08:00,20:00"
-                    value={carePlan.scheduledTimes}
-                    onChange={(e) => setCarePlan((c) => ({ ...c, scheduledTimes: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Instruções</Label>
-                  <Textarea
-                    value={carePlan.instructions ?? ""}
-                    onChange={(e) => setCarePlan((c) => ({ ...c, instructions: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <Button onClick={() => carePlanMutation.mutate()} disabled={carePlanMutation.isPending || !canWrite}>
-                <Save className="size-4" />
-                Salvar plano
-              </Button>
-              {!canWrite && (
-                <p className="text-sm text-muted-foreground">
-                  Seu perfil é somente leitura e não pode editar o plano de cuidado.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          {token && id && <PatientCarePlansTab patientId={id} token={token} canWrite={canWrite} />}
         </TabsContent>
 
         <TabsContent value="morisky">

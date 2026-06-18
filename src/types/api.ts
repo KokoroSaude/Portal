@@ -963,13 +963,28 @@ export interface OnboardingJourney {
   effectiveSteps: JourneyStep[];
 }
 
-export interface CarePlanUpdate {
+export interface CarePlan {
+  id: string;
+  patientId: string;
+  medication: string;
+  dosage: string;
+  scheduledTimes: string;
+  isActive: boolean;
+  startDate: string;
+  endDate?: string | null;
+  instructions?: string | null;
+}
+
+export interface CarePlanUpsert {
   medication: string;
   dosage: string;
   scheduledTimes: string;
   instructions?: string;
   endDate?: string;
 }
+
+/** @deprecated Use CarePlanUpsert */
+export interface CarePlanUpdate extends CarePlanUpsert {}
 
 export interface AdminTenant {
   id: string;

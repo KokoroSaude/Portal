@@ -40,7 +40,8 @@ import type {
   TpbScaleDefinition,
   TpbScaleViewResponse,
   AdherenceTrendPoint,
-  CarePlanUpdate,
+  CarePlan,
+  CarePlanUpsert,
   CreateTenantResponse,
   CreatePatientResponse,
   EngagementReport,
@@ -310,9 +311,33 @@ export const api = {
   deletePatient: (token: string, id: string) =>
     request<void>(`/api/patients/${id}`, { method: "DELETE", token }),
 
-  updateCarePlan: (token: string, patientId: string, payload: CarePlanUpdate) =>
-    request<{ carePlanId: string }>(`/api/patients/${patientId}/care-plan`, {
+  listCarePlans: (token: string, patientId: string) =>
+    request<CarePlan[]>(`/api/patients/${patientId}/care-plans`, { token }),
+
+  createCarePlan: (token: string, patientId: string, payload: CarePlanUpsert) =>
+    request<{ carePlanId: string }>(`/api/patients/${patientId}/care-plans`, {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  updateCarePlanById: (token: string, patientId: string, carePlanId: string, payload: CarePlanUpsert) =>
+    request<{ carePlanId: string }>(`/api/patients/${patientId}/care-plans/${carePlanId}`, {
       method: "PATCH",
+      token,
+      body: payload,
+    }),
+
+  deleteCarePlan: (token: string, patientId: string, carePlanId: string) =>
+    request<void>(`/api/patients/${patientId}/care-plans/${carePlanId}`, {
+      method: "DELETE",
+      token,
+    }),
+
+  /** @deprecated Use createCarePlan / updateCarePlanById */
+  updateCarePlan: (token: string, patientId: string, payload: CarePlanUpsert) =>
+    request<{ carePlanId: string }>(`/api/patients/${patientId}/care-plans`, {
+      method: "POST",
       token,
       body: payload,
     }),
