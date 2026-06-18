@@ -25,15 +25,15 @@ export function AppLayout() {
 
   return (
     <TourProvider onOpenMobileNav={() => setMobileNavOpen(true)}>
-      <div className="flex h-[100dvh] overflow-hidden bg-background">
+      <div className="min-h-[100dvh] bg-background">
         <aside
           className={cn(
-            "hidden shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out lg:flex lg:h-[100dvh] lg:max-h-[100dvh] lg:flex-col",
+            "fixed inset-y-0 left-0 z-40 hidden overflow-hidden transition-[width] duration-200 ease-in-out lg:block",
             sidebarCollapsed ? "w-16" : "w-64",
           )}
         >
           <AppSidebar
-            className="min-h-0 w-full flex-1 shadow-sm"
+            className="h-full w-full shadow-sm"
             collapsed={sidebarCollapsed}
             collapsible
             onToggleCollapsed={toggleSidebar}
@@ -41,7 +41,12 @@ export function AppLayout() {
           />
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          className={cn(
+            "flex min-h-[100dvh] flex-col transition-[padding] duration-200 ease-in-out",
+            sidebarCollapsed ? "lg:pl-16" : "lg:pl-64",
+          )}
+        >
           <header className="relative flex h-14 shrink-0 items-center border-b border-border/60 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
             <Button
               type="button"
