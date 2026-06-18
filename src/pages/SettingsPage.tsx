@@ -35,6 +35,37 @@ import { normalizeVoiceToneSelectValue } from "@/lib/adminTemplateTones";
 import { LOCALE_LABELS, VOICE_TONES, FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
 
+const SETTINGS_TABS = [
+  "operacao",
+  "ia",
+  "engajamento",
+  "onboarding",
+  "pesquisas",
+  "usuarios",
+] as const;
+
+type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return SETTINGS_TABS.includes(value as SettingsTab);
+}
+
+function SettingsSaveButton({
+  onSave,
+  pending,
+  label = "Salvar alterações",
+}: {
+  onSave: () => void;
+  pending: boolean;
+  label?: string;
+}) {
+  return (
+    <Button onClick={onSave} disabled={pending}>
+      {pending ? "Salvando…" : label}
+    </Button>
+  );
+}
+
 export function SettingsPage() {
   const { token, isAdmin, hasFeature } = useAuth();
   const queryClient = useQueryClient();
@@ -43,7 +74,8 @@ export function SettingsPage() {
   const [bulkCsatOpen, setBulkCsatOpen] = useState(false);
   const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const tabParam = searchParams.get("tab");
-  const defaultTab = tabParam === "usuarios" || tabParam === "operacional" ? tabParam : "operacional";
+  const defaultTab: SettingsTab =
+    tabParam === "operacional" ? "operacao" : isSettingsTab(tabParam) ? tabParam : "operacao";
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
@@ -153,6 +185,9 @@ export function SettingsPage() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
+  const save = () => saveMutation.mutate(form);
+  const savePending = saveMutation.isPending;
+
   return (
     <div className="space-y-6">
       <div>
@@ -161,17 +196,21 @@ export function SettingsPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} key={defaultTab}>
-        <TabsList>
-          <TabsTrigger value="operacional">Operacional</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="operacao">Operação</TabsTrigger>
+          <TabsTrigger value="ia">IA</TabsTrigger>
+          <TabsTrigger value="engajamento">Engajamento</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
           {hasFeature("users.manage") && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="operacional">
+        <TabsContent value="operacao" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Operação</CardTitle>
               <CardDescription>
-                Janela de envio, follow-ups e tom de voz das mensagens automáticas.
+                Janela de envio, follow-ups, tom de voz e acesso ao WhatsApp.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -261,50 +300,6 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              {hasFeature(FEATURE_KEYS.aiCopilot) && settings && (
-                <div className="space-y-2 rounded-lg border border-dashed bg-muted/20 p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Sparkles className="size-4 text-primary" />
-                    <p className="text-sm font-medium">Status da IA neste tenant</p>
-                    <PatientAiAvailabilityBadge settings={settings} canConfigureTenant />
-                  </div>
-                  {settings.aiFeatures?.platformConfigured === false && (
-                    <p className="text-sm text-amber-900">
-                      A chave do provedor (Claude ou OpenAI) ainda não está configurada na plataforma
-                      Kokoro. Enquanto isso, o assistente usa apenas regras — mesmo com o toggle ligado.
-                    </p>
-                  )}
-                  {getAiAvailability(settings) === "disabled" && settings.aiFeatures?.platformConfigured !== false && (
-                    <p className="text-sm text-muted-foreground">
-                      A plataforma está pronta. Ligue o toggle abaixo e clique em{" "}
-                      <strong>Salvar alterações</strong> para ativar IA no WhatsApp e nos resumos.
-                    </p>
-                  )}
-                  {getAiAvailability(settings) === "ready" && (
-                    <p className="text-sm text-muted-foreground">
-                      Tudo certo para IA. Na ficha do paciente, use{" "}
-                      <strong>Atualizar assistente</strong> — o badge deve mostrar{" "}
-                      <strong>Resumo: IA</strong>.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="space-y-1">
-                  <Label htmlFor="aiEnabled">Inteligência artificial</Label>
-                  <p className="text-sm text-muted-foreground">
-                    NLU no WhatsApp, insights nos relatórios e personalização de marcos. Desligado usa
-                    apenas regras determinísticas.
-                  </p>
-                </div>
-                <Switch
-                  id="aiEnabled"
-                  checked={form.aiEnabled}
-                  onCheckedChange={(checked) => update("aiEnabled", checked)}
-                />
-              </div>
-
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-1">
                   <Label htmlFor="requirePreRegisteredPatients">Somente pacientes cadastrados</Label>
@@ -320,15 +315,73 @@ export function SettingsPage() {
                 />
               </div>
 
-              <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Salvando…" : "Salvar alterações"}
-              </Button>
+              <SettingsSaveButton onSave={save} pending={savePending} />
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="ia" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Nudge comportamental</CardTitle>
+              <CardTitle>Inteligência artificial</CardTitle>
+              <CardDescription>
+                NLU no WhatsApp, insights nos relatórios e personalização de marcos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {hasFeature(FEATURE_KEYS.aiCopilot) && settings && (
+                <div className="space-y-2 rounded-lg border border-dashed bg-muted/20 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Sparkles className="size-4 text-primary" />
+                    <p className="text-sm font-medium">Status da IA neste tenant</p>
+                    <PatientAiAvailabilityBadge settings={settings} canConfigureTenant />
+                  </div>
+                  {settings.aiFeatures?.platformConfigured === false && (
+                    <p className="text-sm text-amber-900">
+                      A chave do provedor (Claude ou OpenAI) ainda não está configurada na plataforma
+                      Kokoro. Enquanto isso, o assistente usa apenas regras — mesmo com o toggle ligado.
+                    </p>
+                  )}
+                  {getAiAvailability(settings) === "disabled" &&
+                    settings.aiFeatures?.platformConfigured !== false && (
+                      <p className="text-sm text-muted-foreground">
+                        A plataforma está pronta. Ligue o toggle abaixo e salve para ativar IA no
+                        WhatsApp e nos resumos.
+                      </p>
+                    )}
+                  {getAiAvailability(settings) === "ready" && (
+                    <p className="text-sm text-muted-foreground">
+                      Tudo certo para IA. Na ficha do paciente, use{" "}
+                      <strong>Atualizar assistente</strong> — o badge deve mostrar{" "}
+                      <strong>Resumo: IA</strong>.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="aiEnabled">Ativar IA</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Desligado usa apenas regras determinísticas no WhatsApp e nos relatórios.
+                  </p>
+                </div>
+                <Switch
+                  id="aiEnabled"
+                  checked={form.aiEnabled}
+                  onCheckedChange={(checked) => update("aiEnabled", checked)}
+                />
+              </div>
+
+              <SettingsSaveButton onSave={save} pending={savePending} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="engajamento" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Nudge comportamental</CardTitle>
               <CardDescription>
                 Reforço positivo variado, normas sociais nos marcos e limite de mensagens de empatia.
                 {" "}
@@ -443,12 +496,16 @@ export function SettingsPage() {
                   onCheckedChange={(checked) => update("dailySummaryEnabled", checked)}
                 />
               </div>
+
+              <SettingsSaveButton onSave={save} pending={savePending} />
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="onboarding" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Cadastro pendente no WhatsApp</CardTitle>
+              <CardTitle>Cadastro pendente no WhatsApp</CardTitle>
               <CardDescription>
                 Para quem começou o cadastro pelo WhatsApp e parou no meio — sem terminar nome,
                 medicamento ou horários.
@@ -502,37 +559,39 @@ export function SettingsPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? "Salvando…" : "Salvar lembretes automáticos"}
-                </Button>
+                <SettingsSaveButton
+                  onSave={save}
+                  pending={savePending}
+                  label="Salvar lembretes automáticos"
+                />
                 <Dialog open={bulkOnboardingOpen} onOpenChange={setBulkOnboardingOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" disabled={bulkOnboardingMutation.isPending}>
-                    <RefreshCw className="size-4" />
-                    Lembrar todos com cadastro em andamento
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Lembrar todos com cadastro em andamento?</DialogTitle>
-                    <DialogDescription>
-                      Cada paciente que ainda não terminou o cadastro receberá no WhatsApp a pergunta
-                      em que parou. Quem não puder receber agora será ignorado.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setBulkOnboardingOpen(false)}>
-                      Cancelar
+                  <DialogTrigger asChild>
+                    <Button variant="outline" disabled={bulkOnboardingMutation.isPending}>
+                      <RefreshCw className="size-4" />
+                      Lembrar todos com cadastro em andamento
                     </Button>
-                    <Button
-                      onClick={() => bulkOnboardingMutation.mutate()}
-                      disabled={bulkOnboardingMutation.isPending}
-                    >
-                      {bulkOnboardingMutation.isPending ? "Enviando…" : "Enviar lembretes"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Lembrar todos com cadastro em andamento?</DialogTitle>
+                      <DialogDescription>
+                        Cada paciente que ainda não terminou o cadastro receberá no WhatsApp a pergunta
+                        em que parou. Quem não puder receber agora será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkOnboardingOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkOnboardingMutation.mutate()}
+                        disabled={bulkOnboardingMutation.isPending}
+                      >
+                        {bulkOnboardingMutation.isPending ? "Enviando…" : "Enviar lembretes"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <p className="text-sm text-muted-foreground">
@@ -542,10 +601,12 @@ export function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="pesquisas" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Pesquisa de satisfação (CSAT)</CardTitle>
+              <CardTitle>Pesquisa de satisfação (CSAT)</CardTitle>
               <CardDescription>
                 Dispare manualmente a pergunta de 1 a 5 no WhatsApp — por paciente, seleção na lista
                 ou todos os ativos.
@@ -585,7 +646,7 @@ export function SettingsPage() {
         </TabsContent>
 
         {hasFeature("users.manage") && (
-          <TabsContent value="usuarios">
+          <TabsContent value="usuarios" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Usuários</CardTitle>
