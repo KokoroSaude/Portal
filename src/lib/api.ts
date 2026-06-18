@@ -92,6 +92,8 @@ import type {
   WhatsappSender,
   MetaEmbeddedSignupConfig,
   MetaEmbeddedSignupCompleteResult,
+  WhatsAppBusinessProfile,
+  UpdateWhatsAppBusinessProfilePayload,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -662,6 +664,37 @@ export const api = {
       token,
       body: payload,
     }),
+
+  getWhatsAppBusinessProfile: (token: string, senderId: string) =>
+    request<WhatsAppBusinessProfile>(`/api/senders/${senderId}/business-profile`, { token }),
+
+  updateWhatsAppBusinessProfile: (
+    token: string,
+    senderId: string,
+    payload: UpdateWhatsAppBusinessProfilePayload,
+  ) =>
+    request<WhatsAppBusinessProfile>(`/api/senders/${senderId}/business-profile`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  uploadWhatsAppBusinessProfilePicture: async (token: string, senderId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/senders/${senderId}/business-profile/picture`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : undefined;
+    if (!res.ok) {
+      const err = data as { error?: string } | undefined;
+      throw new ApiClientError(err?.error ?? `Erro ${res.status}`, res.status, data);
+    }
+    return data as WhatsAppBusinessProfile;
+  },
 
   getWhatsAppDiagnostics: (token: string, limit = 50) =>
     request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, UserCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -34,6 +34,7 @@ import { FEATURE_KEYS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import type { WhatsappSender } from "@/types/api";
 import { formatDateTime, maskPhone } from "@/lib/utils";
+import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
 
 function senderConnectionLabel(sender: WhatsappSender): string {
   if (sender.connectionSource === "EmbeddedSignup") return "Meta";
@@ -54,6 +55,7 @@ export function SettingsSendersTab() {
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [open, setOpen] = useState(false);
+  const [profileSender, setProfileSender] = useState<WhatsappSender | null>(null);
   const [editing, setEditing] = useState<WhatsappSender | null>(null);
   const [form, setForm] = useState({
     phoneNumber: "",
@@ -171,7 +173,7 @@ export function SettingsSendersTab() {
         <div>
           <CardTitle>Números cadastrados</CardTitle>
           <CardDescription>
-            Conecte pela Meta (recomendado) ou cadastre WABA ID e Phone ID manualmente como fallback.
+            Conecte pela Meta, edite o perfil público (foto, descrição, sites) ou cadastre IDs manualmente.
           </CardDescription>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -278,6 +280,14 @@ export function SettingsSendersTab() {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setProfileSender(s)}
+                      >
+                        <UserCircle2 className="size-4" />
+                        Perfil Meta
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit(s)}>
                         <Pencil className="size-4" />
                         Editar
@@ -350,6 +360,12 @@ export function SettingsSendersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WhatsappBusinessProfileEditor
+        sender={profileSender}
+        open={profileSender !== null}
+        onOpenChange={(v) => !v && setProfileSender(null)}
+      />
     </Card>
   );
 }

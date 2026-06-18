@@ -1201,6 +1201,28 @@ export interface MetaEmbeddedSignupCompleteResult {
   webhookConfigured: boolean;
 }
 
+export interface WhatsAppBusinessProfile {
+  phoneId: string;
+  verifiedName: string | null;
+  nameStatus: string | null;
+  profilePictureUrl: string | null;
+  about: string | null;
+  description: string | null;
+  address: string | null;
+  email: string | null;
+  vertical: string | null;
+  websites: string[];
+}
+
+export interface UpdateWhatsAppBusinessProfilePayload {
+  about?: string;
+  description?: string;
+  address?: string;
+  email?: string;
+  vertical?: string;
+  websites?: string[];
+}
+
 export interface WhatsappDiagnosticEvent {
   at: string;
   eventType: string;
