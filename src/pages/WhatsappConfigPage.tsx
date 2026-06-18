@@ -44,6 +44,8 @@ export function WhatsappConfigPage() {
   });
 
   const activeSender = senders.find((s) => s.isActive) ?? senders[0];
+  const isMetaConnected =
+    activeSender?.connectionSource === "EmbeddedSignup" && activeSender?.hasEmbeddedToken;
 
   const setupSteps = useMemo<SetupStep[]>(
     () => [
@@ -66,16 +68,13 @@ export function WhatsappConfigPage() {
       {
         id: "webhook",
         title: "Webhook Meta",
-        description: activeSender?.connectionSource === "EmbeddedSignup"
+        description: isMetaConnected
           ? "Configurado automaticamente ao conectar com a Meta."
           : "Aponte o callback URL e o verify token no app Meta Developers.",
-        done:
-          activeSender?.connectionSource === "EmbeddedSignup"
-            ? Boolean(activeSender?.wabaId && activeSender?.phoneId)
-            : Boolean(activeSender?.wabaId && activeSender?.phoneId),
+        done: isMetaConnected || Boolean(activeSender?.wabaId && activeSender?.phoneId),
       },
     ],
-    [activeSender],
+    [activeSender, isMetaConnected],
   );
 
   const completedSteps = setupSteps.filter((s) => s.done).length;

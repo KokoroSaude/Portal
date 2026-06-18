@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { FEATURE_KEYS } from "@/lib/constants";
+import { formatDateTime } from "@/lib/utils";
 import type { MetaEmbeddedSignupCompleteResult } from "@/types/api";
 
 type EmbeddedSignupMessage = {
@@ -45,6 +47,7 @@ function buildRedirectUri(): string {
 
 function startRedirectFlow(appId: string, configId: string) {
   storeSignupIds(undefined, undefined);
+  sessionStorage.removeItem(HANDLED_CODE_KEY);
 
   const url = new URL("https://www.facebook.com/v20.0/dialog/oauth");
   url.searchParams.set("client_id", appId);
@@ -57,16 +60,27 @@ function startRedirectFlow(appId: string, configId: string) {
 }
 
 export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupConnectProps) {
-  const { token } = useAuth();
+  const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
   const signupDataRef = useRef<{ wabaId?: string; phoneId?: string }>({});
   const completingRef = useRef(false);
+  const pendingCodeRef = useRef<string | null>(null);
 
   const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ["meta-embedded-signup-config"],
     queryFn: () => api.getMetaEmbeddedSignupConfig(token!),
     enabled: !!token,
   });
+
+  const { data: senders = [] } = useQuery({
+    queryKey: ["senders"],
+    queryFn: () => api.listSenders(token!),
+    enabled: !!token && hasFeature(FEATURE_KEYS.whatsappSendersManage),
+  });
+
+  const metaConnectedSender = senders.find(
+    (s) => s.connectionSource === "EmbeddedSignup" && s.hasEmbeddedToken,
+  );
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -99,19 +113,27 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
     mutationFn: (payload: { code: string; wabaId?: string; phoneId?: string }) =>
       api.completeMetaEmbeddedSignup(token!, payload),
     onSuccess: (result) => {
+      if (pendingCodeRef.current) {
+        sessionStorage.setItem(HANDLED_CODE_KEY, pendingCodeRef.current);
+        pendingCodeRef.current = null;
+      }
       toast.success("Número conectado com a Meta");
       queryClient.invalidateQueries({ queryKey: ["senders"] });
       queryClient.invalidateQueries({ queryKey: ["whatsapp-diagnostics"] });
       onConnected?.(result);
     },
-    onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Falha ao conectar com a Meta"),
+    onError: (err) => {
+      pendingCodeRef.current = null;
+      sessionStorage.removeItem(HANDLED_CODE_KEY);
+      toast.error(err instanceof ApiClientError ? err.message : "Falha ao conectar com a Meta");
+    },
   });
 
   const finishWithCode = useCallback(
     (code: string, wabaId?: string, phoneId?: string) => {
       if (completingRef.current) return;
       completingRef.current = true;
+      pendingCodeRef.current = code;
       completeMutation.mutate(
         { code, wabaId, phoneId },
         { onSettled: () => { completingRef.current = false; } },
@@ -121,7 +143,7 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
   );
 
   useEffect(() => {
-    if (!token || !config?.enabled) return;
+    if (!token || configLoading || !config?.enabled) return;
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
@@ -134,13 +156,15 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
     }
 
     if (!code) return;
-    if (sessionStorage.getItem(HANDLED_CODE_KEY) === code) return;
+    if (sessionStorage.getItem(HANDLED_CODE_KEY) === code) {
+      window.history.replaceState({}, "", REDIRECT_PATH);
+      return;
+    }
 
-    sessionStorage.setItem(HANDLED_CODE_KEY, code);
     const stored = readSignupIds();
     finishWithCode(code, stored.wabaId ?? signupDataRef.current.wabaId, stored.phoneId ?? signupDataRef.current.phoneId);
     window.history.replaceState({}, "", REDIRECT_PATH);
-  }, [token, config?.enabled, finishWithCode]);
+  }, [token, configLoading, config?.enabled, finishWithCode]);
 
   const handleConnect = useCallback(() => {
     if (!config?.appId || !config.configId) {
@@ -170,8 +194,38 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
     );
   }
 
+  if (metaConnectedSender) {
+    return (
+      <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+        <div className="flex items-start gap-2 text-sm">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div>
+            <p className="font-medium">Conectado via Meta</p>
+            <p className="text-muted-foreground">
+              {metaConnectedSender.displayName}
+              {metaConnectedSender.connectedAt
+                ? ` · desde ${formatDateTime(metaConnectedSender.connectedAt)}`
+                : ""}
+            </p>
+          </div>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={handleConnect} disabled={completeMutation.isPending}>
+          {completeMutation.isPending ? "Reconectando…" : "Reconectar com Meta"}
+        </Button>
+      </div>
+    );
+  }
+
+  const hasManualOnly = senders.length > 0;
+
   return (
     <div className="space-y-2">
+      {hasManualOnly && (
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          Há remetente cadastrado manualmente. Conecte com a Meta para gravar o token OAuth e exibir{" "}
+          <strong>Conectado via Meta</strong> na tabela.
+        </p>
+      )}
       <Button type="button" onClick={handleConnect} disabled={completeMutation.isPending}>
         {completeMutation.isPending ? (
           <>
@@ -184,7 +238,7 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
       </Button>
       <p className="text-xs text-muted-foreground">
         Você será redirecionado para a Meta, fará login e verificará o celular. Ao voltar, o remetente
-        é cadastrado automaticamente.
+        manual existente é atualizado automaticamente quando for a mesma WABA/número.
       </p>
       <p className="text-xs text-muted-foreground">
         No Meta Developers, inclua em <strong>URIs de redirecionamento OAuth válidos</strong>:{" "}
