@@ -1026,6 +1026,51 @@ export interface PlatformAiTestResult {
   error: string | null;
 }
 
+export interface AdminMetaTemplateVariable {
+  name: string;
+  example: string;
+}
+
+export interface AdminMetaTemplateItem {
+  number: number;
+  canonicalKey: string;
+  defaultMetaName: string;
+  priority: string;
+  body: string;
+  customBody: string | null;
+  effectiveBody: string;
+  variables: AdminMetaTemplateVariable[];
+  buttons: string[];
+  mappedMetaName: string | null;
+  metaTemplateId: string | null;
+  syncStatus: string;
+  rejectionReason: string | null;
+  validationErrors: string[];
+  canSubmit: boolean;
+}
+
+export interface AdminMetaTemplateList {
+  wabaId: string;
+  tenantId: string | null;
+  tenantName: string | null;
+  metaConfigured: boolean;
+  templates: AdminMetaTemplateItem[];
+}
+
+export interface AdminMetaTemplateSubmitItemResult {
+  canonicalKey: string;
+  success: boolean;
+  message: string | null;
+  metaTemplateId: string | null;
+}
+
+export interface AdminMetaTemplateSubmitResult {
+  submitted: number;
+  skipped: number;
+  failed: number;
+  results: AdminMetaTemplateSubmitItemResult[];
+}
+
 export interface PatientInsightPromptPreview {
   feature: string;
   systemPrompt: string;

@@ -1,4 +1,6 @@
 import type {
+  AdminMetaTemplateList,
+  AdminMetaTemplateSubmitResult,
   AdminMessageTemplate,
   AdminOnboardingFlow,
   AdminPlatformUser,
@@ -880,6 +882,50 @@ export const api = {
       token,
     });
   },
+
+  adminListMetaTemplates: (token: string, tenantId?: string) => {
+    const qs = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : "";
+    return request<AdminMetaTemplateList>(`/api/admin/meta/templates${qs}`, { token });
+  },
+
+  adminSubmitMetaTemplates: (
+    token: string,
+    payload: {
+      tenantId?: string | null;
+      canonicalKeys?: string[];
+      onlyMissing?: boolean;
+      onlyRejected?: boolean;
+    },
+  ) =>
+    request<AdminMetaTemplateSubmitResult>("/api/admin/meta/templates/submit", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  adminUpdateMetaTemplateMapping: (
+    token: string,
+    canonicalKey: string,
+    metaName: string,
+    tenantId?: string | null,
+  ) =>
+    request<void>(`/api/admin/meta/templates/${encodeURIComponent(canonicalKey)}`, {
+      method: "PUT",
+      token,
+      body: { tenantId: tenantId ?? null, metaName },
+    }),
+
+  adminUpdateMetaTemplateBody: (
+    token: string,
+    canonicalKey: string,
+    customBody: string | null,
+    tenantId?: string | null,
+  ) =>
+    request<void>(`/api/admin/meta/templates/${encodeURIComponent(canonicalKey)}/body`, {
+      method: "PUT",
+      token,
+      body: { tenantId: tenantId ?? null, customBody },
+    }),
 
   simulatorStatus: (token: string) =>
     request<SimulatorStatus>("/api/admin/simulator/status", { token }),

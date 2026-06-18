@@ -56,6 +56,10 @@ const AdminConfigurationPage = lazyPage(
   () => import("@/pages/admin/AdminConfigurationPage"),
   "AdminConfigurationPage",
 );
+const AdminMetaTemplatesPage = lazyPage(
+  () => import("@/pages/admin/AdminMetaTemplatesPage"),
+  "AdminMetaTemplatesPage",
+);
 
 function PageLoader() {
   return (
@@ -119,6 +123,7 @@ export default function App() {
                     <Route path="admin/simulador" element={<AdminSimulatorPage />} />
                     <Route path="admin/onboarding" element={<AdminOnboardingPage />} />
                     <Route path="admin/mensagens" element={<AdminTemplatesPage />} />
+                    <Route path="admin/templates-meta" element={<AdminMetaTemplatesPage />} />
                     <Route path="admin/configuracao" element={<AdminConfigurationPage />} />
                   </Route>
                 </Route>
