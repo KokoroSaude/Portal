@@ -38,17 +38,15 @@ const SIGNUP_WABA_KEY = "kokoro_meta_signup_waba";
 const SIGNUP_PHONE_KEY = "kokoro_meta_signup_phone";
 const HANDLED_CODE_KEY = "kokoro_meta_signup_handled_code";
 
-function storeSignupIds(wabaId?: string, phoneId?: string) {
-  if (wabaId) sessionStorage.setItem(SIGNUP_WABA_KEY, wabaId);
-  if (phoneId) sessionStorage.setItem(SIGNUP_PHONE_KEY, phoneId);
-}
-
-function readSignupIds(): { wabaId?: string; phoneId?: string } {
-  const wabaId = sessionStorage.getItem(SIGNUP_WABA_KEY) ?? undefined;
-  const phoneId = sessionStorage.getItem(SIGNUP_PHONE_KEY) ?? undefined;
+function clearSignupIds() {
   sessionStorage.removeItem(SIGNUP_WABA_KEY);
   sessionStorage.removeItem(SIGNUP_PHONE_KEY);
-  return { wabaId, phoneId };
+}
+
+function storeSignupIds(wabaId?: string, phoneId?: string) {
+  clearSignupIds();
+  if (wabaId) sessionStorage.setItem(SIGNUP_WABA_KEY, wabaId);
+  if (phoneId) sessionStorage.setItem(SIGNUP_PHONE_KEY, phoneId);
 }
 
 function buildRedirectUri(): string {
@@ -56,7 +54,7 @@ function buildRedirectUri(): string {
 }
 
 function startRedirectFlow(appId: string, configId: string) {
-  storeSignupIds(undefined, undefined);
+  clearSignupIds();
   sessionStorage.removeItem(HANDLED_CODE_KEY);
 
   const url = new URL("https://www.facebook.com/v20.0/dialog/oauth");
@@ -193,12 +191,12 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
   });
 
   const finishWithCode = useCallback(
-    (code: string, wabaId?: string, phoneId?: string) => {
+    (code: string) => {
       if (completingRef.current) return;
       completingRef.current = true;
       pendingCodeRef.current = code;
       completeMutation.mutate(
-        { code, wabaId, phoneId, redirectUri: buildRedirectUri() },
+        { code, redirectUri: buildRedirectUri() },
         { onSettled: () => { completingRef.current = false; } },
       );
     },
@@ -224,8 +222,8 @@ export function MetaEmbeddedSignupConnect({ onConnected }: MetaEmbeddedSignupCon
       return;
     }
 
-    const stored = readSignupIds();
-    finishWithCode(code, stored.wabaId ?? signupDataRef.current.wabaId, stored.phoneId ?? signupDataRef.current.phoneId);
+    clearSignupIds();
+    finishWithCode(code);
     window.history.replaceState({}, "", REDIRECT_PATH);
   }, [token, configLoading, config?.enabled, finishWithCode]);
 
