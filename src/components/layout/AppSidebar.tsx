@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   BarChart3,
@@ -425,52 +425,6 @@ type AppSidebarProps = {
   onToggleCollapsed?: () => void;
 };
 
-function useSidebarNavMaxHeight(
-  rootRef: React.RefObject<HTMLElement | null>,
-  headerRef: React.RefObject<HTMLElement | null>,
-  footerRef: React.RefObject<HTMLElement | null>,
-  deps: unknown[],
-) {
-  const [maxHeight, setMaxHeight] = useState<number>();
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const viewport = rootRef.current?.clientHeight ?? window.innerHeight;
-      const header = headerRef.current?.offsetHeight ?? 0;
-      const footer = footerRef.current?.offsetHeight ?? 0;
-      setMaxHeight(Math.max(96, viewport - header - footer - 1));
-    };
-
-    measure();
-
-    const observer = new ResizeObserver(measure);
-    if (rootRef.current) observer.observe(rootRef.current);
-    if (headerRef.current) observer.observe(headerRef.current);
-    if (footerRef.current) observer.observe(footerRef.current);
-
-    window.addEventListener("resize", measure);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- remeasure when sidebar chrome changes
-  }, deps);
-
-  return maxHeight;
-}
-
-function stopMainScrollWhenNavScrolls(nav: HTMLElement, event: WheelEvent) {
-  if (nav.scrollHeight <= nav.clientHeight + 1) return;
-
-  const atTop = nav.scrollTop <= 0;
-  const atBottom = nav.scrollTop + nav.clientHeight >= nav.scrollHeight - 1;
-
-  if ((event.deltaY < 0 && !atTop) || (event.deltaY > 0 && !atBottom)) {
-    event.stopPropagation();
-  }
-}
-
 export function AppSidebar({
   className,
   onNavigate,
@@ -483,30 +437,20 @@ export function AppSidebar({
     useAuth();
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
-
-  const rootRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const footerRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
-
-  const navMaxHeight = useSidebarNavMaxHeight(rootRef, headerRef, footerRef, [
-    collapsed,
-    displayName,
-    email,
-    isPlatform,
-    isTenant,
-    isAdmin,
-    role,
-  ]);
 
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
 
-    const onWheel = (event: WheelEvent) => stopMainScrollWhenNavScrolls(nav, event);
-    nav.addEventListener("wheel", onWheel);
+    const onWheel = (event: WheelEvent) => {
+      if (nav.scrollHeight <= nav.clientHeight + 1) return;
+      event.stopPropagation();
+    };
+
+    nav.addEventListener("wheel", onWheel, { passive: true });
     return () => nav.removeEventListener("wheel", onWheel);
-  }, [navMaxHeight]);
+  }, [collapsed, isPlatform, isTenant, isAdmin]);
 
   const handleLogout = () => {
     onNavigate?.();
@@ -516,7 +460,6 @@ export function AppSidebar({
 
   return (
     <div
-      ref={rootRef}
       className={cn(
         "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
@@ -526,7 +469,6 @@ export function AppSidebar({
       <div className="pointer-events-none absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" aria-hidden />
 
       <div
-        ref={headerRef}
         className={cn(
           "relative z-10 flex shrink-0 flex-col items-center text-center",
           collapsed ? "px-2 py-4" : "px-6 py-5",
@@ -564,50 +506,44 @@ export function AppSidebar({
 
       <Separator className="relative z-10 shrink-0 bg-white/20" />
 
-      <nav
-        ref={navRef}
-        style={navMaxHeight ? { maxHeight: navMaxHeight } : undefined}
-        className={cn(
-          "relative z-10 shrink-0 overflow-x-hidden overflow-y-auto overscroll-y-contain",
-          "[scrollbar-gutter:stable]",
-          collapsed ? "p-2" : "p-4",
-        )}
-      >
-        <div className="flex flex-col gap-2">
-          {isTenant &&
-            TENANT_NAV_SECTIONS.map((section) => (
-              <NavSection
-                key={section.title}
-                title={section.title}
-                items={section.items}
-                hasFeature={hasFeature}
-                isAdmin={isAdmin}
-                onNavigate={onNavigate}
-                collapsed={collapsed}
-              />
-            ))}
-          {isPlatform &&
-            PLATFORM_NAV_SECTIONS.map((section) => (
-              <NavSection
-                key={section.title}
-                title={section.title}
-                items={section.items}
-                hasFeature={() => true}
-                isAdmin
-                onNavigate={onNavigate}
-                collapsed={collapsed}
-              />
-            ))}
-        </div>
-      </nav>
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <nav
+          ref={navRef}
+          className={cn(
+            "h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain",
+            collapsed ? "p-2" : "p-4",
+          )}
+        >
+          <div className="flex flex-col gap-2">
+            {isTenant &&
+              TENANT_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={hasFeature}
+                  isAdmin={isAdmin}
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+            {isPlatform &&
+              PLATFORM_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={() => true}
+                  isAdmin
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+          </div>
+        </nav>
+      </div>
 
-      <div
-        ref={footerRef}
-        className={cn(
-          "relative z-10 mt-auto shrink-0 border-t border-white/20",
-          collapsed ? "p-2" : "p-4",
-        )}
-      >
+      <div className={cn("relative z-10 shrink-0 border-t border-white/20", collapsed ? "p-2" : "p-4")}>
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
             <SidebarCollapsedFlyout

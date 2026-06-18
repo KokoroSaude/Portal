@@ -28,7 +28,7 @@ export function AppLayout() {
       <div className="min-h-[100dvh] bg-background">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden overflow-hidden transition-[width] duration-200 ease-in-out lg:block",
+            "fixed inset-y-0 left-0 z-40 hidden h-[100dvh] overflow-hidden transition-[width] duration-200 ease-in-out lg:block",
             sidebarCollapsed ? "w-16" : "w-64",
           )}
         >
