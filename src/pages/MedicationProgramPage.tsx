@@ -120,7 +120,7 @@ export function MedicationProgramPage() {
   if (!canView) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Programa de medicamento" description="Acompanhamento por medicamento na rede" />
+        <PageHeader title="Relatório por medicamento" description="Consulta rápida de adesão por medicamento na rede." />
         <FeatureLocked
           title="Relatório não disponível"
           description="O programa de medicamento requer o recurso de relatórios de cohort (plano Professional ou superior)."
@@ -132,8 +132,8 @@ export function MedicationProgramPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Programa de medicamento"
-        description="Adesão consolidada e por filial para um medicamento da rede"
+        title="Relatório por medicamento"
+        description="Consulta rápida: escolha um medicamento e veja adesão da rede, por loja e quem precisa de contato — sem precisar cadastrar um programa antes."
       />
 
       <Card>

@@ -94,7 +94,7 @@ export function MedicationProgramsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Programas terapêuticos"
-        description="Programas nomeados por medicamento com metas e ações"
+        description="Programas nomeados da rede (ex.: “Semaglutida 2026”) com meta de adesão, dashboard fixo e atalho para campanhas de WhatsApp no cohort do medicamento."
         actions={
           isAdmin ? (
             <Button onClick={() => setCreateOpen(true)}>

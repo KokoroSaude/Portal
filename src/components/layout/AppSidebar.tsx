@@ -17,13 +17,16 @@ import {
   Megaphone,
   PanelLeft,
   PanelLeftClose,
+  Pill,
   Settings,
   Shield,
   Users,
+  Wrench,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
 import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
+import { SidebarSubmenuFlyout } from "@/components/layout/SidebarSubmenuFlyout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,43 +46,169 @@ export type NavItem = {
   children?: NavItem[];
 };
 
-export const TENANT_NAV: NavItem[] = [
-  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, feature: FEATURE_KEYS.reportsBasic },
-  { to: "/pacientes", label: "Pacientes", icon: Users },
-  { to: "/whatsapp/conversas", label: "Conversas com pacientes", icon: MessageCircle, feature: FEATURE_KEYS.whatsappConversations },
-  { to: "/whatsapp/promocoes", label: "Promoções", icon: Megaphone, feature: FEATURE_KEYS.whatsappConversations },
-  { to: "/relatorios", label: "Relatórios", icon: BarChart3, feature: FEATURE_KEYS.reportsBasic },
+export type NavSectionConfig = {
+  title: string;
+  items: NavItem[];
+};
+
+export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
   {
-    to: "/relatorios/programa-medicamento",
-    label: "Programa medicamento",
-    icon: ClipboardList,
-    feature: FEATURE_KEYS.reportsCohort,
+    title: "Dia a dia",
+    items: [
+      {
+        to: "/",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        end: true,
+        feature: FEATURE_KEYS.reportsBasic,
+      },
+      { to: "/pacientes", label: "Pacientes", icon: Users },
+      {
+        label: "WhatsApp",
+        icon: MessageCircle,
+        children: [
+          {
+            to: "/whatsapp/conversas",
+            label: "Conversas",
+            icon: MessageCircle,
+            feature: FEATURE_KEYS.whatsappConversations,
+          },
+          {
+            to: "/whatsapp/promocoes",
+            label: "Promoções",
+            icon: Megaphone,
+            feature: FEATURE_KEYS.whatsappConversations,
+          },
+          {
+            to: "/whatsapp/configuracao",
+            label: "Configuração",
+            icon: Settings,
+          },
+        ],
+      },
+    ],
   },
-  { to: "/programas", label: "Programas", icon: ClipboardList, feature: FEATURE_KEYS.reportsCohort },
-  { to: "/medicamentos", label: "Medicamentos", icon: ClipboardList, adminOnly: true },
-  { to: "/templates", label: "Templates", icon: FileText, feature: FEATURE_KEYS.templatesCustomRead },
-  { to: "/conhecimento", label: "Base de conhecimento", icon: BookOpen, feature: FEATURE_KEYS.aiCopilot, adminOnly: true },
-  { to: "/jornada", label: "Jornada", icon: GitBranch, feature: FEATURE_KEYS.journeyOnboardingRead },
-  { to: "/whatsapp/configuracao", label: "Configuração WhatsApp", icon: Settings },
-  { to: "/morisky", label: "MMAS-8 (Morisky)", icon: ClipboardList, adminOnly: true, feature: FEATURE_KEYS.scalesMorisky },
-  { to: "/tcp", label: "TCP (Comportamento)", icon: ClipboardList, adminOnly: true, feature: FEATURE_KEYS.scalesTpb },
-  { to: "/configuracoes", label: "Configurações", icon: Settings },
+  {
+    title: "Análise",
+    items: [
+      {
+        label: "Relatórios",
+        icon: BarChart3,
+        children: [
+          {
+            to: "/relatorios",
+            label: "Visão geral",
+            icon: BarChart3,
+            feature: FEATURE_KEYS.reportsBasic,
+          },
+          {
+            to: "/relatorios/programa-medicamento",
+            label: "Por medicamento",
+            icon: Pill,
+            feature: FEATURE_KEYS.reportsCohort,
+          },
+        ],
+      },
+      {
+        to: "/programas",
+        label: "Programas terapêuticos",
+        icon: ClipboardList,
+        feature: FEATURE_KEYS.reportsCohort,
+      },
+    ],
+  },
+  {
+    title: "Programa",
+    items: [
+      {
+        to: "/jornada",
+        label: "Jornada",
+        icon: GitBranch,
+        feature: FEATURE_KEYS.journeyOnboardingRead,
+      },
+      {
+        to: "/templates",
+        label: "Templates",
+        icon: FileText,
+        feature: FEATURE_KEYS.templatesCustomRead,
+      },
+      {
+        to: "/conhecimento",
+        label: "Base de conhecimento",
+        icon: BookOpen,
+        feature: FEATURE_KEYS.aiCopilot,
+        adminOnly: true,
+      },
+    ],
+  },
+  {
+    title: "Configuração",
+    items: [
+      { to: "/configuracoes", label: "Geral", icon: Settings },
+      {
+        to: "/medicamentos",
+        label: "Catálogo de medicamentos",
+        icon: Pill,
+        adminOnly: true,
+      },
+      {
+        to: "/morisky",
+        label: "MMAS-8 (Morisky)",
+        icon: ClipboardList,
+        adminOnly: true,
+        feature: FEATURE_KEYS.scalesMorisky,
+      },
+      {
+        to: "/tcp",
+        label: "TCP (Comportamento)",
+        icon: ClipboardList,
+        adminOnly: true,
+        feature: FEATURE_KEYS.scalesTpb,
+      },
+    ],
+  },
+  {
+    title: "Ajuda",
+    items: [{ to: "/guia", label: "Guia passo a passo", icon: HelpCircle }],
+  },
 ];
 
-export const PLATFORM_NAV: NavItem[] = [
-  { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
-  { to: "/", label: "Visão geral", icon: Shield, end: true },
-  { to: "/admin/tenants", label: "Organizações", icon: Building2 },
-  { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
-  { to: "/admin/usuarios", label: "Superadmins", icon: Users },
-  { to: "/admin/onboarding", label: "Onboarding WhatsApp", icon: GitBranch },
-  { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
-  { to: "/admin/templates-meta", label: "Templates Meta", icon: MessageSquare },
-  { to: "/admin/simulador", label: "Simulador", icon: MessageCircle },
-  { to: "/admin/configuracao", label: "Configuração", icon: Settings },
-  { to: "/admin/assinatura", label: "Assinatura e-mail", icon: Mail },
+/** Flat list derived from sections (legacy). */
+export const TENANT_NAV: NavItem[] = TENANT_NAV_SECTIONS.flatMap((section) => section.items);
+
+export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
+  {
+    title: "Gestão",
+    items: [
+      { to: "/", label: "Visão geral", icon: Shield, end: true },
+      { to: "/admin/tenants", label: "Organizações", icon: Building2 },
+      { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
+      { to: "/admin/usuarios", label: "Superadmins", icon: Users },
+    ],
+  },
+  {
+    title: "WhatsApp",
+    items: [
+      { to: "/admin/onboarding", label: "Onboarding", icon: GitBranch },
+      { to: "/admin/templates-meta", label: "Templates Meta", icon: MessageSquare },
+      { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
+    ],
+  },
+  {
+    title: "Ferramentas",
+    items: [
+      { to: "/admin/simulador", label: "Simulador", icon: Wrench },
+      { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
+      { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
+    ],
+  },
+  {
+    title: "Ajuda",
+    items: [{ to: "/guia", label: "Guia passo a passo", icon: HelpCircle }],
+  },
 ];
+
+export const PLATFORM_NAV: NavItem[] = PLATFORM_NAV_SECTIONS.flatMap((section) => section.items);
 
 function isNavItemVisible(item: NavItem, hasFeature: (key: string) => boolean, isAdmin: boolean): boolean {
   if (item.adminOnly && !isAdmin) return false;
@@ -124,15 +253,15 @@ function NavLinkItem({
           cn(
             "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
             collapsed ? "justify-center px-2" : "gap-3 px-3",
-            !collapsed && indent && "ml-4 py-2 text-[13px]",
+            !collapsed && indent && "ml-3 py-2 pl-3 text-[13px] font-normal",
             isActive
               ? "bg-white/20 text-primary-foreground"
               : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
           )
         }
       >
-        {collapsed && <Icon className="size-4 shrink-0" />}
-        {!collapsed && label}
+        <Icon className={cn("shrink-0", collapsed ? "size-4" : "size-4 opacity-90")} />
+        {!collapsed && <span className="truncate">{label}</span>}
       </NavLink>
     </SidebarCollapsedFlyout>
   );
@@ -144,7 +273,6 @@ function NavGroup({
   isAdmin,
   onNavigate,
   collapsed,
-  sectionTitle,
   pathname,
 }: {
   item: NavItem;
@@ -152,7 +280,6 @@ function NavGroup({
   isAdmin: boolean;
   onNavigate?: () => void;
   collapsed?: boolean;
-  sectionTitle: string;
   pathname: string;
 }) {
   const visibleChildren = (item.children ?? []).filter((child) => isNavItemVisible(child, hasFeature, isAdmin));
@@ -160,45 +287,43 @@ function NavGroup({
   const isGroupActive = visibleChildren.some(
     (child) => child.to && (pathname === child.to || pathname.startsWith(`${child.to}/`)),
   );
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isGroupActive);
   const wasActiveRef = useRef(false);
 
   useEffect(() => {
     if (isGroupActive && !wasActiveRef.current) setOpen(true);
-    if (!isGroupActive && wasActiveRef.current) setOpen(false);
     wasActiveRef.current = isGroupActive;
   }, [isGroupActive]);
 
   if (collapsed) {
-    const firstChild = visibleChildren.find((child) => child.to);
-    const flyoutHint = visibleChildren.map((child) => child.label).join(" · ");
+    const flyoutItems = visibleChildren
+      .filter((child): child is NavItem & { to: string } => !!child.to)
+      .map((child) => ({ to: child.to, label: child.label }));
 
-    return firstChild?.to ? (
-      <SidebarCollapsedFlyout
-        collapsed
+    return (
+      <SidebarSubmenuFlyout
         label={item.label}
-        description={flyoutHint || sectionTitle}
-      >
-        <NavLink
-          to={firstChild.to}
-          onClick={onNavigate}
-          data-tour={tourNavId(firstChild.to)}
-          className={({ isActive }) =>
-            cn(
+        items={flyoutItems}
+        onNavigate={onNavigate}
+        trigger={
+          <div
+            className={cn(
               "flex items-center justify-center rounded-lg px-2 py-2.5 transition-colors",
-              (isActive || isGroupActive) && "bg-white/20 text-primary-foreground",
-              !isActive && !isGroupActive && "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
-            )
-          }
-        >
-          <Icon className="size-4 shrink-0" />
-        </NavLink>
-      </SidebarCollapsedFlyout>
-    ) : null;
+              isGroupActive
+                ? "bg-white/20 text-primary-foreground"
+                : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+            )}
+            aria-label={item.label}
+          >
+            <Icon className="size-4 shrink-0" />
+          </div>
+        }
+      />
+    );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -206,11 +331,12 @@ function NavGroup({
         className={cn(
           "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
           isGroupActive
-            ? "text-primary-foreground"
+            ? "bg-white/10 text-primary-foreground"
             : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
         )}
       >
-        <span className="flex-1 text-left">{item.label}</span>
+        <Icon className="size-4 shrink-0 opacity-90" />
+        <span className="flex-1 truncate text-left">{item.label}</span>
         <ChevronDown
           className={cn("size-4 shrink-0 opacity-70 transition-transform", open && "rotate-180")}
           aria-hidden
@@ -256,9 +382,9 @@ function NavSection({
   if (visible.length === 0) return null;
 
   return (
-    <div className="space-y-1" data-tour="sidebar-nav">
+    <div className="space-y-1" data-tour={title === "Dia a dia" ? "sidebar-nav" : undefined}>
       {!collapsed && (
-        <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55">
+        <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/55 first:pt-0">
           {title}
         </p>
       )}
@@ -271,7 +397,6 @@ function NavSection({
             isAdmin={isAdmin}
             onNavigate={onNavigate}
             collapsed={collapsed}
-            sectionTitle={title}
             pathname={pathname}
           />
         ) : item.to ? (
@@ -367,27 +492,31 @@ export function AppSidebar({
 
       <Separator className="relative z-10 bg-white/20" />
 
-      <nav className={cn("relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
-        {isTenant && (
-          <NavSection
-            title="Operação"
-            items={TENANT_NAV}
-            hasFeature={hasFeature}
-            isAdmin={isAdmin}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-          />
-        )}
-        {isPlatform && (
-          <NavSection
-            title="Plataforma"
-            items={PLATFORM_NAV}
-            hasFeature={() => true}
-            isAdmin
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-          />
-        )}
+      <nav className={cn("relative z-10 flex flex-1 flex-col gap-2 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
+        {isTenant &&
+          TENANT_NAV_SECTIONS.map((section) => (
+            <NavSection
+              key={section.title}
+              title={section.title}
+              items={section.items}
+              hasFeature={hasFeature}
+              isAdmin={isAdmin}
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+            />
+          ))}
+        {isPlatform &&
+          PLATFORM_NAV_SECTIONS.map((section) => (
+            <NavSection
+              key={section.title}
+              title={section.title}
+              items={section.items}
+              hasFeature={() => true}
+              isAdmin
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+            />
+          ))}
       </nav>
 
       <div className={cn("relative z-10 border-t border-white/20", collapsed ? "p-2" : "p-4")}>

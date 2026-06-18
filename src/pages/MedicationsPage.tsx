@@ -54,8 +54,10 @@ export function MedicationsPage() {
   if (!isAdmin) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Catálogo de medicamentos" />
-        <p className="text-sm text-muted-foreground">Acesso restrito a administradores.</p>
+        <PageHeader
+          title="Catálogo de medicamentos"
+          description="Acesso restrito a administradores. O catálogo padroniza nomes entre filiais."
+        />
       </div>
     );
   }
@@ -64,7 +66,7 @@ export function MedicationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Catálogo de medicamentos"
-        description="Nomes canônicos e aliases para padronizar a rede"
+        description="Cadastro de nomes canônicos e aliases. Usado ao vincular planos de cuidado e para filtrar relatórios/programas com precisão."
         actions={
           <Button
             variant="outline"
