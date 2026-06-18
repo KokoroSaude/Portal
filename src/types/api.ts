@@ -527,6 +527,7 @@ export interface TenantSettings {
   achievementsEnabled?: boolean;
   dailySummaryEnabled?: boolean;
   progressMenuEnabled?: boolean;
+  requirePreRegisteredPatients?: boolean;
 }
 
 export interface PatientAchievementItem {

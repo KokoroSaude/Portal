@@ -66,6 +66,7 @@ export function SettingsPage() {
         onboardingResumeEnabled: settings.onboardingResumeEnabled ?? true,
         onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
         onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
+        requirePreRegisteredPatients: settings.requirePreRegisteredPatients ?? false,
       });
     }
   }, [settings]);
@@ -301,6 +302,21 @@ export function SettingsPage() {
                   id="aiEnabled"
                   checked={form.aiEnabled}
                   onCheckedChange={(checked) => update("aiEnabled", checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="requirePreRegisteredPatients">Somente pacientes cadastrados</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativo, o WhatsApp só responde a números já cadastrados no portal. Novos
+                    contatos precisam ser incluídos pela equipe antes de enviar mensagem.
+                  </p>
+                </div>
+                <Switch
+                  id="requirePreRegisteredPatients"
+                  checked={form.requirePreRegisteredPatients ?? false}
+                  onCheckedChange={(checked) => update("requirePreRegisteredPatients", checked)}
                 />
               </div>
 
