@@ -28,7 +28,7 @@ export function AppLayout() {
       <div className="flex h-[100dvh] overflow-hidden bg-background">
         <aside
           className={cn(
-            "hidden h-full shrink-0 transition-[width] duration-200 ease-in-out lg:flex",
+            "hidden h-full min-h-0 shrink-0 transition-[width] duration-200 ease-in-out lg:flex",
             sidebarCollapsed ? "w-16" : "w-64",
           )}
         >

@@ -21,7 +21,7 @@ export function MobileNavDrawer({ open, onOpenChange, children }: MobileNavDrawe
         />
         <Dialog.Content
           className={cn(
-            "fixed inset-y-0 left-0 z-50 flex w-[min(100vw,18rem)] flex-col shadow-soft-lg outline-none",
+            "fixed inset-y-0 left-0 z-50 flex min-h-0 w-[min(100vw,18rem)] flex-col overflow-hidden shadow-soft-lg outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
             "duration-200",

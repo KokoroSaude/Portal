@@ -447,7 +447,7 @@ export function AppSidebar({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
       )}
     >
@@ -456,7 +456,7 @@ export function AppSidebar({
 
       <div
         className={cn(
-          "relative z-10 flex flex-col items-center text-center",
+          "relative z-10 flex shrink-0 flex-col items-center text-center",
           collapsed ? "px-2 py-4" : "px-6 py-5",
         )}
       >
@@ -490,36 +490,43 @@ export function AppSidebar({
         )}
       </div>
 
-      <Separator className="relative z-10 bg-white/20" />
+      <Separator className="relative z-10 shrink-0 bg-white/20" />
 
-      <nav className={cn("relative z-10 flex flex-1 flex-col gap-2 overflow-y-auto", collapsed ? "p-2" : "p-4")}>
-        {isTenant &&
-          TENANT_NAV_SECTIONS.map((section) => (
-            <NavSection
-              key={section.title}
-              title={section.title}
-              items={section.items}
-              hasFeature={hasFeature}
-              isAdmin={isAdmin}
-              onNavigate={onNavigate}
-              collapsed={collapsed}
-            />
-          ))}
-        {isPlatform &&
-          PLATFORM_NAV_SECTIONS.map((section) => (
-            <NavSection
-              key={section.title}
-              title={section.title}
-              items={section.items}
-              hasFeature={() => true}
-              isAdmin
-              onNavigate={onNavigate}
-              collapsed={collapsed}
-            />
-          ))}
+      <nav
+        className={cn(
+          "relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain",
+          collapsed ? "p-2" : "p-4",
+        )}
+      >
+        <div className="flex flex-col gap-2">
+          {isTenant &&
+            TENANT_NAV_SECTIONS.map((section) => (
+              <NavSection
+                key={section.title}
+                title={section.title}
+                items={section.items}
+                hasFeature={hasFeature}
+                isAdmin={isAdmin}
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+              />
+            ))}
+          {isPlatform &&
+            PLATFORM_NAV_SECTIONS.map((section) => (
+              <NavSection
+                key={section.title}
+                title={section.title}
+                items={section.items}
+                hasFeature={() => true}
+                isAdmin
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+              />
+            ))}
+        </div>
       </nav>
 
-      <div className={cn("relative z-10 border-t border-white/20", collapsed ? "p-2" : "p-4")}>
+      <div className={cn("relative z-10 shrink-0 border-t border-white/20", collapsed ? "p-2" : "p-4")}>
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
             <SidebarCollapsedFlyout
