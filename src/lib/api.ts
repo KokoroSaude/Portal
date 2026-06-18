@@ -91,7 +91,7 @@ import type {
   WhatsappDiagnostics,
   WhatsappSender,
   MetaEmbeddedSignupConfig,
-  MetaEmbeddedSignupCompleteResult,
+  MetaEmbeddedSignupFlowResult,
   WhatsAppBusinessProfile,
   UpdateWhatsAppBusinessProfilePayload,
 } from "@/types/api";
@@ -658,15 +658,16 @@ export const api = {
   completeMetaEmbeddedSignup: (
     token: string,
     payload: {
-      code: string;
+      code?: string;
       wabaId?: string;
       phoneId?: string;
       phoneNumber?: string;
       displayName?: string;
       redirectUri?: string;
+      sessionId?: string;
     },
   ) =>
-    request<MetaEmbeddedSignupCompleteResult>("/api/meta/embedded-signup/complete", {
+    request<MetaEmbeddedSignupFlowResult>("/api/meta/embedded-signup/complete", {
       method: "POST",
       token,
       body: payload,

@@ -1201,6 +1201,22 @@ export interface MetaEmbeddedSignupCompleteResult {
   webhookConfigured: boolean;
 }
 
+export interface MetaEmbeddedSignupPhoneOption {
+  phoneId: string;
+  displayPhoneNumber: string;
+  verifiedName: string | null;
+  isVerified: boolean;
+  likelyTestNumber: boolean;
+}
+
+export interface MetaEmbeddedSignupFlowResult {
+  status: "completed" | "select_phone";
+  result: MetaEmbeddedSignupCompleteResult | null;
+  sessionId: string | null;
+  wabaId: string | null;
+  phones: MetaEmbeddedSignupPhoneOption[] | null;
+}
+
 export interface WhatsAppBusinessProfile {
   phoneId: string;
   verifiedName: string | null;
