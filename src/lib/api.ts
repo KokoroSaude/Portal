@@ -754,6 +754,13 @@ export const api = {
       body,
     }),
 
+  updatePromoCampaign: (token: string, campaignId: string, message: string) =>
+    request<void>(`/api/promotions/campaigns/${campaignId}`, {
+      method: "PUT",
+      token,
+      body: { message },
+    }),
+
   sendPromoCampaign: (token: string, campaignId: string) =>
     request<{ status: string }>(`/api/promotions/campaigns/${campaignId}/send`, {
       method: "POST",

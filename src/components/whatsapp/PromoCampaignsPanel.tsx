@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Megaphone, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
+import { CalendarClock, Megaphone, Plus, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,15 @@ const SEGMENTS = [
   { value: "PatientsOnMedication", label: "Pacientes em um medicamento (catálogo)" },
 ] as const;
 
+function segmentLabel(value: string): string {
+  return SEGMENTS.find((s) => s.value === value)?.label ?? value;
+}
+
 function statusVariant(status: string): "default" | "secondary" | "outline" | "warning" {
   switch (status) {
     case "Completed":
       return "secondary";
     case "Sending":
-      return "default";
     case "Scheduled":
       return "default";
     case "Failed":
@@ -81,6 +84,8 @@ function localDatetimeToUtcIso(local: string): string {
 export function PromoCampaignsPanel() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const editorRef = useRef<HTMLDivElement>(null);
+
   const [message, setMessage] = useState("");
   const [segment, setSegment] = useState<string>("ActivePatients");
   const [segmentMedicationId, setSegmentMedicationId] = useState<string>("");
@@ -126,29 +131,62 @@ export function PromoCampaignsPanel() {
     },
   });
 
-  useEffect(() => {
-    if (defaults.data?.defaultMessage && !message) {
-      setMessage(defaults.data.defaultMessage);
-    }
-  }, [defaults.data?.defaultMessage, message]);
-
-  useEffect(() => {
-    if (detail.data?.status === "Draft") {
-      setScheduleAtLocal(defaultScheduleLocal());
-    }
-  }, [detail.data?.status, selectedId]);
-
-  const invalidateCampaign = () => {
-    void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
-    void queryClient.invalidateQueries({ queryKey: ["promo-campaign", selectedId] });
-  };
-
   const list = campaigns.data ?? [];
+  const selectedSummary = list.find((c) => c.id === selectedId) ?? null;
+  const isEditingDraft = selectedSummary?.status === "Draft";
+  const isCreatingNew = !selectedId;
   const templateReady = defaults.data?.promotionTemplateConfigured ?? false;
   const formValid =
     !!message.trim() &&
     templateReady &&
     (segment !== "PatientsOnMedication" || !!segmentMedicationId);
+
+  useEffect(() => {
+    if (defaults.data?.defaultMessage && isCreatingNew && !message) {
+      setMessage(defaults.data.defaultMessage);
+    }
+  }, [defaults.data?.defaultMessage, isCreatingNew, message]);
+
+  useEffect(() => {
+    if (detail.isError) {
+      toast.error(
+        detail.error instanceof ApiClientError
+          ? detail.error.message
+          : "Erro ao carregar campanha",
+      );
+    }
+  }, [detail.isError, detail.error]);
+
+  const invalidateCampaign = () => {
+    void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
+    if (selectedId) {
+      void queryClient.invalidateQueries({ queryKey: ["promo-campaign", selectedId] });
+    }
+  };
+
+  const scrollToEditor = () => {
+    requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const resetNewForm = () => {
+    setSelectedId(null);
+    setMessage(defaults.data?.defaultMessage ?? "");
+    setSegment("ActivePatients");
+    setSegmentMedicationId("");
+    setScheduleAtLocal(defaultScheduleLocal());
+  };
+
+  const selectCampaign = (campaign: PromoCampaignListItem) => {
+    setSelectedId(campaign.id);
+    setMessage(campaign.message);
+    setSegment(campaign.segment);
+    if (campaign.status === "Draft") {
+      setScheduleAtLocal(defaultScheduleLocal());
+    }
+    scrollToEditor();
+  };
 
   const createDraftPayload = () => ({
     message: message.trim(),
@@ -157,26 +195,26 @@ export function PromoCampaignsPanel() {
       segment === "PatientsOnMedication" ? segmentMedicationId || undefined : undefined,
   });
 
-  const ensureDraftCampaignId = async (): Promise<string> => {
-    if (selectedId) {
-      const existing = list.find((c) => c.id === selectedId);
-      if (existing?.status === "Draft") return selectedId;
-    }
-    const result = await api.createPromoCampaign(token!, createDraftPayload());
-    setSelectedId(result.campaignId);
-    void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
-    return result.campaignId;
-  };
-
   const createCampaign = useMutation({
     mutationFn: () => api.createPromoCampaign(token!, createDraftPayload()),
     onSuccess: (result) => {
       toast.success(`Campanha criada — ${result.totalRecipients} destinatário(s)`);
       setSelectedId(result.campaignId);
       void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
+      scrollToEditor();
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao criar campanha"),
+  });
+
+  const updateCampaign = useMutation({
+    mutationFn: () => api.updatePromoCampaign(token!, selectedId!, message.trim()),
+    onSuccess: () => {
+      toast.success("Rascunho salvo");
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar campanha"),
   });
 
   const sendCampaign = useMutation({
@@ -214,7 +252,7 @@ export function PromoCampaignsPanel() {
     mutationFn: (campaignId: string) => api.deactivatePromoCampaign(token!, campaignId),
     onSuccess: () => {
       toast.success("Campanha desativada");
-      setSelectedId(null);
+      resetNewForm();
       invalidateCampaign();
     },
     onError: (err) =>
@@ -225,36 +263,24 @@ export function PromoCampaignsPanel() {
     mutationFn: (campaignId: string) => api.deletePromoCampaign(token!, campaignId),
     onSuccess: () => {
       toast.success("Campanha excluída");
-      setSelectedId(null);
+      resetNewForm();
       invalidateCampaign();
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir campanha"),
   });
 
-  const confirmDeactivate = (campaignId: string, message: string) => {
-    if (!window.confirm(`Desativar esta campanha?\n\n${message}`)) return;
-    deactivateCampaign.mutate(campaignId);
-  };
-
-  const confirmDelete = (campaignId: string, message: string) => {
-    if (
-      !window.confirm(
-        `Excluir permanentemente esta campanha?\n\n${message}\n\nEsta ação não pode ser desfeita.`,
-      )
-    ) {
-      return;
-    }
-    deleteCampaign.mutate(campaignId);
-  };
-
-  const canDeactivate = (status: string) => status === "Draft" || status === "Scheduled";
-  const canDelete = (status: string) => status !== "Sending";
-
   const createAndSend = useMutation({
     mutationFn: async () => {
-      const campaignId = await ensureDraftCampaignId();
-      await api.sendPromoCampaign(token!, campaignId);
+      let campaignId = selectedId;
+      if (!isEditingDraft) {
+        const result = await api.createPromoCampaign(token!, createDraftPayload());
+        campaignId = result.campaignId;
+        setSelectedId(result.campaignId);
+      } else if (message.trim() !== selectedSummary?.message) {
+        await api.updatePromoCampaign(token!, campaignId!, message.trim());
+      }
+      await api.sendPromoCampaign(token!, campaignId!);
     },
     onSuccess: () => {
       toast.success("Envio iniciado em segundo plano");
@@ -266,8 +292,19 @@ export function PromoCampaignsPanel() {
 
   const createAndSchedule = useMutation({
     mutationFn: async () => {
-      const campaignId = await ensureDraftCampaignId();
-      return api.schedulePromoCampaign(token!, campaignId, localDatetimeToUtcIso(scheduleAtLocal));
+      let campaignId = selectedId;
+      if (!isEditingDraft) {
+        const result = await api.createPromoCampaign(token!, createDraftPayload());
+        campaignId = result.campaignId;
+        setSelectedId(result.campaignId);
+      } else if (message.trim() !== selectedSummary?.message) {
+        await api.updatePromoCampaign(token!, campaignId!, message.trim());
+      }
+      return api.schedulePromoCampaign(
+        token!,
+        campaignId!,
+        localDatetimeToUtcIso(scheduleAtLocal),
+      );
     },
     onSuccess: (result) => {
       toast.success(`Campanha agendada para ${formatDateTime(result.scheduledAt)}`);
@@ -277,129 +314,56 @@ export function PromoCampaignsPanel() {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao agendar campanha"),
   });
 
+  const confirmDeactivate = (campaignId: string, label: string) => {
+    if (!window.confirm(`Desativar esta campanha?\n\n${label}`)) return;
+    deactivateCampaign.mutate(campaignId);
+  };
+
+  const confirmDelete = (campaignId: string, label: string) => {
+    if (
+      !window.confirm(
+        `Excluir permanentemente esta campanha?\n\n${label}\n\nEsta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    deleteCampaign.mutate(campaignId);
+  };
+
   const actionPending =
-    createCampaign.isPending || createAndSend.isPending || createAndSchedule.isPending;
+    createCampaign.isPending ||
+    updateCampaign.isPending ||
+    createAndSend.isPending ||
+    createAndSchedule.isPending ||
+    sendCampaign.isPending ||
+    scheduleCampaign.isPending;
+
+  const canDeactivate = (status: string) => status === "Draft" || status === "Scheduled";
+  const canDelete = (status: string) => status !== "Sending";
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Megaphone className="size-5" />
-            Nova campanha de promoção
-          </CardTitle>
-          <CardDescription>
-            Envia o template Meta <code className="text-xs">kokoro_promocao_farmacia</code> para um
-            segmento de pacientes. Respeita opt-out e envia com intervalo entre mensagens.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!templateReady && (
-            <p className="rounded-md border border-amber-300/60 bg-amber-50/60 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
-              Template de promoção não configurado. Cadastre e aprove{" "}
-              <strong>kokoro_promocao_farmacia</strong> em Admin → Templates Meta.
-            </p>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="promo-segment">Segmento</Label>
-            <Select value={segment} onValueChange={setSegment}>
-              <SelectTrigger id="promo-segment">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SEGMENTS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {segment === "PatientsOnMedication" && (
-            <div className="space-y-2">
-              <Label>Medicamento do catálogo</Label>
-              <Select value={segmentMedicationId} onValueChange={setSegmentMedicationId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o medicamento..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(medications.data ?? []).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.canonicalName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="promo-message">Texto da promoção (variável mensagem)</Label>
-            <Textarea
-              id="promo-message"
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="promo-schedule-at">Agendar para (opcional)</Label>
-            <Input
-              id="promo-schedule-at"
-              type="datetime-local"
-              value={scheduleAtLocal}
-              onChange={(e) => setScheduleAtLocal(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Horário local do seu navegador. Fora da janela de envio da clínica, o disparo aguarda
-              o próximo horário permitido.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!formValid || actionPending}
-              onClick={() => createCampaign.mutate()}
-            >
-              Criar rascunho
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!formValid || actionPending || !scheduleAtLocal}
-              onClick={() => createAndSchedule.mutate()}
-            >
-              <CalendarClock className="size-4" />
-              Agendar envio
-            </Button>
-            <Button
-              type="button"
-              disabled={!formValid || actionPending}
-              onClick={() => createAndSend.mutate()}
-            >
-              <Send className="size-4" />
-              Enviar agora
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <div>
             <CardTitle>Campanhas</CardTitle>
-            <CardDescription>Histórico e status de envio</CardDescription>
+            <CardDescription>Selecione uma campanha para editar, enviar ou excluir</CardDescription>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={campaigns.isFetching}
-            onClick={() => void campaigns.refetch()}
-          >
-            <RefreshCw className={campaigns.isFetching ? "size-4 animate-spin" : "size-4"} />
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={resetNewForm}>
+              <Plus className="size-4" />
+              Nova campanha
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={campaigns.isFetching}
+              onClick={() => void campaigns.refetch()}
+            >
+              <RefreshCw className={campaigns.isFetching ? "size-4 animate-spin" : "size-4"} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {campaigns.isLoading ? (
@@ -412,15 +376,15 @@ export function PromoCampaignsPanel() {
                 <button
                   key={campaign.id}
                   type="button"
-                  onClick={() => setSelectedId(campaign.id)}
+                  onClick={() => selectCampaign(campaign)}
                   className={`flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left hover:bg-muted/50 ${
-                    selectedId === campaign.id ? "border-primary bg-primary/5" : ""
+                    selectedId === campaign.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : ""
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{campaign.message}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDateTime(campaign.createdAt)} · {campaign.segment}
+                      {formatDateTime(campaign.createdAt)} · {segmentLabel(campaign.segment)}
                       {campaign.status === "Scheduled" && campaign.scheduledAt && (
                         <> · envio {formatDateTime(campaign.scheduledAt)}</>
                       )}
@@ -439,76 +403,241 @@ export function PromoCampaignsPanel() {
         </CardContent>
       </Card>
 
-      {selectedId && (
-        <Card>
-          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle>Detalhes</CardTitle>
-              {detail.data && (
-                <CardDescription className="mt-1">
-                  {detail.data.status === "Scheduled" && detail.data.scheduledAt && (
-                    <>
-                      Agendada para {formatDateTime(detail.data.scheduledAt)} ·{" "}
-                    </>
-                  )}
-                  {detail.data.sentCount} enviados · {detail.data.failedCount} falhas ·{" "}
-                  {detail.data.skippedCount} ignorados
-                </CardDescription>
+      <div ref={editorRef}>
+        {(isCreatingNew || isEditingDraft) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="size-5" />
+                {isEditingDraft ? "Editar rascunho" : "Nova campanha de promoção"}
+              </CardTitle>
+              <CardDescription>
+                {isEditingDraft
+                  ? "Altere o texto e escolha enviar, agendar ou excluir."
+                  : "Envia o template Meta kokoro_promocao_farmacia para um segmento de pacientes."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!templateReady && (
+                <p className="rounded-md border border-amber-300/60 bg-amber-50/60 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                  Template de promoção não configurado. Cadastre e aprove{" "}
+                  <strong>kokoro_promocao_farmacia</strong> em Admin → Templates Meta.
+                </p>
               )}
-            </div>
-            {detail.data?.status === "Draft" && (
+
+              {isEditingDraft && selectedSummary && (
+                <p className="text-sm text-muted-foreground">
+                  Segmento: <strong>{segmentLabel(selectedSummary.segment)}</strong> ·{" "}
+                  {selectedSummary.totalRecipients} destinatário(s)
+                </p>
+              )}
+
+              {!isEditingDraft && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="promo-segment">Segmento</Label>
+                    <Select value={segment} onValueChange={setSegment}>
+                      <SelectTrigger id="promo-segment">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SEGMENTS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {segment === "PatientsOnMedication" && (
+                    <div className="space-y-2">
+                      <Label>Medicamento do catálogo</Label>
+                      <Select value={segmentMedicationId} onValueChange={setSegmentMedicationId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o medicamento..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(medications.data ?? []).map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.canonicalName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="promo-message">Texto da promoção (variável mensagem)</Label>
+                <Textarea
+                  id="promo-message"
+                  rows={4}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promo-schedule-at">Agendar para</Label>
+                <Input
+                  id="promo-schedule-at"
+                  type="datetime-local"
+                  value={scheduleAtLocal}
+                  onChange={(e) => setScheduleAtLocal(e.target.value)}
+                />
+              </div>
+
               <div className="flex flex-wrap gap-2">
+                {isEditingDraft ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!message.trim() || actionPending}
+                    onClick={() => updateCampaign.mutate()}
+                  >
+                    Salvar alterações
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!formValid || actionPending}
+                    onClick={() => createCampaign.mutate()}
+                  >
+                    Criar rascunho
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
-                  disabled={scheduleCampaign.isPending || !templateReady || !scheduleAtLocal}
-                  onClick={() =>
-                    scheduleCampaign.mutate({
-                      campaignId: selectedId,
-                      scheduledAt: localDatetimeToUtcIso(scheduleAtLocal),
-                    })
-                  }
+                  disabled={(!formValid && !isEditingDraft) || actionPending || !scheduleAtLocal}
+                  onClick={() => createAndSchedule.mutate()}
                 >
                   <CalendarClock className="size-4" />
                   Agendar envio
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
-                  disabled={sendCampaign.isPending || !templateReady}
-                  onClick={() => sendCampaign.mutate(selectedId)}
+                  disabled={(!formValid && !isEditingDraft) || actionPending}
+                  onClick={() => createAndSend.mutate()}
                 >
                   <Send className="size-4" />
                   Enviar agora
                 </Button>
+                {isEditingDraft && selectedId && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                      onClick={() => confirmDeactivate(selectedId, message)}
+                    >
+                      <XCircle className="size-4" />
+                      Desativar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                      onClick={() => confirmDelete(selectedId, message)}
+                    >
+                      <Trash2 className="size-4" />
+                      Excluir
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
-            {detail.data?.status === "Scheduled" && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={cancelSchedule.isPending}
-                onClick={() => cancelSchedule.mutate(selectedId)}
-              >
-                <XCircle className="size-4" />
-                Cancelar agendamento
-              </Button>
-            )}
-            {detail.data?.status === "Sending" && (
+            </CardContent>
+          </Card>
+        )}
+
+        {selectedSummary && !isEditingDraft && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-wrap items-center gap-2">
+                Campanha selecionada
+                <Badge variant={statusVariant(selectedSummary.status)}>
+                  {statusLabel(selectedSummary.status)}
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                {selectedSummary.status === "Scheduled" && selectedSummary.scheduledAt && (
+                  <>Agendada para {formatDateTime(selectedSummary.scheduledAt)} · </>
+                )}
+                {selectedSummary.sentCount}/{selectedSummary.totalRecipients} enviados
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm">{selectedSummary.message}</p>
               <p className="text-sm text-muted-foreground">
-                Envio em andamento — aguarde a conclusão para excluir.
+                Segmento: {segmentLabel(selectedSummary.segment)}
               </p>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {selectedSummary.status === "Scheduled" && selectedId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={cancelSchedule.isPending}
+                    onClick={() => cancelSchedule.mutate(selectedId)}
+                  >
+                    <XCircle className="size-4" />
+                    Cancelar agendamento
+                  </Button>
+                )}
+                {canDeactivate(selectedSummary.status) && selectedId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                    onClick={() => confirmDeactivate(selectedId, selectedSummary.message)}
+                  >
+                    Desativar
+                  </Button>
+                )}
+                {canDelete(selectedSummary.status) && selectedId && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                    onClick={() => confirmDelete(selectedId, selectedSummary.message)}
+                  >
+                    <Trash2 className="size-4" />
+                    Excluir
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {selectedId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Destinatários</CardTitle>
+            <CardDescription>
+              {detail.data
+                ? `${detail.data.sentCount} enviados · ${detail.data.failedCount} falhas · ${detail.data.skippedCount} ignorados`
+                : "Carregando lista…"}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {detail.isLoading ? (
               <Skeleton className="h-40 w-full" />
+            ) : detail.isError ? (
+              <p className="text-sm text-destructive">Não foi possível carregar os destinatários.</p>
             ) : detail.data ? (
-              <>
-                <div className="max-h-80 space-y-1 overflow-y-auto text-sm">
-                  {detail.data.recipients.map((r) => (
+              <div className="max-h-80 space-y-1 overflow-y-auto text-sm">
+                {detail.data.recipients.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhum destinatário.</p>
+                ) : (
+                  detail.data.recipients.map((r) => (
                     <div
                       key={r.patientId}
                       className="flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1"
@@ -519,39 +648,9 @@ export function PromoCampaignsPanel() {
                         <span className="w-full text-xs text-destructive">{r.errorMessage}</span>
                       )}
                     </div>
-                  ))}
-                </div>
-                {(canDeactivate(detail.data.status) || canDelete(detail.data.status)) && (
-                  <div className="flex flex-wrap gap-2 border-t pt-4">
-                    {canDeactivate(detail.data.status) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
-                        onClick={() =>
-                          confirmDeactivate(selectedId, detail.data!.message)
-                        }
-                      >
-                        <XCircle className="size-4" />
-                        Desativar
-                      </Button>
-                    )}
-                    {canDelete(detail.data.status) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
-                        onClick={() => confirmDelete(selectedId, detail.data!.message)}
-                      >
-                        <Trash2 className="size-4" />
-                        Excluir
-                      </Button>
-                    )}
-                  </div>
+                  ))
                 )}
-              </>
+              </div>
             ) : null}
           </CardContent>
         </Card>
