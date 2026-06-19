@@ -490,27 +490,27 @@ export function AppSidebar({
         )}
       >
         {!collapsed ? (
-          <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-start gap-1">
-            <div className="size-8" aria-hidden />
-            <div className="flex min-w-0 flex-col items-center text-center">
-              <KokoroLogo variant="onCoral" to="/" height={56} />
-              <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>
-            </div>
-            {collapsible ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                aria-label="Recolher menu"
-                onClick={onToggleCollapsed}
-              >
-                <PanelLeftClose className="size-4" />
-              </Button>
-            ) : (
+          <>
+            <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1">
               <div className="size-8" aria-hidden />
-            )}
-          </div>
+              <KokoroLogo variant="onCoral" to="/" height={48} className="mx-auto" />
+              {collapsible ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                  aria-label="Recolher menu"
+                  onClick={onToggleCollapsed}
+                >
+                  <PanelLeftClose className="size-4" />
+                </Button>
+              ) : (
+                <div className="size-8" aria-hidden />
+              )}
+            </div>
+            <p className="mt-2 text-center text-xs text-primary-foreground/70">Portal</p>
+          </>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <KokoroLogo variant="onCoral" to="/" height={32} />
