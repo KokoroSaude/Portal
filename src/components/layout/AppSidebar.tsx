@@ -251,7 +251,7 @@ function NavLinkItem({
         data-tour={tourNavId(to)}
         className={({ isActive }) =>
           cn(
-            "flex items-start rounded-lg py-2.5 text-sm font-medium transition-colors",
+            "flex items-start rounded-lg py-2 text-sm font-medium transition-colors",
             collapsed ? "justify-center px-2" : "gap-3 px-3",
             !collapsed && indent && "ml-3 py-2 pl-3 text-[13px] font-normal",
             isActive
@@ -261,7 +261,11 @@ function NavLinkItem({
         }
       >
         <Icon className={cn("mt-0.5 shrink-0", collapsed ? "size-4" : "size-4 opacity-90")} />
-        {!collapsed && <span className="min-w-0 flex-1 leading-snug">{label}</span>}
+        {!collapsed && (
+          <span className="min-w-0 flex-1 line-clamp-2 leading-snug" title={label}>
+            {label}
+          </span>
+        )}
       </NavLink>
     </SidebarCollapsedFlyout>
   );
@@ -329,14 +333,16 @@ function NavGroup({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cn(
-          "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          "flex w-full items-start gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           isGroupActive
             ? "bg-white/10 text-primary-foreground"
             : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
         )}
       >
         <Icon className="mt-0.5 size-4 shrink-0 opacity-90" />
-        <span className="min-w-0 flex-1 text-left leading-snug">{item.label}</span>
+        <span className="min-w-0 flex-1 line-clamp-2 text-left leading-snug" title={item.label}>
+          {item.label}
+        </span>
         <ChevronDown
           className={cn("mt-0.5 size-4 shrink-0 opacity-70 transition-transform", open && "rotate-180")}
           aria-hidden
@@ -437,11 +443,13 @@ export function AppSidebar({
     useAuth();
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const sidebar = sidebarRef.current;
     const nav = navRef.current;
-    if (!nav) return;
+    if (!sidebar || !nav) return;
 
     const onWheel = (event: WheelEvent) => {
       if (nav.scrollHeight <= nav.clientHeight + 1) return;
@@ -461,8 +469,8 @@ export function AppSidebar({
       }
     };
 
-    nav.addEventListener("wheel", onWheel, { passive: false });
-    return () => nav.removeEventListener("wheel", onWheel);
+    sidebar.addEventListener("wheel", onWheel, { passive: false });
+    return () => sidebar.removeEventListener("wheel", onWheel);
   }, [collapsed, isPlatform, isTenant, isAdmin]);
 
   const handleLogout = () => {
@@ -473,6 +481,7 @@ export function AppSidebar({
 
   return (
     <div
+      ref={sidebarRef}
       className={cn(
         "relative grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
@@ -538,10 +547,11 @@ export function AppSidebar({
         ref={navRef}
         className={cn(
           "relative z-10 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain",
-          collapsed ? "p-2" : "p-4",
+          "[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.35)_transparent]",
+          collapsed ? "p-2 pb-3" : "p-4 pb-6",
         )}
       >
-        <div className="flex flex-col gap-2 pb-1">
+        <div className="flex flex-col gap-1.5 pb-2">
           {isTenant &&
             TENANT_NAV_SECTIONS.map((section) => (
               <NavSection
