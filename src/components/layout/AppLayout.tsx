@@ -29,7 +29,7 @@ export function AppLayout() {
         <aside
           className={cn(
             "fixed inset-y-0 left-0 z-40 hidden h-[100dvh] overflow-hidden transition-[width] duration-200 ease-in-out lg:flex lg:flex-col",
-            sidebarCollapsed ? "w-16" : "w-64",
+            sidebarCollapsed ? "w-16" : "w-72",
           )}
         >
           <AppSidebar
@@ -44,7 +44,7 @@ export function AppLayout() {
         <div
           className={cn(
             "flex min-h-[100dvh] flex-col transition-[padding] duration-200 ease-in-out",
-            sidebarCollapsed ? "lg:pl-16" : "lg:pl-64",
+            sidebarCollapsed ? "lg:pl-16" : "lg:pl-72",
           )}
         >
           <header className="relative flex h-14 shrink-0 items-center border-b border-border/60 bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">

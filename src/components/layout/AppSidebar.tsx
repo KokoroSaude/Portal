@@ -251,7 +251,7 @@ function NavLinkItem({
         data-tour={tourNavId(to)}
         className={({ isActive }) =>
           cn(
-            "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+            "flex items-start rounded-lg py-2.5 text-sm font-medium transition-colors",
             collapsed ? "justify-center px-2" : "gap-3 px-3",
             !collapsed && indent && "ml-3 py-2 pl-3 text-[13px] font-normal",
             isActive
@@ -260,8 +260,8 @@ function NavLinkItem({
           )
         }
       >
-        <Icon className={cn("shrink-0", collapsed ? "size-4" : "size-4 opacity-90")} />
-        {!collapsed && <span className="truncate">{label}</span>}
+        <Icon className={cn("mt-0.5 shrink-0", collapsed ? "size-4" : "size-4 opacity-90")} />
+        {!collapsed && <span className="min-w-0 flex-1 leading-snug">{label}</span>}
       </NavLink>
     </SidebarCollapsedFlyout>
   );
@@ -329,16 +329,16 @@ function NavGroup({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
           isGroupActive
             ? "bg-white/10 text-primary-foreground"
             : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
         )}
       >
-        <Icon className="size-4 shrink-0 opacity-90" />
-        <span className="flex-1 truncate text-left">{item.label}</span>
+        <Icon className="mt-0.5 size-4 shrink-0 opacity-90" />
+        <span className="min-w-0 flex-1 text-left leading-snug">{item.label}</span>
         <ChevronDown
-          className={cn("size-4 shrink-0 opacity-70 transition-transform", open && "rotate-180")}
+          className={cn("mt-0.5 size-4 shrink-0 opacity-70 transition-transform", open && "rotate-180")}
           aria-hidden
         />
       </button>
@@ -485,37 +485,50 @@ export function AppSidebar({
 
       <div
         className={cn(
-          "relative z-10 flex shrink-0 flex-col items-center text-center",
-          collapsed ? "px-2 py-4" : "px-6 py-5",
+          "relative z-10 shrink-0",
+          collapsed ? "px-2 py-4" : "px-3 py-4",
         )}
       >
-        {collapsible && !collapsed && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-            aria-label="Recolher menu"
-            onClick={onToggleCollapsed}
-          >
-            <PanelLeftClose className="size-4" />
-          </Button>
-        )}
-        <KokoroLogo variant="onCoral" to="/" height={collapsed ? 32 : 56} />
-        {!collapsed && <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>}
-        {collapsible && collapsed && (
-          <SidebarCollapsedFlyout collapsed label="Expandir menu">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mt-2 size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-              aria-label="Expandir menu"
-              onClick={onToggleCollapsed}
-            >
-              <PanelLeft className="size-4" />
-            </Button>
-          </SidebarCollapsedFlyout>
+        {!collapsed ? (
+          <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-start gap-1">
+            <div className="size-8" aria-hidden />
+            <div className="flex min-w-0 flex-col items-center text-center">
+              <KokoroLogo variant="onCoral" to="/" height={56} />
+              <p className="mt-2 text-xs text-primary-foreground/70">Portal</p>
+            </div>
+            {collapsible ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                aria-label="Recolher menu"
+                onClick={onToggleCollapsed}
+              >
+                <PanelLeftClose className="size-4" />
+              </Button>
+            ) : (
+              <div className="size-8" aria-hidden />
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <KokoroLogo variant="onCoral" to="/" height={32} />
+            {collapsible && (
+              <SidebarCollapsedFlyout collapsed label="Expandir menu">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                  aria-label="Expandir menu"
+                  onClick={onToggleCollapsed}
+                >
+                  <PanelLeft className="size-4" />
+                </Button>
+              </SidebarCollapsedFlyout>
+            )}
+          </div>
         )}
       </div>
 
