@@ -772,6 +772,15 @@ export const api = {
       token,
     }),
 
+  deactivatePromoCampaign: (token: string, campaignId: string) =>
+    request<{ status: string }>(`/api/promotions/campaigns/${campaignId}/deactivate`, {
+      method: "POST",
+      token,
+    }),
+
+  deletePromoCampaign: (token: string, campaignId: string) =>
+    request<void>(`/api/promotions/campaigns/${campaignId}`, { method: "DELETE", token }),
+
   getSettings: async (token: string) =>
     normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),
 

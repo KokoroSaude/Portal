@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Megaphone, RefreshCw, Send, XCircle } from "lucide-react";
+import { CalendarClock, Megaphone, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ function statusLabel(status: string): string {
     case "Failed":
       return "Falhou";
     case "Cancelled":
-      return "Cancelada";
+      return "Desativada";
     default:
       return status;
   }
@@ -209,6 +209,47 @@ export function PromoCampaignsPanel() {
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao cancelar agendamento"),
   });
+
+  const deactivateCampaign = useMutation({
+    mutationFn: (campaignId: string) => api.deactivatePromoCampaign(token!, campaignId),
+    onSuccess: () => {
+      toast.success("Campanha desativada");
+      setSelectedId(null);
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao desativar campanha"),
+  });
+
+  const deleteCampaign = useMutation({
+    mutationFn: (campaignId: string) => api.deletePromoCampaign(token!, campaignId),
+    onSuccess: () => {
+      toast.success("Campanha excluída");
+      setSelectedId(null);
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir campanha"),
+  });
+
+  const confirmDeactivate = (campaignId: string, message: string) => {
+    if (!window.confirm(`Desativar esta campanha?\n\n${message}`)) return;
+    deactivateCampaign.mutate(campaignId);
+  };
+
+  const confirmDelete = (campaignId: string, message: string) => {
+    if (
+      !window.confirm(
+        `Excluir permanentemente esta campanha?\n\n${message}\n\nEsta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    deleteCampaign.mutate(campaignId);
+  };
+
+  const canDeactivate = (status: string) => status === "Draft" || status === "Scheduled";
+  const canDelete = (status: string) => status !== "Sending";
 
   const createAndSend = useMutation({
     mutationFn: async () => {
@@ -455,25 +496,62 @@ export function PromoCampaignsPanel() {
                 Cancelar agendamento
               </Button>
             )}
+            {detail.data?.status === "Sending" && (
+              <p className="text-sm text-muted-foreground">
+                Envio em andamento — aguarde a conclusão para excluir.
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {detail.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : detail.data ? (
-              <div className="max-h-80 space-y-1 overflow-y-auto text-sm">
-                {detail.data.recipients.map((r) => (
-                  <div
-                    key={r.patientId}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1"
-                  >
-                    <span>{r.patientName ?? r.phone}</span>
-                    <Badge variant="outline">{r.status}</Badge>
-                    {r.errorMessage && (
-                      <span className="w-full text-xs text-destructive">{r.errorMessage}</span>
+              <>
+                <div className="max-h-80 space-y-1 overflow-y-auto text-sm">
+                  {detail.data.recipients.map((r) => (
+                    <div
+                      key={r.patientId}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1"
+                    >
+                      <span>{r.patientName ?? r.phone}</span>
+                      <Badge variant="outline">{r.status}</Badge>
+                      {r.errorMessage && (
+                        <span className="w-full text-xs text-destructive">{r.errorMessage}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {(canDeactivate(detail.data.status) || canDelete(detail.data.status)) && (
+                  <div className="flex flex-wrap gap-2 border-t pt-4">
+                    {canDeactivate(detail.data.status) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                        onClick={() =>
+                          confirmDeactivate(selectedId, detail.data!.message)
+                        }
+                      >
+                        <XCircle className="size-4" />
+                        Desativar
+                      </Button>
+                    )}
+                    {canDelete(detail.data.status) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        disabled={deactivateCampaign.isPending || deleteCampaign.isPending}
+                        onClick={() => confirmDelete(selectedId, detail.data!.message)}
+                      >
+                        <Trash2 className="size-4" />
+                        Excluir
+                      </Button>
                     )}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : null}
           </CardContent>
         </Card>
