@@ -143,14 +143,33 @@ export function PromoCampaignsPanel() {
     void queryClient.invalidateQueries({ queryKey: ["promo-campaign", selectedId] });
   };
 
+  const list = campaigns.data ?? [];
+  const templateReady = defaults.data?.promotionTemplateConfigured ?? false;
+  const formValid =
+    !!message.trim() &&
+    templateReady &&
+    (segment !== "PatientsOnMedication" || !!segmentMedicationId);
+
+  const createDraftPayload = () => ({
+    message: message.trim(),
+    segment,
+    segmentMedicationId:
+      segment === "PatientsOnMedication" ? segmentMedicationId || undefined : undefined,
+  });
+
+  const ensureDraftCampaignId = async (): Promise<string> => {
+    if (selectedId) {
+      const existing = list.find((c) => c.id === selectedId);
+      if (existing?.status === "Draft") return selectedId;
+    }
+    const result = await api.createPromoCampaign(token!, createDraftPayload());
+    setSelectedId(result.campaignId);
+    void queryClient.invalidateQueries({ queryKey: ["promo-campaigns"] });
+    return result.campaignId;
+  };
+
   const createCampaign = useMutation({
-    mutationFn: () =>
-      api.createPromoCampaign(token!, {
-        message: message.trim(),
-        segment,
-        segmentMedicationId:
-          segment === "PatientsOnMedication" ? segmentMedicationId || undefined : undefined,
-      }),
+    mutationFn: () => api.createPromoCampaign(token!, createDraftPayload()),
     onSuccess: (result) => {
       toast.success(`Campanha criada — ${result.totalRecipients} destinatário(s)`);
       setSelectedId(result.campaignId);
@@ -191,8 +210,34 @@ export function PromoCampaignsPanel() {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao cancelar agendamento"),
   });
 
-  const list = campaigns.data ?? [];
-  const templateReady = defaults.data?.promotionTemplateConfigured ?? false;
+  const createAndSend = useMutation({
+    mutationFn: async () => {
+      const campaignId = await ensureDraftCampaignId();
+      await api.sendPromoCampaign(token!, campaignId);
+    },
+    onSuccess: () => {
+      toast.success("Envio iniciado em segundo plano");
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar campanha"),
+  });
+
+  const createAndSchedule = useMutation({
+    mutationFn: async () => {
+      const campaignId = await ensureDraftCampaignId();
+      return api.schedulePromoCampaign(token!, campaignId, localDatetimeToUtcIso(scheduleAtLocal));
+    },
+    onSuccess: (result) => {
+      toast.success(`Campanha agendada para ${formatDateTime(result.scheduledAt)}`);
+      invalidateCampaign();
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao agendar campanha"),
+  });
+
+  const actionPending =
+    createCampaign.isPending || createAndSend.isPending || createAndSchedule.isPending;
 
   return (
     <div className="space-y-6">
@@ -256,18 +301,46 @@ export function PromoCampaignsPanel() {
               placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
             />
           </div>
-          <Button
-            type="button"
-            disabled={
-              !message.trim() ||
-              !templateReady ||
-              createCampaign.isPending ||
-              (segment === "PatientsOnMedication" && !segmentMedicationId)
-            }
-            onClick={() => createCampaign.mutate()}
-          >
-            Criar rascunho
-          </Button>
+          <div className="space-y-2">
+            <Label htmlFor="promo-schedule-at">Agendar para (opcional)</Label>
+            <Input
+              id="promo-schedule-at"
+              type="datetime-local"
+              value={scheduleAtLocal}
+              onChange={(e) => setScheduleAtLocal(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Horário local do seu navegador. Fora da janela de envio da clínica, o disparo aguarda
+              o próximo horário permitido.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!formValid || actionPending}
+              onClick={() => createCampaign.mutate()}
+            >
+              Criar rascunho
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!formValid || actionPending || !scheduleAtLocal}
+              onClick={() => createAndSchedule.mutate()}
+            >
+              <CalendarClock className="size-4" />
+              Agendar envio
+            </Button>
+            <Button
+              type="button"
+              disabled={!formValid || actionPending}
+              onClick={() => createAndSend.mutate()}
+            >
+              <Send className="size-4" />
+              Enviar agora
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -299,7 +372,9 @@ export function PromoCampaignsPanel() {
                   key={campaign.id}
                   type="button"
                   onClick={() => setSelectedId(campaign.id)}
-                  className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left hover:bg-muted/50"
+                  className={`flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left hover:bg-muted/50 ${
+                    selectedId === campaign.id ? "border-primary bg-primary/5" : ""
+                  }`}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{campaign.message}</p>
@@ -382,21 +457,6 @@ export function PromoCampaignsPanel() {
             )}
           </CardHeader>
           <CardContent className="space-y-4">
-            {detail.data?.status === "Draft" && (
-              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
-                <Label htmlFor="promo-schedule-at">Data e hora do envio</Label>
-                <Input
-                  id="promo-schedule-at"
-                  type="datetime-local"
-                  value={scheduleAtLocal}
-                  onChange={(e) => setScheduleAtLocal(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Horário local do seu navegador. Fora da janela de envio da clínica, o disparo
-                  aguarda o próximo horário permitido.
-                </p>
-              </div>
-            )}
             {detail.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : detail.data ? (
