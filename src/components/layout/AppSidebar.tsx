@@ -443,35 +443,6 @@ export function AppSidebar({
     useAuth();
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const sidebar = sidebarRef.current;
-    const nav = navRef.current;
-    if (!sidebar || !nav) return;
-
-    const onWheel = (event: WheelEvent) => {
-      if (nav.scrollHeight <= nav.clientHeight + 1) return;
-
-      let delta = event.deltaY;
-      if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) delta *= 16;
-      if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) delta *= nav.clientHeight;
-
-      const nextTop = nav.scrollTop + delta;
-      const maxTop = nav.scrollHeight - nav.clientHeight;
-      const clamped = Math.max(0, Math.min(nextTop, maxTop));
-
-      if (clamped !== nav.scrollTop) {
-        event.preventDefault();
-        event.stopPropagation();
-        nav.scrollTop = clamped;
-      }
-    };
-
-    sidebar.addEventListener("wheel", onWheel, { passive: false });
-    return () => sidebar.removeEventListener("wheel", onWheel);
-  }, [collapsed, isPlatform, isTenant, isAdmin]);
 
   const handleLogout = () => {
     onNavigate?.();
@@ -481,9 +452,8 @@ export function AppSidebar({
 
   return (
     <div
-      ref={sidebarRef}
       className={cn(
-        "relative grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
       )}
     >
@@ -492,167 +462,163 @@ export function AppSidebar({
         <div className="absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" />
       </div>
 
-      <div
-        className={cn(
-          "relative z-10 shrink-0",
-          collapsed ? "px-2 py-4" : "px-3 py-4",
-        )}
-      >
-        {!collapsed ? (
-          <>
-            <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1">
-              <div className="size-8" aria-hidden />
-              <KokoroLogo variant="onCoral" to="/" height={48} className="mx-auto" />
-              {collapsible ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                  aria-label="Recolher menu"
-                  onClick={onToggleCollapsed}
-                >
-                  <PanelLeftClose className="size-4" />
-                </Button>
-              ) : (
-                <div className="size-8" aria-hidden />
-              )}
-            </div>
-            <p className="mt-2 text-center text-xs text-primary-foreground/70">Portal</p>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <KokoroLogo variant="onCoral" to="/" height={32} />
-            {collapsible && (
-              <SidebarCollapsedFlyout collapsed label="Expandir menu">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                  aria-label="Expandir menu"
-                  onClick={onToggleCollapsed}
-                >
-                  <PanelLeft className="size-4" />
-                </Button>
-              </SidebarCollapsedFlyout>
+      <div className="sidebar-scroll relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <div className="flex min-h-full flex-col">
+          <header
+            className={cn(
+              "sticky top-0 z-20 shrink-0 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
+              collapsed ? "px-2 py-4" : "px-3 py-4",
             )}
-          </div>
-        )}
-      </div>
-
-      <Separator className="relative z-10 shrink-0 bg-white/20" />
-
-      <nav
-        ref={navRef}
-        className={cn(
-          "relative z-10 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain",
-          "[scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.35)_transparent]",
-          collapsed ? "p-2 pb-3" : "p-4 pb-6",
-        )}
-      >
-        <div className="flex flex-col gap-1.5 pb-2">
-          {isTenant &&
-            TENANT_NAV_SECTIONS.map((section) => (
-              <NavSection
-                key={section.title}
-                title={section.title}
-                items={section.items}
-                hasFeature={hasFeature}
-                isAdmin={isAdmin}
-                onNavigate={onNavigate}
-                collapsed={collapsed}
-              />
-            ))}
-          {isPlatform &&
-            PLATFORM_NAV_SECTIONS.map((section) => (
-              <NavSection
-                key={section.title}
-                title={section.title}
-                items={section.items}
-                hasFeature={() => true}
-                isAdmin
-                onNavigate={onNavigate}
-                collapsed={collapsed}
-              />
-            ))}
-        </div>
-      </nav>
-
-      <div
-        className={cn(
-          "relative z-20 shrink-0 border-t border-white/20 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
-          collapsed ? "p-2" : "p-4",
-        )}
-      >
-        {collapsed ? (
-          <div className="flex flex-col items-center gap-2">
-            <SidebarCollapsedFlyout
-              collapsed
-              label={displayName}
-              description={
-                email
-                  ? `${email} · ${isPlatform ? "Superadmin" : role ?? "Operação"}`
-                  : isPlatform
-                    ? "Superadmin"
-                    : (role ?? "Operação")
-              }
-            >
-              <NavLink to="/perfil" onClick={onNavigate} aria-label="Meu perfil">
-                <UserAvatar
-                  name={displayName}
-                  avatarUrl={avatarUrl}
-                  className="size-8 shrink-0"
-                  fallbackClassName="bg-white/20 text-xs text-primary-foreground"
-                />
-              </NavLink>
-            </SidebarCollapsedFlyout>
-            <SidebarCollapsedFlyout collapsed label="Sair">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                aria-label="Sair"
-                onClick={handleLogout}
-              >
-                <LogOut className="size-4" />
-              </Button>
-            </SidebarCollapsedFlyout>
-          </div>
-        ) : (
-          <>
-            <NavLink
-              to="/perfil"
-              onClick={onNavigate}
-              className="mb-3 flex items-center gap-3 rounded-lg transition-colors hover:bg-white/10"
-            >
-              <UserAvatar
-                name={displayName}
-                avatarUrl={avatarUrl}
-                className="size-8 shrink-0"
-                fallbackClassName="bg-white/20 text-xs text-primary-foreground"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{displayName}</p>
-                <p className="truncate text-xs text-primary-foreground/70">{email}</p>
-                <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
-                  {isPlatform ? "Superadmin" : role ?? "Operação"}
-                </Badge>
+          >
+            {!collapsed ? (
+              <>
+                <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1">
+                  <div className="size-8" aria-hidden />
+                  <KokoroLogo variant="onCoral" to="/" height={48} className="mx-auto" />
+                  {collapsible ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                      aria-label="Recolher menu"
+                      onClick={onToggleCollapsed}
+                    >
+                      <PanelLeftClose className="size-4" />
+                    </Button>
+                  ) : (
+                    <div className="size-8" aria-hidden />
+                  )}
+                </div>
+                <p className="mt-2 text-center text-xs text-primary-foreground/70">Portal</p>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <KokoroLogo variant="onCoral" to="/" height={32} />
+                {collapsible && (
+                  <SidebarCollapsedFlyout collapsed label="Expandir menu">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                      aria-label="Expandir menu"
+                      onClick={onToggleCollapsed}
+                    >
+                      <PanelLeft className="size-4" />
+                    </Button>
+                  </SidebarCollapsedFlyout>
+                )}
               </div>
-            </NavLink>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-              onClick={handleLogout}
-            >
-              <LogOut className="size-4" />
-              Sair
-            </Button>
-            <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
-          </>
-        )}
+            )}
+            <Separator className="mt-4 bg-white/20" />
+          </header>
+
+          <nav className={cn("flex-1", collapsed ? "p-2 py-3" : "px-4 py-3")}>
+            <div className="flex flex-col gap-1.5">
+              {isTenant &&
+                TENANT_NAV_SECTIONS.map((section) => (
+                  <NavSection
+                    key={section.title}
+                    title={section.title}
+                    items={section.items}
+                    hasFeature={hasFeature}
+                    isAdmin={isAdmin}
+                    onNavigate={onNavigate}
+                    collapsed={collapsed}
+                  />
+                ))}
+              {isPlatform &&
+                PLATFORM_NAV_SECTIONS.map((section) => (
+                  <NavSection
+                    key={section.title}
+                    title={section.title}
+                    items={section.items}
+                    hasFeature={() => true}
+                    isAdmin
+                    onNavigate={onNavigate}
+                    collapsed={collapsed}
+                  />
+                ))}
+            </div>
+          </nav>
+
+          <footer
+            className={cn(
+              "sticky bottom-0 z-20 mt-auto shrink-0 border-t border-white/20 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
+              collapsed ? "p-2" : "p-4",
+            )}
+          >
+            {collapsed ? (
+              <div className="flex flex-col items-center gap-2">
+                <SidebarCollapsedFlyout
+                  collapsed
+                  label={displayName}
+                  description={
+                    email
+                      ? `${email} · ${isPlatform ? "Superadmin" : role ?? "Operação"}`
+                      : isPlatform
+                        ? "Superadmin"
+                        : (role ?? "Operação")
+                  }
+                >
+                  <NavLink to="/perfil" onClick={onNavigate} aria-label="Meu perfil">
+                    <UserAvatar
+                      name={displayName}
+                      avatarUrl={avatarUrl}
+                      className="size-8 shrink-0"
+                      fallbackClassName="bg-white/20 text-xs text-primary-foreground"
+                    />
+                  </NavLink>
+                </SidebarCollapsedFlyout>
+                <SidebarCollapsedFlyout collapsed label="Sair">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                    aria-label="Sair"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="size-4" />
+                  </Button>
+                </SidebarCollapsedFlyout>
+              </div>
+            ) : (
+              <>
+                <NavLink
+                  to="/perfil"
+                  onClick={onNavigate}
+                  className="mb-3 flex items-center gap-3 rounded-lg transition-colors hover:bg-white/10"
+                >
+                  <UserAvatar
+                    name={displayName}
+                    avatarUrl={avatarUrl}
+                    className="size-8 shrink-0"
+                    fallbackClassName="bg-white/20 text-xs text-primary-foreground"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{displayName}</p>
+                    <p className="truncate text-xs text-primary-foreground/70">{email}</p>
+                    <Badge className="mt-1 border-white/30 bg-white/15 text-[10px] text-primary-foreground hover:bg-white/15">
+                      {isPlatform ? "Superadmin" : role ?? "Operação"}
+                    </Badge>
+                  </div>
+                </NavLink>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="size-4" />
+                  Sair
+                </Button>
+                <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
+              </>
+            )}
+          </footer>
+        </div>
       </div>
     </div>
   );
