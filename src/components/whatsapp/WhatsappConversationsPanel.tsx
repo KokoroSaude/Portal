@@ -484,7 +484,7 @@ export function WhatsappConversationsPanel() {
             )}
           >
             {conversationList.length > 0 && (
-            <div className="space-y-2 rounded-xl border p-2">
+            <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain rounded-xl border p-2 sm:max-h-96">
               {conversationList.map((conversation) => {
                 const active = conversation.patientId === selectedPatientId;
                 return (
