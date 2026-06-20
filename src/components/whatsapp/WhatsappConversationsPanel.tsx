@@ -388,8 +388,14 @@ export function WhatsappConversationsPanel() {
         usePromotionTemplate,
         requestCsat: askCsat,
       }),
-    onSuccess: () => {
-      toast.success("Mensagem enviada");
+    onSuccess: (res) => {
+      if (res.messageType === "audio") {
+        toast.success("Nota de voz enviada");
+      } else if (res.voiceFallbackReason) {
+        toast.warning(`Enviado como texto: ${res.voiceFallbackReason}`);
+      } else {
+        toast.success("Mensagem enviada");
+      }
       setReplyText("");
       setRequestCsat(false);
       void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });

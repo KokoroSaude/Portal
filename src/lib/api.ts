@@ -746,7 +746,7 @@ export const api = {
       requestCsat?: boolean;
     },
   ) =>
-    request<{ messageId: string; wamId: string | null }>(
+    request<{ messageId: string; wamId: string | null; messageType?: string; voiceFallbackReason?: string | null }>(
       `/api/whatsapp/conversations/${patientId}/reply`,
       { method: "POST", token, body },
     ),
