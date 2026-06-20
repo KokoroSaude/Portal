@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, ExternalLink, MessageCircle, Pause, Play, RefreshCw, Send, Trash2, UserX } from "lucide-react";
+import { CalendarClock, ExternalLink, MessageCircle, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -327,23 +327,31 @@ export function WhatsappConversationsPanel() {
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao retomar"),
   });
 
+  const generateTcpDraft = useMutation({
+    mutationFn: () =>
+      api.previewTpbIntervention(token!, selectedPatientId!, replyText.trim() || undefined),
+    onSuccess: (result) => {
+      setReplyText(result.text);
+      toast.success("Rascunho gerado com TCP");
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "TCP indisponível para este paciente"),
+  });
+
   const sendOperatorReply = useMutation({
     mutationFn: ({
       patientId,
       text,
-      useTemplate = false,
       usePromotionTemplate = false,
       requestCsat: askCsat = false,
     }: {
       patientId: string;
       text: string;
-      useTemplate?: boolean;
       usePromotionTemplate?: boolean;
       requestCsat?: boolean;
     }) =>
       api.sendWhatsAppOperatorReply(token!, patientId, {
         text,
-        useTemplate,
         usePromotionTemplate,
         requestCsat: askCsat,
       }),
@@ -358,10 +366,7 @@ export function WhatsappConversationsPanel() {
     },
     onError: (err) => {
       if (err instanceof ApiClientError && err.status === 422) {
-        toast.error(
-          err.message ||
-            "Janela de 24h expirada. Aguarde o paciente enviar uma mensagem.",
-        );
+        toast.error(err.message || "Não foi possível enviar a mensagem.");
         return;
       }
       if (err instanceof ApiClientError && err.status === 503) {
@@ -386,9 +391,22 @@ export function WhatsappConversationsPanel() {
   const conversationList = conversations.data ?? [];
   const selectedConversation = conversationList.find((c) => c.patientId === selectedPatientId);
   const messagingWindow = thread.data?.messagingWindow ?? selectedConversation?.messagingWindow;
+  const outboundContent = thread.data?.outboundContent;
   const canSendRegularMessage = messagingWindow?.isOpen ?? true;
   const canSendTemplateMessage = !canSendRegularMessage && !!messagingWindow?.canSendTemplate;
   const canSendPromotionTemplate = !!messagingWindow?.canSendPromotionTemplate;
+  const canSendAnyMessage = canSendRegularMessage || canSendTemplateMessage || canSendPromotionTemplate;
+  const canGenerateTcp =
+    canSendRegularMessage &&
+    !!outboundContent?.tpbEnabled &&
+    (outboundContent?.nextChannel === "ai" || outboundContent?.mode === "AiOnly");
+
+  const outboundModeLabel =
+    outboundContent?.mode === "AiOnly"
+      ? "Modo: IA"
+      : outboundContent?.mode === "Alternate"
+        ? `Intercalar · próximo: ${outboundContent.nextChannel === "ai" ? "IA" : "template"}`
+        : "Modo: template";
   const displayedMessages = onlyPharmacyMessages
     ? (thread.data?.messages ?? []).filter((m) => m.contentSource === "operator")
     : (thread.data?.messages ?? []);
@@ -555,6 +573,11 @@ export function WhatsappConversationsPanel() {
                   </div>
                   {canWrite && selectedPatientId && (
                     <div className="space-y-2 border-t pt-3">
+                      {outboundContent && (
+                        <Badge variant="outline" className="text-[10px] font-normal">
+                          {outboundModeLabel}
+                        </Badge>
+                      )}
                       {messagingWindow && (
                         <div
                           className={cn(
@@ -566,7 +589,9 @@ export function WhatsappConversationsPanel() {
                         >
                           {canSendRegularMessage
                             ? `Janela de 24h aberta${messagingWindow.expiresAt ? ` até ${formatDateTime(messagingWindow.expiresAt)}` : ""}.`
-                            : "Janela de 24h expirada. Use template Meta para responder ou enviar promoção."}
+                            : canSendTemplateMessage
+                              ? "Janela expirada — o envio usará template Meta aprovado."
+                              : "Janela de 24h expirada. Configure template Meta ou aguarde resposta do paciente."}
                         </div>
                       )}
                       <Textarea
@@ -575,11 +600,12 @@ export function WhatsappConversationsPanel() {
                         rows={3}
                         disabled={
                           sendOperatorReply.isPending ||
-                          (!canSendRegularMessage && !canSendTemplateMessage && !canSendPromotionTemplate)
+                          generateTcpDraft.isPending ||
+                          !canSendAnyMessage
                         }
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim() && canSendRegularMessage) {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && replyText.trim() && canSendAnyMessage) {
                             e.preventDefault();
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,
@@ -601,7 +627,19 @@ export function WhatsappConversationsPanel() {
                           />
                         </div>
                       )}
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {canGenerateTcp && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={generateTcpDraft.isPending || sendOperatorReply.isPending}
+                            onClick={() => generateTcpDraft.mutate()}
+                          >
+                            <Sparkles className="size-4" />
+                            Gerar com TCP
+                          </Button>
+                        )}
                         {canSendPromotionTemplate && (
                           <Button
                             type="button"
@@ -619,27 +657,10 @@ export function WhatsappConversationsPanel() {
                             Enviar promoção
                           </Button>
                         )}
-                        {canSendTemplateMessage && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            disabled={!replyText.trim() || sendOperatorReply.isPending}
-                            onClick={() =>
-                              sendOperatorReply.mutate({
-                                patientId: selectedPatientId,
-                                text: replyText.trim(),
-                                useTemplate: true,
-                              })
-                            }
-                          >
-                            Enviar via template Meta
-                          </Button>
-                        )}
                         <Button
                           type="button"
                           size="sm"
-                          disabled={!replyText.trim() || sendOperatorReply.isPending || !canSendRegularMessage}
+                          disabled={!replyText.trim() || sendOperatorReply.isPending || !canSendAnyMessage}
                           onClick={() =>
                             sendOperatorReply.mutate({
                               patientId: selectedPatientId,

@@ -390,6 +390,52 @@ export function SettingsPage() {
                 />
               </div>
 
+              <div className="space-y-2 rounded-lg border p-4">
+                <Label htmlFor="outboundContentMode">Modo de conteúdo das mensagens</Label>
+                <p className="text-sm text-muted-foreground">
+                  Define como lembretes, follow-ups e respostas da farmácia são gerados. Fora da janela
+                  de 24h, mensagens usam template Meta aprovado.
+                </p>
+                <Select
+                  value={form.outboundContentMode ?? "TemplateOnly"}
+                  onValueChange={(v) =>
+                    update("outboundContentMode", v as TenantSettings["outboundContentMode"])
+                  }
+                >
+                  <SelectTrigger id="outboundContentMode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TemplateOnly">Somente template</SelectItem>
+                    <SelectItem value="AiOnly">Somente IA</SelectItem>
+                    <SelectItem value="Alternate">Intercalar template e IA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(form.outboundContentMode ?? "TemplateOnly") === "Alternate" && (
+                <div className="space-y-2 rounded-lg border p-4">
+                  <Label htmlFor="outboundAlternateStrategy">Regra de intercalação</Label>
+                  <Select
+                    value={form.outboundAlternateStrategy ?? "PerPatient"}
+                    onValueChange={(v) =>
+                      update(
+                        "outboundAlternateStrategy",
+                        v as TenantSettings["outboundAlternateStrategy"],
+                      )
+                    }
+                  >
+                    <SelectTrigger id="outboundAlternateStrategy">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PerPatient">Por paciente (alterna a cada envio)</SelectItem>
+                      <SelectItem value="PerMessageKind">Por tipo de mensagem</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <SettingsSaveButton onSave={save} pending={savePending} />
             </CardContent>
           </Card>

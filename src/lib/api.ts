@@ -728,7 +728,13 @@ export const api = {
   sendWhatsAppOperatorReply: (
     token: string,
     patientId: string,
-    body: { text: string; useTemplate?: boolean; usePromotionTemplate?: boolean; requestCsat?: boolean },
+    body: {
+      text: string;
+      useTemplate?: boolean;
+      usePromotionTemplate?: boolean;
+      forceTemplate?: boolean;
+      requestCsat?: boolean;
+    },
   ) =>
     request<{ messageId: string; wamId: string | null }>(
       `/api/whatsapp/conversations/${patientId}/reply`,

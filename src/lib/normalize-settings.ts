@@ -12,6 +12,8 @@ type RawAiFeatures = AiPlatformFeatures & {
 type RawTenantSettings = TenantSettings & {
   AiFeatures?: RawAiFeatures;
   AiEnabled?: boolean;
+  OutboundContentMode?: TenantSettings["outboundContentMode"];
+  OutboundAlternateStrategy?: TenantSettings["outboundAlternateStrategy"];
 };
 
 function normalizeAiFeatures(raw?: RawAiFeatures | null): AiPlatformFeatures | undefined {
@@ -35,6 +37,9 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
   return {
     ...raw,
     aiEnabled: raw.aiEnabled ?? raw.AiEnabled ?? false,
+    outboundContentMode: raw.outboundContentMode ?? raw.OutboundContentMode ?? "TemplateOnly",
+    outboundAlternateStrategy:
+      raw.outboundAlternateStrategy ?? raw.OutboundAlternateStrategy ?? "PerPatient",
     aiFeatures,
   };
 }

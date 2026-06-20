@@ -591,6 +591,8 @@ export interface TenantSettings {
   progressMenuEnabled?: boolean;
   requirePreRegisteredPatients?: boolean;
   defaultPromoMessage?: string | null;
+  outboundContentMode?: "TemplateOnly" | "AiOnly" | "Alternate";
+  outboundAlternateStrategy?: "PerPatient" | "PerMessageKind";
 }
 
 export interface PatientAchievementItem {
@@ -1374,6 +1376,14 @@ export interface WhatsappConversationScheduling {
   }[];
 }
 
+export interface WhatsappOutboundContent {
+  mode: "TemplateOnly" | "AiOnly" | "Alternate";
+  alternateStrategy: "PerPatient" | "PerMessageKind";
+  nextChannel: string;
+  aiEnabled: boolean;
+  tpbEnabled: boolean;
+}
+
 export interface WhatsappConversationThread {
   patient: {
     id: string;
@@ -1386,6 +1396,7 @@ export interface WhatsappConversationThread {
   };
   messages: WhatsappConversationMessage[];
   messagingWindow?: WhatsappMessagingWindow;
+  outboundContent?: WhatsappOutboundContent;
   scheduling?: WhatsappConversationScheduling;
 }
 
