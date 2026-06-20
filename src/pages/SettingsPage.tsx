@@ -96,6 +96,8 @@ export function SettingsPage() {
         voiceTone: normalizeVoiceToneSelectValue(settings.voiceTone),
         aiEnabled: settings.aiEnabled ?? false,
         voiceMessagesEnabled: settings.voiceMessagesEnabled ?? false,
+        prescriptionScanEnabled: settings.prescriptionScanEnabled ?? false,
+        voiceGender: settings.voiceGender ?? "Feminine",
         onboardingResumeEnabled: settings.onboardingResumeEnabled ?? true,
         onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
         onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
@@ -389,6 +391,62 @@ export function SettingsPage() {
                   onCheckedChange={(checked) => update("aiEnabled", checked)}
                 />
               </div>
+
+              {hasFeature(FEATURE_KEYS.whatsappVoice) && (
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="voiceMessagesEnabled">Mensagens em áudio (acessibilidade)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Permite cadastrar pacientes com canal Áudio. Respostas saem em voz quando
+                        habilitado.
+                      </p>
+                    </div>
+                    <Switch
+                      id="voiceMessagesEnabled"
+                      checked={form.voiceMessagesEnabled}
+                      onCheckedChange={(checked) => update("voiceMessagesEnabled", checked)}
+                    />
+                  </div>
+                  {form.voiceMessagesEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="voiceGender">Voz da farmácia</Label>
+                      <Select
+                        value={form.voiceGender ?? "Feminine"}
+                        onValueChange={(v) =>
+                          update("voiceGender", v as TenantSettings["voiceGender"])
+                        }
+                      >
+                        <SelectTrigger id="voiceGender">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Feminine">Feminina</SelectItem>
+                          <SelectItem value="Masculine">Masculina</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {hasFeature(FEATURE_KEYS.whatsappPrescription) && (
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="prescriptionScanEnabled">Leitura de receita (PDF/imagem)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite que pacientes enviem foto ou PDF de receita no WhatsApp. Medicamentos são
+                      confirmados antes de cadastrar lembretes.
+                    </p>
+                  </div>
+                  <Switch
+                    id="prescriptionScanEnabled"
+                    checked={form.prescriptionScanEnabled ?? false}
+                    onCheckedChange={(checked) => update("prescriptionScanEnabled", checked)}
+                    disabled={!form.aiEnabled}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2 rounded-lg border p-4">
                 <Label htmlFor="outboundContentMode">Modo de conteúdo das mensagens</Label>

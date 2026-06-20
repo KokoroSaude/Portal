@@ -4,6 +4,7 @@ export type MessagePreviewVariables = {
   horario?: string;
   horarios?: string;
   saudacao?: string;
+  mensagem?: string;
 };
 
 const DEFAULT_PREVIEW_VARIABLES: Required<MessagePreviewVariables> = {
@@ -12,6 +13,7 @@ const DEFAULT_PREVIEW_VARIABLES: Required<MessagePreviewVariables> = {
   horario: "08:00",
   horarios: "08:00 e 20:00",
   saudacao: "Bom dia",
+  mensagem: "20% de desconto em vitaminas até sexta-feira.",
 };
 
 /** Substitutes {var} and {{var}} placeholders for WhatsApp template preview. */

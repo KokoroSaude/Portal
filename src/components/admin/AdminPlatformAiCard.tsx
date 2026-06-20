@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import type { PlatformAiUseCaseRoute } from "@/types/api";
 
 const DEFAULT_MODELS: Record<string, string> = {
   openai: "gpt-4o-mini",
@@ -24,11 +25,28 @@ const DEFAULT_MODELS: Record<string, string> = {
   groq: "llama-3.3-70b-versatile",
 };
 
+const USE_CASE_META: Record<string, string> = {
+  whatsapp: "WhatsApp (intents, onboarding, medicamentos)",
+  prescription_vision: "Receita (PDF/imagem)",
+  insights: "Insights e copilot",
+  outbound: "Personalização de mensagens",
+  milestone: "Personalização de marcos",
+};
+
+const DEFAULT_USE_CASE_ROUTES: PlatformAiUseCaseRoute[] = [
+  { key: "whatsapp", provider: null, model: null },
+  { key: "prescription_vision", provider: null, model: null },
+  { key: "insights", provider: null, model: null },
+  { key: "outbound", provider: null, model: null },
+  { key: "milestone", provider: null, model: null },
+];
+
 export function AdminPlatformAiCard() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState("openai");
   const [model, setModel] = useState("");
+  const [useCaseRoutes, setUseCaseRoutes] = useState<PlatformAiUseCaseRoute[]>(DEFAULT_USE_CASE_ROUTES);
   const [openAiApiKey, setOpenAiApiKey] = useState("");
   const [anthropicApiKey, setAnthropicApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -44,7 +62,21 @@ export function AdminPlatformAiCard() {
     if (!data) return;
     setProvider(data.provider);
     setModel(data.model === DEFAULT_MODELS[data.provider] ? "" : data.model);
+    if (data.useCaseRoutes?.length) {
+      setUseCaseRoutes(
+        DEFAULT_USE_CASE_ROUTES.map((defaults) => {
+          const saved = data.useCaseRoutes.find((r) => r.key === defaults.key);
+          return saved ?? defaults;
+        }),
+      );
+    }
   }, [data]);
+
+  const updateRoute = (key: string, patch: Partial<PlatformAiUseCaseRoute>) => {
+    setUseCaseRoutes((routes) =>
+      routes.map((route) => (route.key === key ? { ...route, ...patch } : route)),
+    );
+  };
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -59,6 +91,11 @@ export function AdminPlatformAiCard() {
         updateAnthropicApiKey: anthropicApiKey.trim().length > 0,
         updateGeminiApiKey: geminiApiKey.trim().length > 0,
         updateGroqApiKey: groqApiKey.trim().length > 0,
+        useCaseRoutes: useCaseRoutes.map((route) => ({
+          key: route.key,
+          provider: route.provider || null,
+          model: route.model?.trim() || null,
+        })),
       }),
     onSuccess: () => {
       toast.success("Configuração de IA salva");
@@ -84,6 +121,32 @@ export function AdminPlatformAiCard() {
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao testar IA"),
   });
 
+  const testVisionMutation = useMutation({
+    mutationFn: () => api.adminTestPlatformAiVision(token!),
+    onSuccess: (result) => {
+      if (result.parsedOk) {
+        toast.success(result.message ?? "Visão de receita OK.");
+        return;
+      }
+      toast.error(result.error ?? "Teste de visão falhou.");
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao testar visão"),
+  });
+
+  const visionRouteProvider =
+    useCaseRoutes.find((r) => r.key === "prescription_vision")?.provider ?? provider;
+  const visionKeyReady =
+    visionRouteProvider === "gemini"
+      ? data?.geminiConfigured
+      : visionRouteProvider === "openai"
+        ? data?.openAiConfigured
+        : visionRouteProvider === "anthropic"
+          ? data?.anthropicConfigured
+          : visionRouteProvider === "groq"
+            ? data?.groqConfigured
+            : data?.isConfigured;
+
   const effectiveModel = model.trim() || DEFAULT_MODELS[provider] || "";
 
   return (
@@ -94,8 +157,8 @@ export function AdminPlatformAiCard() {
           Inteligência artificial
         </CardTitle>
         <CardDescription>
-          Salve as chaves aqui e troque o provedor quando quiser — sem redeploy. Chaves criptografadas no
-          banco (fallback: variáveis de ambiente no Railway).
+          Salve as chaves aqui e escolha um provedor por funcionalidade. Vazio em um use case usa o
+          padrão global. Chaves criptografadas no banco (fallback: variáveis de ambiente).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -118,14 +181,14 @@ export function AdminPlatformAiCard() {
           </Badge>
           {data && (
             <Badge variant={data.isConfigured ? "success" : "warning"}>
-              {data.isConfigured ? "Provedor ativo pronto" : "Falta chave do provedor selecionado"}
+              {data.isConfigured ? "Padrão global pronto" : "Falta chave do provedor padrão"}
             </Badge>
           )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Provedor ativo</Label>
+            <Label>Provedor padrão (fallback)</Label>
             <Select value={provider} onValueChange={setProvider} disabled={isLoading}>
               <SelectTrigger>
                 <SelectValue />
@@ -139,7 +202,7 @@ export function AdminPlatformAiCard() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ai-model">Modelo (opcional)</Label>
+            <Label htmlFor="ai-model">Modelo padrão (opcional)</Label>
             <Input
               id="ai-model"
               placeholder={DEFAULT_MODELS[provider]}
@@ -149,6 +212,55 @@ export function AdminPlatformAiCard() {
             />
             <p className="text-xs text-muted-foreground">Padrão: {effectiveModel}</p>
           </div>
+        </div>
+
+        <div className="space-y-4 rounded-lg border p-4">
+          <div>
+            <p className="text-sm font-medium">Roteamento por funcionalidade</p>
+            <p className="text-sm text-muted-foreground">
+              Ex.: Groq no WhatsApp + Gemini grátis só na receita. Deixe provedor vazio para usar o
+              padrão global.
+            </p>
+          </div>
+          {useCaseRoutes.map((route) => (
+            <div key={route.key} className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <Label>{USE_CASE_META[route.key] ?? route.key}</Label>
+              </div>
+              <div className="space-y-2">
+                <Label>Provedor</Label>
+                <Select
+                  value={route.provider ?? "default"}
+                  onValueChange={(v) =>
+                    updateRoute(route.key, { provider: v === "default" ? null : v })
+                  }
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Usar padrão global</SelectItem>
+                    <SelectItem value="gemini">Gemini</SelectItem>
+                    <SelectItem value="groq">Groq</SelectItem>
+                    <SelectItem value="anthropic">Anthropic</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Modelo (opcional)</Label>
+                <Input
+                  placeholder={
+                    route.provider ? DEFAULT_MODELS[route.provider] : "Modelo do padrão global"
+                  }
+                  value={route.model ?? ""}
+                  onChange={(e) => updateRoute(route.key, { model: e.target.value || null })}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="space-y-4 rounded-lg border p-4">
@@ -216,13 +328,31 @@ export function AdminPlatformAiCard() {
             onClick={() => testMutation.mutate()}
             disabled={testMutation.isPending || isLoading || !data?.isConfigured}
           >
-            {testMutation.isPending ? "Testando…" : "Testar conexão LLM"}
+            {testMutation.isPending ? "Testando…" : "Testar insights (LLM)"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => testVisionMutation.mutate()}
+            disabled={testVisionMutation.isPending || isLoading || !visionKeyReady}
+          >
+            {testVisionMutation.isPending ? "Testando…" : "Testar receita (visão)"}
           </Button>
         </div>
+        {!visionKeyReady && (
+          <p className="text-sm text-muted-foreground">
+            Para testar receita, configure o provedor de{" "}
+            <strong>{USE_CASE_META.prescription_vision}</strong>
+            {visionRouteProvider !== provider ? ` (${visionRouteProvider})` : ""} com chave válida
+            {visionRouteProvider === "groq" || visionRouteProvider === "anthropic"
+              ? " — use Gemini ou OpenAI para visão."
+              : "."}
+          </p>
+        )}
         {!data?.isConfigured && (
           <p className="text-sm text-amber-900">
-            Para ativar: escolha o provedor, cole a chave correspondente no campo abaixo e salve.
-            Só trocar o provedor sem colar a chave não configura o LLM.
+            Configure pelo menos o provedor padrão com a chave correspondente. Use o roteamento acima
+            para funcionalidades específicas (ex.: receita com Gemini grátis).
           </p>
         )}
       </CardContent>

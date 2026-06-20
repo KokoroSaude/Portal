@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { WhatsAppMessagePreview } from "@/components/messages/WhatsAppMessagePreview";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -26,6 +27,9 @@ const SEGMENTS = [
   { value: "AllEligible", label: "Todos elegíveis (exceto onboarding e opt-out)" },
   { value: "PatientsOnMedication", label: "Pacientes em um medicamento (catálogo)" },
 ] as const;
+
+const FALLBACK_PROMO_TEMPLATE_BODY =
+  "Olá, {{nome}}! Temos uma promoção especial para você: {{mensagem}} Responda por aqui se tiver interesse.";
 
 function segmentLabel(value: string): string {
   return SEGMENTS.find((s) => s.value === value)?.label ?? value;
@@ -136,6 +140,12 @@ export function PromoCampaignsPanel() {
   const isEditingDraft = selectedSummary?.status === "Draft";
   const isCreatingNew = !selectedId;
   const templateReady = defaults.data?.promotionTemplateConfigured ?? false;
+  const promoTemplateBody =
+    defaults.data?.templateBody?.trim() || FALLBACK_PROMO_TEMPLATE_BODY;
+  const promoPreviewVariables = {
+    nome: "Maria",
+    mensagem: message.trim() || defaults.data?.defaultMessage?.trim() || undefined,
+  };
   const formValid =
     !!message.trim() &&
     templateReady &&
@@ -469,14 +479,21 @@ export function PromoCampaignsPanel() {
                 </>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="promo-message">Texto da promoção (variável mensagem)</Label>
-                <Textarea
-                  id="promo-message"
-                  rows={4}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="promo-message">Texto da promoção (variável mensagem)</Label>
+                  <Textarea
+                    id="promo-message"
+                    rows={4}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Ex.: 20% de desconto em vitaminas até sexta-feira."
+                  />
+                </div>
+                <WhatsAppMessagePreview
+                  content={promoTemplateBody}
+                  variables={promoPreviewVariables}
+                  emptyLabel="Digite o texto da promoção para ver como o paciente receberá no WhatsApp."
                 />
               </div>
 
@@ -572,6 +589,10 @@ export function PromoCampaignsPanel() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm">{selectedSummary.message}</p>
+              <WhatsAppMessagePreview
+                content={promoTemplateBody}
+                variables={{ nome: "Maria", mensagem: selectedSummary.message }}
+              />
               <p className="text-sm text-muted-foreground">
                 Segmento: {segmentLabel(selectedSummary.segment)}
               </p>

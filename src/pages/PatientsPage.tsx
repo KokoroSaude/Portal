@@ -60,7 +60,21 @@ export function PatientsPage() {
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
   const [status, setStatus] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState({ phone: "", name: "", sendWelcome: true });
+  const [form, setForm] = useState({
+    phone: "",
+    name: "",
+    sendWelcome: true,
+    preferredMessageChannel: "Text" as "Text" | "Audio",
+  });
+
+  const { data: tenantSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token,
+  });
+
+  const canSetAudioChannel =
+    hasFeature(FEATURE_KEYS.whatsappVoice) && (tenantSettings?.voiceMessagesEnabled ?? false);
 
   useEffect(() => {
     setPage(1);
@@ -86,12 +100,6 @@ export function PatientsPage() {
   });
 
   const activeSender = senders.find((s) => s.isActive) ?? senders[0];
-
-  const { data: tenantSettings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token && canWrite,
-  });
 
   const bulkMoriskyMutation = useMutation({
     mutationFn: (patientIds: string[]) => api.triggerMoriskyBulk(token!, { patientIds }),
@@ -155,11 +163,12 @@ export function PatientsPage() {
         phone: form.phone,
         name: form.name.trim() || undefined,
         sendWelcome: form.sendWelcome,
+        preferredMessageChannel: canSetAudioChannel ? form.preferredMessageChannel : undefined,
       }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", sendWelcome: true });
+      setForm({ phone: "", name: "", sendWelcome: true, preferredMessageChannel: "Text" });
 
       if (!result.created) {
         toast.info("Este telefone já está cadastrado.");
@@ -289,6 +298,31 @@ export function PatientsPage() {
                     onCheckedChange={(v) => setForm((f) => ({ ...f, sendWelcome: v }))}
                   />
                 </div>
+                {canSetAudioChannel && (
+                  <div className="space-y-2">
+                    <Label htmlFor="patient-channel">Canal de comunicação</Label>
+                    <Select
+                      value={form.preferredMessageChannel}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          preferredMessageChannel: v as "Text" | "Audio",
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="patient-channel">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Text">Texto</SelectItem>
+                        <SelectItem value="Audio">Áudio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Pacientes em áudio recebem respostas faladas no WhatsApp.
+                    </p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button

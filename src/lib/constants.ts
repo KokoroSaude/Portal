@@ -19,6 +19,8 @@ export const FEATURE_KEYS = {
   aiCopilot: "ai.copilot",
   satisfactionCsat: "satisfaction.csat",
   whatsappConversations: "whatsapp.conversations",
+  whatsappVoice: "whatsapp.voice",
+  whatsappPrescription: "whatsapp.prescription",
 } as const;
 
 export const ROLE_LABELS: Record<string, string> = {
@@ -43,6 +45,7 @@ export const CONVERSATION_STEP_LABELS: Record<string, string> = {
   WaitingReengagement: "Aguardando resposta de reengajamento",
   WaitingPauseResume: "Pausa acabou — aguardando retomar",
   Active: "Ativo (mensagens livres)",
+  PrescriptionReview: "Revisão de receita",
 };
 
 export const CONTENT_SOURCE_LABELS: Record<string, string> = {

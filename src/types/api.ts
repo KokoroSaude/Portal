@@ -48,6 +48,7 @@ export interface Patient {
   phone: string;
   status: string;
   medication: string | null;
+  preferredMessageChannel?: "Text" | "Audio";
   consecutiveMissedCheckins?: number;
   lastCheckinAt: string | null;
   createdAt: string;
@@ -569,6 +570,8 @@ export interface TenantSettings {
   aiEnabled: boolean;
   aiFeatures?: AiPlatformFeatures;
   voiceMessagesEnabled: boolean;
+  prescriptionScanEnabled?: boolean;
+  voiceGender?: "Feminine" | "Masculine";
   moriskyEnabled: boolean;
   moriskyOnOnboarding: boolean;
   moriskyPeriodicDays: number | null;
@@ -1068,6 +1071,12 @@ export interface AdminProductMetrics {
   onboardingsThisWeek: number;
 }
 
+export interface PlatformAiUseCaseRoute {
+  key: string;
+  provider: string | null;
+  model: string | null;
+}
+
 export interface AdminPlatformAiSettings {
   provider: string;
   model: string;
@@ -1080,6 +1089,7 @@ export interface AdminPlatformAiSettings {
   anthropicKeyHint: string | null;
   geminiKeyHint: string | null;
   groqKeyHint: string | null;
+  useCaseRoutes: PlatformAiUseCaseRoute[];
 }
 
 export interface PlatformAiTestResult {
@@ -1340,6 +1350,7 @@ export interface WhatsappConversationMessage {
   content: string;
   wamId: string | null;
   messageType: string | null;
+  transcript?: string | null;
   contentSource: string | null;
   templateKey: string | null;
   contextJson: string | null;
@@ -1390,6 +1401,7 @@ export interface WhatsappConversationThread {
     name: string | null;
     phone: string;
     status: string;
+    preferredMessageChannel?: "Text" | "Audio";
     activatedAt?: string | null;
     pausedUntil?: string | null;
     consecutiveMissedCheckins?: number;
@@ -1403,6 +1415,7 @@ export interface WhatsappConversationThread {
 export interface PromoDefaults {
   defaultMessage: string | null;
   promotionTemplateConfigured: boolean;
+  templateBody: string | null;
 }
 
 export interface PromoCampaignListItem {

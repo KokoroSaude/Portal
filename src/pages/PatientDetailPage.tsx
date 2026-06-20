@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Star, Trash2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
 import { PatientKokoroAssistantCard } from "@/components/patients/PatientKokoroAssistantCard";
@@ -28,6 +29,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +65,7 @@ export function PatientDetailPage() {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [nameInput, setNameInput] = useState("");
+  const [channelInput, setChannelInput] = useState<"Text" | "Audio">("Text");
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
   const timelinePageSize = 20;
@@ -66,6 +75,8 @@ export function PatientDetailPage() {
     queryFn: () => api.getPatient(token!, id!),
     enabled: !!token && !!id,
   });
+
+  const voiceFeatureEnabled = hasFeature(FEATURE_KEYS.whatsappVoice);
 
   const { data: timeline, isLoading: timelineLoading } = useQuery({
     queryKey: ["patient-timeline", id, timelinePage],
@@ -100,8 +111,11 @@ export function PatientDetailPage() {
   const { data: tenantSettings, isLoading: settingsLoading, isError: settingsError } = useQuery({
     queryKey: ["settings"],
     queryFn: () => api.getSettings(token!),
-    enabled: !!token && hasFeature(FEATURE_KEYS.aiCopilot),
+    enabled: !!token,
   });
+
+  const voiceTenantEnabled = tenantSettings?.voiceMessagesEnabled ?? false;
+  const canSetAudioChannel = voiceFeatureEnabled && voiceTenantEnabled;
 
   const { data: platformAi } = useQuery({
     queryKey: ["admin-platform-ai"],
@@ -204,6 +218,7 @@ export function PatientDetailPage() {
       api.updatePatient(token!, id!, {
         phone: phoneInput.trim() || undefined,
         name: nameInput,
+        preferredMessageChannel: channelInput,
       }),
     onSuccess: () => {
       toast.success("Dados do paciente atualizados");
@@ -233,6 +248,7 @@ export function PatientDetailPage() {
     if (patient) {
       setPhoneInput(patient.phone);
       setNameInput(patient.name ?? "");
+      setChannelInput(patient.preferredMessageChannel === "Audio" ? "Audio" : "Text");
     }
   }, [patient]);
 
@@ -266,6 +282,9 @@ export function PatientDetailPage() {
           <h1 className="font-serif text-3xl">{patient.name ?? "Sem nome"}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <PatientStatusBadge status={patient.status} />
+            {patient.preferredMessageChannel === "Audio" && (
+              <Badge variant="secondary">Canal: áudio</Badge>
+            )}
             {hasFeature(FEATURE_KEYS.aiCopilot) && (
               <PatientAiAvailabilityBadge
                 settings={tenantSettings}
@@ -310,6 +329,23 @@ export function PatientDetailPage() {
                         onChange={(e) => setNameInput(e.target.value)}
                       />
                     </div>
+                    {canSetAudioChannel && (
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-channel">Canal de comunicação</Label>
+                        <Select
+                          value={channelInput}
+                          onValueChange={(v) => setChannelInput(v as "Text" | "Audio")}
+                        >
+                          <SelectTrigger id="edit-channel">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Text">Texto</SelectItem>
+                            <SelectItem value="Audio">Áudio</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter>
                     <Button

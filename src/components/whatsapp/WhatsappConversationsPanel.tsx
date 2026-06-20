@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, ExternalLink, MessageCircle, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
+import { CalendarClock, ExternalLink, FileText, MessageCircle, Mic, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -50,10 +50,19 @@ const INTENT_KIND_LABELS: Record<string, string> = {
 
 function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
   const outbound = message.direction === "Outbound";
+  const isAudio = message.messageType === "audio";
+  const isPrescriptionMedia =
+    !outbound && (message.messageType === "image" || message.messageType === "document");
   const sourceLabel = contentSourceLabel(message.contentSource);
   const ctx = !outbound ? parseMessageContext(message.contextJson) : null;
   const understandingSource = ctx?.source ? contentSourceLabel(ctx.source) : null;
   const understandingKind = ctx?.intentKind ?? ctx?.parseType;
+  const displayText =
+    !outbound && isAudio && message.transcript
+      ? message.transcript
+      : !outbound && isPrescriptionMedia && message.transcript
+        ? message.transcript
+        : message.content;
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -66,6 +75,24 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
         )}
       >
         <div className="mb-1 flex flex-wrap gap-1">
+          {isAudio && (
+            <Badge
+              variant={outbound ? "secondary" : "muted"}
+              className={cn("gap-0.5 text-[10px]", outbound && "bg-primary-foreground/15 text-primary-foreground")}
+            >
+              <Mic className="size-3" />
+              Áudio
+            </Badge>
+          )}
+          {isPrescriptionMedia && (
+            <Badge
+              variant={outbound ? "secondary" : "muted"}
+              className={cn("gap-0.5 text-[10px]", outbound && "bg-primary-foreground/15 text-primary-foreground")}
+            >
+              <FileText className="size-3" />
+              Receita
+            </Badge>
+          )}
           {sourceLabel && (
             <Badge
               variant={outbound ? "secondary" : "muted"}
@@ -86,7 +113,13 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
             </Badge>
           )}
         </div>
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        {!outbound && isAudio && message.transcript && message.transcript !== message.content && (
+          <p className="mb-1 text-[10px] opacity-70">Transcrição automática</p>
+        )}
+        {!outbound && isPrescriptionMedia && message.transcript && message.transcript !== message.content && (
+          <p className="mb-1 text-[10px] opacity-70">Texto extraído da receita</p>
+        )}
+        <p className="whitespace-pre-wrap break-words">{displayText}</p>
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
       </div>
     </div>
@@ -500,6 +533,12 @@ export function WhatsappConversationsPanel() {
                     <span>{maskPhone(thread.data?.patient.phone ?? selectedConversation?.phone ?? "")}</span>
                     {thread.data?.patient.status && (
                       <PatientStatusBadge status={thread.data.patient.status} />
+                    )}
+                    {thread.data?.patient.preferredMessageChannel === "Audio" && (
+                      <Badge variant="outline" className="gap-0.5 text-[10px]">
+                        <Mic className="size-3" />
+                        Canal: áudio
+                      </Badge>
                     )}
                   </p>
                 </div>

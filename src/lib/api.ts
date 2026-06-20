@@ -6,6 +6,7 @@ import type {
   AdminOnboardingFlow,
   AdminPlatformUser,
   AdminPlatformAiSettings,
+  PlatformAiUseCaseRoute,
   PlatformAiTestResult,
   PromoCampaignDetail,
   PromoCampaignListItem,
@@ -249,11 +250,20 @@ export const api = {
 
   createPatient: (
     token: string,
-    payload: { phone: string; name?: string; sendWelcome?: boolean },
+    payload: {
+      phone: string;
+      name?: string;
+      sendWelcome?: boolean;
+      preferredMessageChannel?: "Text" | "Audio";
+    },
   ) =>
     request<CreatePatientResponse>("/api/patients", { method: "POST", token, body: payload }),
 
-  updatePatient: (token: string, id: string, payload: { phone?: string; name?: string }) =>
+  updatePatient: (
+    token: string,
+    id: string,
+    payload: { phone?: string; name?: string; preferredMessageChannel?: string },
+  ) =>
     request<void>(`/api/patients/${id}`, { method: "PUT", token, body: payload }),
 
   getPatient: (token: string, id: string) =>
@@ -1007,12 +1017,16 @@ export const api = {
       updateAnthropicApiKey?: boolean;
       updateGeminiApiKey?: boolean;
       updateGroqApiKey?: boolean;
+      useCaseRoutes?: PlatformAiUseCaseRoute[];
     },
   ) =>
     request<void>("/api/admin/platform/ai", { method: "PUT", token, body: payload }),
 
   adminTestPlatformAi: (token: string) =>
     request<PlatformAiTestResult>("/api/admin/platform/ai/test", { method: "POST", token }),
+
+  adminTestPlatformAiVision: (token: string) =>
+    request<PlatformAiTestResult>("/api/admin/platform/ai/test/vision", { method: "POST", token }),
 
   adminUpdateTenantStatus: (token: string, tenantId: string, isActive: boolean) =>
     request<void>(`/api/admin/tenants/${tenantId}/status`, {
