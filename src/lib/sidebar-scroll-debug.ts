@@ -20,11 +20,40 @@ function measure(el: Element | null | undefined): Box | null {
 
 export function isSidebarScrollDebugEnabled() {
   try {
-    return (
-      import.meta.env.DEV || localStorage.getItem("kokoro:debug-sidebar") === "1"
-    );
+    if (import.meta.env.DEV) return true;
+    if (localStorage.getItem("kokoro:debug-sidebar") === "1") return true;
+    return new URLSearchParams(window.location.search).get("debug-sidebar") === "1";
   } catch {
     return import.meta.env.DEV;
+  }
+}
+
+export function warnIfSidebarScrollBroken(
+  nav: HTMLElement | null,
+  extra: Record<string, unknown> = {},
+) {
+  if (!nav) return;
+
+  const navBox = measure(nav);
+  if (!navBox) return;
+
+  const canScroll = navBox.scrollHeight > navBox.clientHeight + 1;
+  const lastLink = nav.querySelector<HTMLElement>("a:last-of-type, button:last-of-type");
+  const lastLinkBelowViewport =
+    lastLink != null && lastLink.getBoundingClientRect().bottom > nav.getBoundingClientRect().bottom + 1;
+
+  if (navBox.clientHeight < 48 && navBox.scrollHeight > navBox.clientHeight) {
+    console.warn("[kokoro-sidebar] scroll area broken (zero height)", { ...extra, nav: navBox });
+    return;
+  }
+
+  if (lastLinkBelowViewport && !canScroll) {
+    console.warn("[kokoro-sidebar] scroll area broken (items clipped)", {
+      ...extra,
+      canScroll,
+      nav: navBox,
+      lastLink: lastLink.textContent?.trim(),
+    });
   }
 }
 

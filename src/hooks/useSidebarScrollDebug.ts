@@ -4,6 +4,7 @@ import {
   isSidebarScrollDebugEnabled,
   logSidebarScroll,
   snapshotSidebarLayout,
+  warnIfSidebarScrollBroken,
 } from "@/lib/sidebar-scroll-debug";
 
 type SidebarScrollDebugRefs = {
@@ -37,9 +38,21 @@ export function useSidebarScrollDebug(
     if (!isSidebarScrollDebugEnabled()) return;
 
     logSidebarScroll("debug-enabled", {
-      hint: 'Set localStorage.removeItem("kokoro:debug-sidebar") to disable in production.',
+      hint: 'Add ?debug-sidebar=1 to the URL or localStorage.setItem("kokoro:debug-sidebar","1")',
     });
   }, []);
+
+  useEffect(() => {
+    const nav = refs.nav.current;
+    if (!nav) return;
+
+    const checkLayout = () => warnIfSidebarScrollBroken(nav, { collapsed, pathname });
+
+    requestAnimationFrame(checkLayout);
+    window.addEventListener("resize", checkLayout);
+
+    return () => window.removeEventListener("resize", checkLayout);
+  }, [collapsed, pathname]);
 
   useEffect(() => {
     if (!isSidebarScrollDebugEnabled()) return;
@@ -48,6 +61,10 @@ export function useSidebarScrollDebug(
     if (!nav) return;
 
     snapshotSidebarLayout("mount-or-deps", resolveRefs(refs), { collapsed, pathname });
+
+    requestAnimationFrame(() => {
+      warnIfSidebarScrollBroken(nav, { collapsed, pathname, label: "mount-or-deps" });
+    });
 
     const logScroll = (source: string) => {
       const scrollTop = nav.scrollTop;

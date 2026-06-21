@@ -466,7 +466,7 @@ export function AppSidebar({
     <div
       ref={rootRef}
       className={cn(
-        "relative flex h-full max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative h-full max-h-[100dvh] min-h-0 overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
       )}
     >
@@ -530,43 +530,41 @@ export function AppSidebar({
           <Separator className="mt-4 bg-white/20" />
         </header>
 
-        <div className="relative min-h-0 overflow-hidden">
-          <nav
-            ref={navRef}
-            data-sidebar-nav
-            className={cn(
-              "sidebar-scroll absolute inset-0 overflow-y-auto overflow-x-hidden",
-              collapsed ? "sidebar-scroll--collapsed p-2 py-3" : "sidebar-scroll--expanded px-4 py-3",
-            )}
-          >
-            <div className="flex flex-col gap-1.5">
-              {isTenant &&
-                TENANT_NAV_SECTIONS.map((section) => (
-                  <NavSection
-                    key={section.title}
-                    title={section.title}
-                    items={section.items}
-                    hasFeature={hasFeature}
-                    isAdmin={isAdmin}
-                    onNavigate={onNavigate}
-                    collapsed={collapsed}
-                  />
-                ))}
-              {isPlatform &&
-                PLATFORM_NAV_SECTIONS.map((section) => (
-                  <NavSection
-                    key={section.title}
-                    title={section.title}
-                    items={section.items}
-                    hasFeature={() => true}
-                    isAdmin
-                    onNavigate={onNavigate}
-                    collapsed={collapsed}
-                  />
-                ))}
-            </div>
-          </nav>
-        </div>
+        <nav
+          ref={navRef}
+          data-sidebar-nav
+          className={cn(
+            "sidebar-scroll min-h-0 overflow-y-auto overflow-x-hidden",
+            collapsed ? "sidebar-scroll--collapsed p-2 py-3" : "sidebar-scroll--expanded px-4 py-3",
+          )}
+        >
+          <div className="flex flex-col gap-1.5">
+            {isTenant &&
+              TENANT_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={hasFeature}
+                  isAdmin={isAdmin}
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+            {isPlatform &&
+              PLATFORM_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={() => true}
+                  isAdmin
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+          </div>
+        </nav>
 
         <footer
           ref={footerRef}
