@@ -43,6 +43,7 @@ import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime, maskPhone } from "@/lib/utils";
+import { maskCpf, stripCpf } from "@/lib/cpf";
 
 const STATUSES = ["", "Active", "Onboarding", "Paused", "Inactive", "OptedOut", "Reengagement"];
 
@@ -63,6 +64,7 @@ export function PatientsPage() {
   const [form, setForm] = useState({
     phone: "",
     name: "",
+    cpf: "",
     sendWelcome: true,
     preferredMessageChannel: "Text" as "Text" | "Audio",
   });
@@ -162,13 +164,14 @@ export function PatientsPage() {
       api.createPatient(token!, {
         phone: form.phone,
         name: form.name.trim() || undefined,
+        cpf: stripCpf(form.cpf) || undefined,
         sendWelcome: form.sendWelcome,
         preferredMessageChannel: canSetAudioChannel ? form.preferredMessageChannel : undefined,
       }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", sendWelcome: true, preferredMessageChannel: "Text" });
+      setForm({ phone: "", name: "", cpf: "", sendWelcome: true, preferredMessageChannel: "Text" });
 
       if (!result.created) {
         toast.info("Este telefone já está cadastrado.");
@@ -285,6 +288,18 @@ export function PatientsPage() {
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="patient-cpf">CPF (opcional)</Label>
+                  <Input
+                    id="patient-cpf"
+                    placeholder="000.000.000-00"
+                    value={form.cpf}
+                    onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ajuda a identificar o paciente além do WhatsApp. Único por farmácia.
+                  </p>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border px-3 py-3">
                   <div>
@@ -521,7 +536,7 @@ export function PatientsPage() {
           <GridSearchBar
             value={searchInput}
             onChange={setSearchInput}
-            placeholder="Buscar por nome ou telefone"
+            placeholder="Buscar por nome, telefone ou CPF"
             resultCount={data?.items.length}
             totalCount={data?.total}
           />
@@ -549,6 +564,7 @@ export function PatientsPage() {
                     )}
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
+                    <TableHead>CPF</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Medicamento</TableHead>
                     <TableHead>Último check-in</TableHead>
@@ -557,7 +573,7 @@ export function PatientsPage() {
                 <TableBody>
                   {data?.items.length === 0 && (
                     <GridEmptyRow
-                      colSpan={bulkSelectEnabled ? 6 : 5}
+                      colSpan={bulkSelectEnabled ? 7 : 6}
                       message={
                         searchInput.trim()
                           ? "Nenhum paciente corresponde à busca."
@@ -582,6 +598,9 @@ export function PatientsPage() {
                         </Link>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{maskPhone(p.phone)}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {p.cpf ? maskCpf(p.cpf) : "—"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-2">
                           <PatientStatusBadge status={p.status} />

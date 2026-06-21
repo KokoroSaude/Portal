@@ -253,6 +253,7 @@ export const api = {
     payload: {
       phone: string;
       name?: string;
+      cpf?: string;
       sendWelcome?: boolean;
       preferredMessageChannel?: "Text" | "Audio";
     },
@@ -262,7 +263,7 @@ export const api = {
   updatePatient: (
     token: string,
     id: string,
-    payload: { phone?: string; name?: string; preferredMessageChannel?: string },
+    payload: { phone?: string; name?: string; cpf?: string; preferredMessageChannel?: string },
   ) =>
     request<void>(`/api/patients/${id}`, { method: "PUT", token, body: payload }),
 

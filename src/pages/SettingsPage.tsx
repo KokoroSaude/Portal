@@ -101,6 +101,7 @@ export function SettingsPage() {
         onboardingResumeEnabled: settings.onboardingResumeEnabled ?? true,
         onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
         onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
+        onboardingSurveyRandomPickEnabled: settings.onboardingSurveyRandomPickEnabled ?? false,
         requirePreRegisteredPatients: settings.requirePreRegisteredPatients ?? false,
         defaultPromoMessage: settings.defaultPromoMessage ?? "",
       });
@@ -720,6 +721,42 @@ export function SettingsPage() {
                 <span className="font-medium text-foreground">Continuar cadastro</span> na ficha do
                 paciente ou na lista de pacientes.
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Escalas no fim do cadastro</CardTitle>
+              <CardDescription>
+                Quando MMAS-8 e TCP estão habilitados no onboarding, evita enviar as duas pesquisas
+                seguidas para o mesmo paciente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label htmlFor="onboardingSurveyRandomPickEnabled">
+                    Escolher uma escala por paciente
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ativo: cada paciente recebe só MMAS-8 ou só TCP ao concluir o cadastro (escolha
+                    estável). Desligado: aplica as duas em sequência.
+                  </p>
+                </div>
+                <Switch
+                  id="onboardingSurveyRandomPickEnabled"
+                  checked={form.onboardingSurveyRandomPickEnabled ?? false}
+                  onCheckedChange={(checked) =>
+                    update("onboardingSurveyRandomPickEnabled", checked)
+                  }
+                />
+              </div>
+
+              <SettingsSaveButton
+                onSave={save}
+                pending={savePending}
+                label="Salvar escalas no cadastro"
+              />
             </CardContent>
           </Card>
         </TabsContent>

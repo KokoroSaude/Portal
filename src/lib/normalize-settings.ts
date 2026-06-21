@@ -40,6 +40,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
     outboundContentMode: raw.outboundContentMode ?? raw.OutboundContentMode ?? "TemplateOnly",
     outboundAlternateStrategy:
       raw.outboundAlternateStrategy ?? raw.OutboundAlternateStrategy ?? "PerPatient",
+    onboardingResumeEnabled: raw.onboardingResumeEnabled ?? true,
+    onboardingSurveyRandomPickEnabled: raw.onboardingSurveyRandomPickEnabled ?? false,
     aiFeatures,
   };
 }

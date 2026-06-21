@@ -46,6 +46,7 @@ export interface Patient {
   id: string;
   name: string | null;
   phone: string;
+  cpf?: string | null;
   status: string;
   medication: string | null;
   preferredMessageChannel?: "Text" | "Audio";
@@ -58,6 +59,7 @@ export interface CreatePatientResponse {
   id: string;
   name: string | null;
   phone: string;
+  cpf?: string | null;
   status: string;
   created: boolean;
   welcomeSent: boolean;
@@ -582,6 +584,7 @@ export interface TenantSettings {
   tpbPeriodicDays: number | null;
   tpbTriggerAfterMisses: number | null;
   tpbCooldownDays: number;
+  onboardingSurveyRandomPickEnabled?: boolean;
   onboardingResumeEnabled: boolean;
   onboardingResumeAfterDays: number;
   onboardingResumeCooldownHours: number;

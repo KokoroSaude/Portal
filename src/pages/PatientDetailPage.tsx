@@ -42,6 +42,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
+import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
 import type { TimelineEvent } from "@/types/api";
 
 const EVENT_LABELS: Record<string, string> = {
@@ -65,6 +66,7 @@ export function PatientDetailPage() {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
   const [nameInput, setNameInput] = useState("");
+  const [cpfInput, setCpfInput] = useState("");
   const [channelInput, setChannelInput] = useState<"Text" | "Audio">("Text");
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
@@ -218,6 +220,7 @@ export function PatientDetailPage() {
       api.updatePatient(token!, id!, {
         phone: phoneInput.trim() || undefined,
         name: nameInput,
+        cpf: cpfInput.trim() === "" ? "" : stripCpf(cpfInput) || undefined,
         preferredMessageChannel: channelInput,
       }),
     onSuccess: () => {
@@ -248,6 +251,7 @@ export function PatientDetailPage() {
     if (patient) {
       setPhoneInput(patient.phone);
       setNameInput(patient.name ?? "");
+      setCpfInput(patient.cpf ? formatCpfDisplay(patient.cpf) : "");
       setChannelInput(patient.preferredMessageChannel === "Audio" ? "Audio" : "Text");
     }
   }, [patient]);
@@ -296,19 +300,24 @@ export function PatientDetailPage() {
               />
             )}
             <span className="font-mono text-sm text-muted-foreground">{maskPhone(patient.phone)}</span>
+            {patient.cpf && (
+              <span className="font-mono text-sm text-muted-foreground">
+                CPF {formatCpfDisplay(patient.cpf)}
+              </span>
+            )}
             {canWrite && (
               <Dialog open={phoneOpen} onOpenChange={setPhoneOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
                     <Pencil className="size-3" />
-                    Editar WhatsApp
+                    Editar dados
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>WhatsApp do paciente</DialogTitle>
+                    <DialogTitle>Dados do paciente</DialogTitle>
                     <DialogDescription>
-                      Atualize se o paciente trocou de número. Deve ser o mesmo usado no WhatsApp.
+                      Atualize WhatsApp, nome ou CPF. O telefone deve ser o mesmo usado no WhatsApp.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3">
@@ -328,6 +337,18 @@ export function PatientDetailPage() {
                         value={nameInput}
                         onChange={(e) => setNameInput(e.target.value)}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-cpf">CPF</Label>
+                      <Input
+                        id="edit-cpf"
+                        value={cpfInput}
+                        onChange={(e) => setCpfInput(e.target.value)}
+                        placeholder="000.000.000-00"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Deixe vazio para remover o CPF cadastrado.
+                      </p>
                     </div>
                     {canSetAudioChannel && (
                       <div className="space-y-2">
