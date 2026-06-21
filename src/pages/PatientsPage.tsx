@@ -359,27 +359,53 @@ export function PatientsPage() {
             <div>
               <CardTitle className="text-base">Como entram novos pacientes</CardTitle>
               <CardDescription className="mt-1">
-                Duas formas equivalentes — o sistema verifica se o telefone já existe antes de criar.
+                {tenantSettings?.requirePreRegisteredPatients
+                  ? "Cadastre primeiro no portal — o WhatsApp só atende números já incluídos."
+                  : "Duas formas equivalentes — o sistema verifica se o telefone já existe antes de criar."}
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            <strong className="text-foreground">Pelo WhatsApp:</strong> o paciente envia qualquer mensagem para{" "}
-            {activeSender ? (
-              <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
-            ) : (
-              <Link to="/whatsapp/configuracao" className="text-primary underline">
-                seu número conectado
-              </Link>
-            )}
-            . Criamos o cadastro e iniciamos o onboarding automaticamente.
-          </p>
-          <p>
-            <strong className="text-foreground">Pelo portal:</strong> use &quot;Novo paciente&quot; para pré-cadastrar
-            e opcionalmente disparar as boas-vindas.
-          </p>
+          {tenantSettings?.requirePreRegisteredPatients ? (
+            <>
+              <p>
+                <strong className="text-foreground">Pelo portal:</strong> use &quot;Novo paciente&quot; para
+                cadastrar o número e, se quiser, disparar as boas-vindas antes do paciente escrever no
+                WhatsApp.
+              </p>
+              <p>
+                <strong className="text-foreground">Pelo WhatsApp:</strong> só funciona depois do cadastro. Se
+                alguém não cadastrado enviar mensagem para{" "}
+                {activeSender ? (
+                  <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
+                ) : (
+                  <Link to="/whatsapp/configuracao" className="text-primary underline">
+                    seu número conectado
+                  </Link>
+                )}
+                , recebe um aviso de que precisa ser incluído pela equipe antes de continuar.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                <strong className="text-foreground">Pelo WhatsApp:</strong> o paciente envia qualquer mensagem para{" "}
+                {activeSender ? (
+                  <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
+                ) : (
+                  <Link to="/whatsapp/configuracao" className="text-primary underline">
+                    seu número conectado
+                  </Link>
+                )}
+                . Criamos o cadastro e iniciamos o onboarding automaticamente.
+              </p>
+              <p>
+                <strong className="text-foreground">Pelo portal:</strong> use &quot;Novo paciente&quot; para
+                pré-cadastrar e opcionalmente disparar as boas-vindas.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

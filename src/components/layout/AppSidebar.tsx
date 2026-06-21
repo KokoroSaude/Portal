@@ -462,93 +462,97 @@ export function AppSidebar({
         <div className="absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" />
       </div>
 
-      <div className="sidebar-scroll relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-        <div className="flex min-h-full flex-col">
-          <header
-            className={cn(
-              "sticky top-0 z-20 shrink-0 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
-              collapsed ? "px-2 py-4" : "px-3 py-4",
-            )}
-          >
-            {!collapsed ? (
-              <>
-                <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <header
+          className={cn(
+            "shrink-0 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
+            collapsed ? "px-2 py-4" : "px-3 py-4",
+          )}
+        >
+          {!collapsed ? (
+            <>
+              <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1">
+                <div className="size-8" aria-hidden />
+                <KokoroLogo variant="onCoral" to="/" height={48} className="mx-auto" />
+                {collapsible ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                    aria-label="Recolher menu"
+                    onClick={onToggleCollapsed}
+                  >
+                    <PanelLeftClose className="size-4" />
+                  </Button>
+                ) : (
                   <div className="size-8" aria-hidden />
-                  <KokoroLogo variant="onCoral" to="/" height={48} className="mx-auto" />
-                  {collapsible ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                      aria-label="Recolher menu"
-                      onClick={onToggleCollapsed}
-                    >
-                      <PanelLeftClose className="size-4" />
-                    </Button>
-                  ) : (
-                    <div className="size-8" aria-hidden />
-                  )}
-                </div>
-                <p className="mt-2 text-center text-xs text-primary-foreground/70">Portal</p>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <KokoroLogo variant="onCoral" to="/" height={32} />
-                {collapsible && (
-                  <SidebarCollapsedFlyout collapsed label="Expandir menu">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                      aria-label="Expandir menu"
-                      onClick={onToggleCollapsed}
-                    >
-                      <PanelLeft className="size-4" />
-                    </Button>
-                  </SidebarCollapsedFlyout>
                 )}
               </div>
-            )}
-            <Separator className="mt-4 bg-white/20" />
-          </header>
-
-          <nav className={cn("flex-1", collapsed ? "p-2 py-3" : "px-4 py-3")}>
-            <div className="flex flex-col gap-1.5">
-              {isTenant &&
-                TENANT_NAV_SECTIONS.map((section) => (
-                  <NavSection
-                    key={section.title}
-                    title={section.title}
-                    items={section.items}
-                    hasFeature={hasFeature}
-                    isAdmin={isAdmin}
-                    onNavigate={onNavigate}
-                    collapsed={collapsed}
-                  />
-                ))}
-              {isPlatform &&
-                PLATFORM_NAV_SECTIONS.map((section) => (
-                  <NavSection
-                    key={section.title}
-                    title={section.title}
-                    items={section.items}
-                    hasFeature={() => true}
-                    isAdmin
-                    onNavigate={onNavigate}
-                    collapsed={collapsed}
-                  />
-                ))}
+              <p className="mt-2 text-center text-xs text-primary-foreground/70">Portal</p>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <KokoroLogo variant="onCoral" to="/" height={32} />
+              {collapsible && (
+                <SidebarCollapsedFlyout collapsed label="Expandir menu">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                    aria-label="Expandir menu"
+                    onClick={onToggleCollapsed}
+                  >
+                    <PanelLeft className="size-4" />
+                  </Button>
+                </SidebarCollapsedFlyout>
+              )}
             </div>
-          </nav>
+          )}
+          <Separator className="mt-4 bg-white/20" />
+        </header>
 
-          <footer
-            className={cn(
-              "sticky bottom-0 z-20 mt-auto shrink-0 border-t border-white/20 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
-              collapsed ? "p-2" : "p-4",
-            )}
-          >
+        <nav
+          className={cn(
+            "sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
+            collapsed ? "p-2 py-3" : "px-4 py-3",
+          )}
+        >
+          <div className="flex flex-col gap-1.5">
+            {isTenant &&
+              TENANT_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={hasFeature}
+                  isAdmin={isAdmin}
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+            {isPlatform &&
+              PLATFORM_NAV_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.title}
+                  title={section.title}
+                  items={section.items}
+                  hasFeature={() => true}
+                  isAdmin
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                />
+              ))}
+          </div>
+        </nav>
+
+        <footer
+          className={cn(
+            "shrink-0 border-t border-white/20 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
+            collapsed ? "p-2" : "p-4",
+          )}
+        >
             {collapsed ? (
               <div className="flex flex-col items-center gap-2">
                 <SidebarCollapsedFlyout
@@ -617,8 +621,7 @@ export function AppSidebar({
                 <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
               </>
             )}
-          </footer>
-        </div>
+        </footer>
       </div>
     </div>
   );
