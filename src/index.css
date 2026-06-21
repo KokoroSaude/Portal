@@ -100,9 +100,9 @@
     overscroll-behavior-y: contain;
   }
 
-  /* stable gutter needs ~6px — breaks scroll in the 64px collapsed rail */
+  /* stable gutter reserves width and can prevent overflow scrolling in narrow rails */
   .sidebar-scroll--expanded {
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
   }
 
   .sidebar-scroll::-webkit-scrollbar {

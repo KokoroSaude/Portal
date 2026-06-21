@@ -36,6 +36,7 @@ import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
 import { cn } from "@/lib/utils";
 import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
+import { useSidebarNavHeight } from "@/hooks/useSidebarNavHeight";
 
 export type NavItem = {
   to?: string;
@@ -446,15 +447,36 @@ export function AppSidebar({
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
 
-  useSidebarScrollDebug(
-    { root: rootRef, grid: gridRef, header: headerRef, nav: navRef, footer: footerRef },
+  const navMaxHeight = useSidebarNavHeight(
+    { shell: shellRef, header: headerRef, footer: footerRef },
     collapsed,
   );
+
+  useSidebarScrollDebug(
+    { root: rootRef, grid: shellRef, header: headerRef, nav: navRef, footer: footerRef },
+    collapsed,
+    navMaxHeight,
+  );
+
+  function handleNavWheel(event: React.WheelEvent<HTMLElement>) {
+    const nav = event.currentTarget;
+    const maxScrollTop = nav.scrollHeight - nav.clientHeight;
+    if (maxScrollTop <= 0) return;
+
+    const goingUp = event.deltaY < 0;
+    const goingDown = event.deltaY > 0;
+    const atTop = nav.scrollTop <= 0;
+    const atBottom = nav.scrollTop >= maxScrollTop - 1;
+
+    if ((goingUp && !atTop) || (goingDown && !atBottom)) {
+      event.stopPropagation();
+    }
+  }
 
   const handleLogout = () => {
     onNavigate?.();
@@ -466,7 +488,7 @@ export function AppSidebar({
     <div
       ref={rootRef}
       className={cn(
-        "relative h-full max-h-[100dvh] min-h-0 overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
       )}
     >
@@ -476,8 +498,8 @@ export function AppSidebar({
       </div>
 
       <div
-        ref={gridRef}
-        className="relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden"
+        ref={shellRef}
+        className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden"
       >
         <header
           ref={headerRef}
@@ -533,8 +555,10 @@ export function AppSidebar({
         <nav
           ref={navRef}
           data-sidebar-nav
+          onWheel={handleNavWheel}
+          style={navMaxHeight != null ? { maxHeight: navMaxHeight } : undefined}
           className={cn(
-            "sidebar-scroll min-h-0 overflow-y-auto overflow-x-hidden",
+            "sidebar-scroll min-h-0 shrink-0 overflow-y-auto overflow-x-hidden",
             collapsed ? "sidebar-scroll--collapsed p-2 py-3" : "sidebar-scroll--expanded px-4 py-3",
           )}
         >
