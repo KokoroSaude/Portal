@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ExternalLink, FileText, MessageCircle, Mic, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
@@ -34,6 +34,9 @@ function parseMessageContext(contextJson: string | null | undefined) {
     return null;
   }
 }
+
+const INITIAL_VISIBLE_MESSAGES = 5;
+const LOAD_MORE_MESSAGES = 10;
 
 const INTENT_KIND_LABELS: Record<string, string> = {
   AddCarePlan: "Novo agendamento",
@@ -282,7 +285,13 @@ export function WhatsappConversationsPanel() {
   const [replyText, setReplyText] = useState("");
   const [requestCsat, setRequestCsat] = useState(false);
   const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
+  const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const threadScrollRef = useRef<HTMLDivElement>(null);
+  const pinnedToBottomRef = useRef(true);
+  const loadingOlderRef = useRef(false);
+  const pendingScrollRestoreRef = useRef<number | null>(null);
+  const prevMessageTotalRef = useRef(0);
 
   const conversations = useQuery({
     queryKey: ["whatsapp-conversations"],
@@ -321,8 +330,64 @@ export function WhatsappConversationsPanel() {
   }, [conversations.data, selectedPatientId, patientIdFromUrl]);
 
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [thread.data?.messages]);
+    setVisibleMessageCount(INITIAL_VISIBLE_MESSAGES);
+    pinnedToBottomRef.current = true;
+    prevMessageTotalRef.current = 0;
+  }, [selectedPatientId, onlyPharmacyMessages]);
+
+  const allDisplayedMessages = onlyPharmacyMessages
+    ? (thread.data?.messages ?? []).filter((m) => m.contentSource === "operator")
+    : (thread.data?.messages ?? []);
+  const visibleMessages = allDisplayedMessages.slice(-visibleMessageCount);
+  const hasOlderMessages = allDisplayedMessages.length > visibleMessages.length;
+
+  useLayoutEffect(() => {
+    const el = threadScrollRef.current;
+    const prevHeight = pendingScrollRestoreRef.current;
+    if (el && prevHeight !== null) {
+      el.scrollTop = el.scrollHeight - prevHeight;
+      pendingScrollRestoreRef.current = null;
+      loadingOlderRef.current = false;
+    }
+  }, [visibleMessageCount, visibleMessages.length]);
+
+  useEffect(() => {
+    const total = allDisplayedMessages.length;
+    const prevTotal = prevMessageTotalRef.current;
+    if (total > prevTotal && pinnedToBottomRef.current) {
+      threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessageTotalRef.current = total;
+  }, [allDisplayedMessages.length, thread.data?.messages]);
+
+  useEffect(() => {
+    if (thread.data?.messages && pinnedToBottomRef.current) {
+      requestAnimationFrame(() => {
+        threadEndRef.current?.scrollIntoView({ behavior: "auto" });
+      });
+    }
+  }, [selectedPatientId, thread.data?.messages?.length]);
+
+  function loadOlderMessages() {
+    if (!hasOlderMessages || loadingOlderRef.current) return;
+    const el = threadScrollRef.current;
+    if (!el) return;
+    loadingOlderRef.current = true;
+    pendingScrollRestoreRef.current = el.scrollHeight;
+    setVisibleMessageCount((count) =>
+      Math.min(allDisplayedMessages.length, count + LOAD_MORE_MESSAGES),
+    );
+  }
+
+  function handleThreadScroll() {
+    const el = threadScrollRef.current;
+    if (!el) return;
+    pinnedToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    const isScrollable = el.scrollHeight > el.clientHeight + 1;
+    if (isScrollable && el.scrollTop < 48) {
+      loadOlderMessages();
+    }
+  }
 
   const deleteMessages = useMutation({
     mutationFn: (patientId: string) => api.deleteWhatsAppConversationMessages(token!, patientId),
@@ -446,9 +511,6 @@ export function WhatsappConversationsPanel() {
       : outboundContent?.mode === "Alternate"
         ? `Intercalar · próximo: ${outboundContent.nextChannel === "ai" ? "IA" : "template"}`
         : "Modo: template";
-  const displayedMessages = onlyPharmacyMessages
-    ? (thread.data?.messages ?? []).filter((m) => m.contentSource === "operator")
-    : (thread.data?.messages ?? []);
 
   return (
     <Card>
@@ -596,27 +658,46 @@ export function WhatsappConversationsPanel() {
                 )}
               </div>
 
-              <div className="grid flex-1 gap-0 lg:grid-cols-[1fr_minmax(200px,240px)]">
-                <div className="space-y-3 overflow-y-auto border-b p-4 lg:border-b-0 lg:border-r">
-                  {thread.isLoading ? (
-                    <Skeleton className="h-40 w-full" />
-                  ) : !displayedMessages.length ? (
-                    <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
-                  ) : (
-                    displayedMessages.map((message) => (
-                      <MessageBubble key={message.id} message={message} />
-                    ))
-                  )}
-                  <div ref={threadEndRef} />
-                  <div className="mt-2 flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                    <span className="font-medium">Só Farmácia</span>
-                    <Switch
-                      checked={onlyPharmacyMessages}
-                      onCheckedChange={setOnlyPharmacyMessages}
-                      aria-label="Filtrar apenas mensagens da farmácia"
-                    />
+              <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[1fr_minmax(200px,240px)]">
+                <div className="flex min-h-0 flex-col">
+                  <div
+                    ref={threadScrollRef}
+                    onScroll={handleThreadScroll}
+                    className="h-64 shrink-0 space-y-3 overflow-y-auto overscroll-contain border-b p-4 sm:h-72 lg:border-b-0 lg:border-r"
+                  >
+                    {thread.isLoading ? (
+                      <Skeleton className="h-40 w-full" />
+                    ) : !visibleMessages.length ? (
+                      <p className="text-center text-sm text-muted-foreground">Sem mensagens nesta conversa.</p>
+                    ) : (
+                      <>
+                        {hasOlderMessages && (
+                          <button
+                            type="button"
+                            onClick={loadOlderMessages}
+                            className="sticky top-0 z-10 w-full rounded-md bg-background/90 py-1.5 text-center text-[10px] text-muted-foreground backdrop-blur-sm hover:text-foreground"
+                          >
+                            Ver mensagens anteriores (
+                            {allDisplayedMessages.length - visibleMessages.length} ocultas)
+                          </button>
+                        )}
+                        {visibleMessages.map((message) => (
+                          <MessageBubble key={message.id} message={message} />
+                        ))}
+                      </>
+                    )}
+                    <div ref={threadEndRef} />
                   </div>
-                  {canWrite && selectedPatientId && (
+                  <div className="shrink-0 space-y-3 p-4 pt-2">
+                    <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                      <span className="font-medium">Só Farmácia</span>
+                      <Switch
+                        checked={onlyPharmacyMessages}
+                        onCheckedChange={setOnlyPharmacyMessages}
+                        aria-label="Filtrar apenas mensagens da farmácia"
+                      />
+                    </div>
+                    {canWrite && selectedPatientId && (
                     <div className="space-y-2 border-t pt-3">
                       {outboundContent && (
                         <Badge variant="outline" className="text-[10px] font-normal">
@@ -719,7 +800,8 @@ export function WhatsappConversationsPanel() {
                         </Button>
                       </div>
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-4">

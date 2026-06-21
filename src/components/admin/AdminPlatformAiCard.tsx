@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type { PlatformAiUseCaseRoute } from "@/types/api";
 
 const DEFAULT_MODELS: Record<string, string> = {
@@ -40,6 +50,43 @@ const DEFAULT_USE_CASE_ROUTES: PlatformAiUseCaseRoute[] = [
   { key: "outbound", provider: null, model: null },
   { key: "milestone", provider: null, model: null },
 ];
+
+function ProviderStatus({
+  name,
+  configured,
+  hint,
+  loading,
+}: {
+  name: string;
+  configured?: boolean;
+  hint?: string | null;
+  loading?: boolean;
+}) {
+  if (loading) {
+    return <Skeleton className="h-16 w-full rounded-lg" />;
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border px-3 py-2.5",
+        configured ? "border-emerald-200/80 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20" : "bg-muted/30",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {configured ? (
+          <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        ) : (
+          <Circle className="size-4 shrink-0 text-muted-foreground" />
+        )}
+        <p className="text-sm font-medium">{name}</p>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {configured ? hint ? `Chave · ${hint}` : "Chave configurada" : "Sem chave"}
+      </p>
+    </div>
+  );
+}
 
 export function AdminPlatformAiCard() {
   const { token } = useAuth();
@@ -148,214 +195,255 @@ export function AdminPlatformAiCard() {
             : data?.isConfigured;
 
   const effectiveModel = model.trim() || DEFAULT_MODELS[provider] || "";
+  const savePending = saveMutation.isPending || isLoading;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="size-5 text-primary" />
-          Inteligência artificial
-        </CardTitle>
-        <CardDescription>
-          Salve as chaves aqui e escolha um provedor por funcionalidade. Vazio em um use case usa o
-          padrão global. Chaves criptografadas no banco (fallback: variáveis de ambiente).
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={data?.openAiConfigured ? "default" : "secondary"}>
-            OpenAI {data?.openAiConfigured ? "ok" : "sem chave"}
-            {data?.openAiKeyHint ? ` · ${data.openAiKeyHint}` : ""}
-          </Badge>
-          <Badge variant={data?.anthropicConfigured ? "default" : "secondary"}>
-            Anthropic {data?.anthropicConfigured ? "ok" : "sem chave"}
-            {data?.anthropicKeyHint ? ` · ${data.anthropicKeyHint}` : ""}
-          </Badge>
-          <Badge variant={data?.geminiConfigured ? "default" : "secondary"}>
-            Gemini {data?.geminiConfigured ? "ok" : "sem chave"}
-            {data?.geminiKeyHint ? ` · ${data.geminiKeyHint}` : ""}
-          </Badge>
-          <Badge variant={data?.groqConfigured ? "default" : "secondary"}>
-            Groq {data?.groqConfigured ? "ok" : "sem chave"}
-            {data?.groqKeyHint ? ` · ${data.groqKeyHint}` : ""}
-          </Badge>
-          {data && (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="size-4 text-primary" />
+            Status dos provedores
+          </CardTitle>
+          <CardDescription>
+            Chaves criptografadas no banco. Fallback: variáveis de ambiente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ProviderStatus
+              name="Gemini"
+              configured={data?.geminiConfigured}
+              hint={data?.geminiKeyHint}
+              loading={isLoading}
+            />
+            <ProviderStatus
+              name="Groq"
+              configured={data?.groqConfigured}
+              hint={data?.groqKeyHint}
+              loading={isLoading}
+            />
+            <ProviderStatus
+              name="Anthropic"
+              configured={data?.anthropicConfigured}
+              hint={data?.anthropicKeyHint}
+              loading={isLoading}
+            />
+            <ProviderStatus
+              name="OpenAI"
+              configured={data?.openAiConfigured}
+              hint={data?.openAiKeyHint}
+              loading={isLoading}
+            />
+          </div>
+          {!isLoading && data && (
             <Badge variant={data.isConfigured ? "success" : "warning"}>
               {data.isConfigured ? "Padrão global pronto" : "Falta chave do provedor padrão"}
             </Badge>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Provedor padrão (fallback)</Label>
-            <Select value={provider} onValueChange={setProvider} disabled={isLoading}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gemini">Gemini (Google — tier gratuito)</SelectItem>
-                <SelectItem value="groq">Llama via Groq (tier gratuito)</SelectItem>
-                <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
-                <SelectItem value="openai">GPT (OpenAI)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ai-model">Modelo padrão (opcional)</Label>
-            <Input
-              id="ai-model"
-              placeholder={DEFAULT_MODELS[provider]}
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground">Padrão: {effectiveModel}</p>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div>
-            <p className="text-sm font-medium">Roteamento por funcionalidade</p>
-            <p className="text-sm text-muted-foreground">
-              Ex.: Groq no WhatsApp + Gemini grátis só na receita. Deixe provedor vazio para usar o
-              padrão global.
-            </p>
-          </div>
-          {useCaseRoutes.map((route) => (
-            <div key={route.key} className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
-              <div className="space-y-1 sm:col-span-2">
-                <Label>{USE_CASE_META[route.key] ?? route.key}</Label>
-              </div>
-              <div className="space-y-2">
-                <Label>Provedor</Label>
-                <Select
-                  value={route.provider ?? "default"}
-                  onValueChange={(v) =>
-                    updateRoute(route.key, { provider: v === "default" ? null : v })
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Usar padrão global</SelectItem>
-                    <SelectItem value="gemini">Gemini</SelectItem>
-                    <SelectItem value="groq">Groq</SelectItem>
-                    <SelectItem value="anthropic">Anthropic</SelectItem>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Modelo (opcional)</Label>
-                <Input
-                  placeholder={
-                    route.provider ? DEFAULT_MODELS[route.provider] : "Modelo do padrão global"
-                  }
-                  value={route.model ?? ""}
-                  onChange={(e) => updateRoute(route.key, { model: e.target.value || null })}
-                  disabled={isLoading}
-                />
-              </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Provedor padrão</CardTitle>
+            <CardDescription>
+              Usado quando um use case não define provedor próprio.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="space-y-2">
+              <Label>Provedor (fallback)</Label>
+              <Select value={provider} onValueChange={setProvider} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini">Gemini (Google — tier gratuito)</SelectItem>
+                  <SelectItem value="groq">Llama via Groq (tier gratuito)</SelectItem>
+                  <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
+                  <SelectItem value="openai">GPT (OpenAI)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-model">Modelo (opcional)</Label>
+              <Input
+                id="ai-model"
+                placeholder={DEFAULT_MODELS[provider]}
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                disabled={isLoading}
+              />
+              <p className="text-xs text-muted-foreground">Padrão: {effectiveModel}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-4 rounded-lg border p-4">
-          <p className="text-sm font-medium">Chaves de API</p>
-          <div className="space-y-2">
-            <Label htmlFor="gemini-key">Gemini (Google AI Studio)</Label>
-            <Input
-              id="gemini-key"
-              type="password"
-              autoComplete="off"
-              placeholder={data?.geminiKeyHint ? `Salva: ${data.geminiKeyHint}` : "Cole a nova chave"}
-              value={geminiApiKey}
-              onChange={(e) => setGeminiApiKey(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="groq-key">Groq (gsk_…)</Label>
-            <Input
-              id="groq-key"
-              type="password"
-              autoComplete="off"
-              placeholder={data?.groqKeyHint ? `Salva: ${data.groqKeyHint}` : "Cole a nova chave"}
-              value={groqApiKey}
-              onChange={(e) => setGroqApiKey(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="anthropic-key">Anthropic (sk-ant-…)</Label>
-            <Input
-              id="anthropic-key"
-              type="password"
-              autoComplete="off"
-              placeholder={data?.anthropicKeyHint ? `Salva: ${data.anthropicKeyHint}` : "Cole a nova chave"}
-              value={anthropicApiKey}
-              onChange={(e) => setAnthropicApiKey(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="openai-key">OpenAI (sk-…)</Label>
-            <Input
-              id="openai-key"
-              type="password"
-              autoComplete="off"
-              placeholder={data?.openAiKeyHint ? `Salva: ${data.openAiKeyHint}` : "Cole a nova chave"}
-              value={openAiApiKey}
-              onChange={(e) => setOpenAiApiKey(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Deixe em branco para manter a chave atual. Preencha só ao cadastrar ou trocar.
-          </p>
-        </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Chaves de API</CardTitle>
+            <CardDescription>
+              Deixe em branco para manter a chave atual. Preencha só ao cadastrar ou trocar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="space-y-2">
+              <Label htmlFor="gemini-key">Gemini (Google AI Studio)</Label>
+              <Input
+                id="gemini-key"
+                type="password"
+                autoComplete="off"
+                placeholder={data?.geminiKeyHint ? `Salva: ${data.geminiKeyHint}` : "Cole a nova chave"}
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="groq-key">Groq (gsk_…)</Label>
+              <Input
+                id="groq-key"
+                type="password"
+                autoComplete="off"
+                placeholder={data?.groqKeyHint ? `Salva: ${data.groqKeyHint}` : "Cole a nova chave"}
+                value={groqApiKey}
+                onChange={(e) => setGroqApiKey(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="anthropic-key">Anthropic (sk-ant-…)</Label>
+              <Input
+                id="anthropic-key"
+                type="password"
+                autoComplete="off"
+                placeholder={
+                  data?.anthropicKeyHint ? `Salva: ${data.anthropicKeyHint}` : "Cole a nova chave"
+                }
+                value={anthropicApiKey}
+                onChange={(e) => setAnthropicApiKey(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="openai-key">OpenAI (sk-…)</Label>
+              <Input
+                id="openai-key"
+                type="password"
+                autoComplete="off"
+                placeholder={data?.openAiKeyHint ? `Salva: ${data.openAiKeyHint}` : "Cole a nova chave"}
+                value={openAiApiKey}
+                onChange={(e) => setOpenAiApiKey(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
-            {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => testMutation.mutate()}
-            disabled={testMutation.isPending || isLoading || !data?.isConfigured}
-          >
-            {testMutation.isPending ? "Testando…" : "Testar insights (LLM)"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => testVisionMutation.mutate()}
-            disabled={testVisionMutation.isPending || isLoading || !visionKeyReady}
-          >
-            {testVisionMutation.isPending ? "Testando…" : "Testar receita (visão)"}
-          </Button>
-        </div>
-        {!visionKeyReady && (
-          <p className="text-sm text-muted-foreground">
-            Para testar receita, configure o provedor de{" "}
-            <strong>{USE_CASE_META.prescription_vision}</strong>
-            {visionRouteProvider !== provider ? ` (${visionRouteProvider})` : ""} com chave válida
-            {visionRouteProvider === "groq" || visionRouteProvider === "anthropic"
-              ? " — use Gemini ou OpenAI para visão."
-              : "."}
-          </p>
-        )}
-        {!data?.isConfigured && (
-          <p className="text-sm text-amber-900">
-            Configure pelo menos o provedor padrão com a chave correspondente. Use o roteamento acima
-            para funcionalidades específicas (ex.: receita com Gemini grátis).
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Roteamento por funcionalidade</CardTitle>
+          <CardDescription>
+            Ex.: Groq no WhatsApp + Gemini grátis só na receita. Provedor vazio usa o padrão global.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Funcionalidade</TableHead>
+                <TableHead className="w-[200px]">Provedor</TableHead>
+                <TableHead className="w-[220px]">Modelo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {useCaseRoutes.map((route) => (
+                <TableRow key={route.key}>
+                  <TableCell className="font-medium">
+                    {USE_CASE_META[route.key] ?? route.key}
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={route.provider ?? "default"}
+                      onValueChange={(v) =>
+                        updateRoute(route.key, { provider: v === "default" ? null : v })
+                      }
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Padrão global</SelectItem>
+                        <SelectItem value="gemini">Gemini</SelectItem>
+                        <SelectItem value="groq">Groq</SelectItem>
+                        <SelectItem value="anthropic">Anthropic</SelectItem>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className="h-9"
+                      placeholder={
+                        route.provider ? DEFAULT_MODELS[route.provider] : "Modelo do padrão global"
+                      }
+                      value={route.model ?? ""}
+                      onChange={(e) => updateRoute(route.key, { model: e.target.value || null })}
+                      disabled={isLoading}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/15 bg-muted/20">
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => saveMutation.mutate()} disabled={savePending}>
+              {saveMutation.isPending ? "Salvando…" : "Salvar configuração"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => testMutation.mutate()}
+              disabled={testMutation.isPending || isLoading || !data?.isConfigured}
+            >
+              {testMutation.isPending ? "Testando…" : "Testar insights (LLM)"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => testVisionMutation.mutate()}
+              disabled={testVisionMutation.isPending || isLoading || !visionKeyReady}
+            >
+              {testVisionMutation.isPending ? "Testando…" : "Testar receita (visão)"}
+            </Button>
+          </div>
+          {!visionKeyReady && (
+            <p className="text-sm text-muted-foreground">
+              Para testar receita, configure o provedor de{" "}
+              <strong>{USE_CASE_META.prescription_vision}</strong>
+              {visionRouteProvider !== provider ? ` (${visionRouteProvider})` : ""} com chave válida
+              {visionRouteProvider === "groq" || visionRouteProvider === "anthropic"
+                ? " — use Gemini ou OpenAI para visão."
+                : "."}
+            </p>
+          )}
+          {!data?.isConfigured && !isLoading && (
+            <p className="text-sm text-amber-900 dark:text-amber-200">
+              Configure pelo menos o provedor padrão com a chave correspondente. Use o roteamento
+              acima para funcionalidades específicas (ex.: receita com Gemini grátis).
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

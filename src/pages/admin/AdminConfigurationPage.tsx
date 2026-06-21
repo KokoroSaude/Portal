@@ -3,10 +3,10 @@ import { PageHeader } from "@/components/PageHeader";
 
 export function AdminConfigurationPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
-        title="Configuração"
-        description="Preferências globais da plataforma Kokoro"
+        title="Configuração da plataforma"
+        description="Preferências globais da Kokoro — provedores de IA, chaves e roteamento por funcionalidade."
       />
 
       <AdminPlatformAiCard />
