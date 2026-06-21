@@ -453,7 +453,7 @@ export function AppSidebar({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
+        "relative flex h-full max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
       )}
     >
@@ -462,7 +462,7 @@ export function AppSidebar({
         <div className="absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" />
       </div>
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
         <header
           className={cn(
             "shrink-0 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
@@ -515,7 +515,7 @@ export function AppSidebar({
 
         <nav
           className={cn(
-            "sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
+            "sidebar-scroll min-h-0 overflow-y-auto overflow-x-hidden",
             collapsed ? "p-2 py-3" : "px-4 py-3",
           )}
         >
