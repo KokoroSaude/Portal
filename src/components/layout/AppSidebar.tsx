@@ -35,6 +35,7 @@ import { FEATURE_KEYS } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
 import { cn } from "@/lib/utils";
+import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
 
 export type NavItem = {
   to?: string;
@@ -444,6 +445,17 @@ export function AppSidebar({
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+
+  useSidebarScrollDebug(
+    { root: rootRef, grid: gridRef, header: headerRef, nav: navRef, footer: footerRef },
+    collapsed,
+  );
+
   const handleLogout = () => {
     onNavigate?.();
     logout();
@@ -452,6 +464,7 @@ export function AppSidebar({
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         "relative flex h-full max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gradient-to-br from-primary via-primary to-[#E85F5F] text-primary-foreground",
         className,
@@ -462,8 +475,12 @@ export function AppSidebar({
         <div className="absolute -bottom-20 -left-12 size-72 rounded-full bg-white/5" />
       </div>
 
-      <div className="relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+      <div
+        ref={gridRef}
+        className="relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden"
+      >
         <header
+          ref={headerRef}
           className={cn(
             "shrink-0 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
             collapsed ? "px-2 py-4" : "px-3 py-4",
@@ -514,6 +531,8 @@ export function AppSidebar({
         </header>
 
         <nav
+          ref={navRef}
+          data-sidebar-nav
           className={cn(
             "sidebar-scroll min-h-0 overflow-y-auto overflow-x-hidden",
             collapsed ? "p-2 py-3" : "px-4 py-3",
@@ -548,6 +567,7 @@ export function AppSidebar({
         </nav>
 
         <footer
+          ref={footerRef}
           className={cn(
             "shrink-0 border-t border-white/20 bg-gradient-to-br from-primary via-primary to-[#E85F5F]",
             collapsed ? "p-2" : "p-4",

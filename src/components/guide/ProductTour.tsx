@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTour } from "@/contexts/TourContext";
+import { logSidebarScroll } from "@/lib/sidebar-scroll-debug";
 import { cn } from "@/lib/utils";
 
 const SPOTLIGHT_PAD = 10;
@@ -23,6 +24,14 @@ function useTargetRect(selector: string | undefined, stepIndex: number) {
         setRect(null);
         return;
       }
+      const inSidebar = !!el.closest("aside, [data-sidebar-nav]");
+      logSidebarScroll("product-tour:scrollIntoView", {
+        selector,
+        stepIndex,
+        inSidebar,
+        tag: el.tagName,
+        text: el.textContent?.trim().slice(0, 80),
+      });
       el.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
       setRect(el.getBoundingClientRect());
     };
