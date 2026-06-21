@@ -93,11 +93,16 @@
   }
 
   .sidebar-scroll {
-    scrollbar-gutter: stable;
+    overflow-anchor: none;
     scrollbar-width: thin;
     scrollbar-color: rgb(255 255 255 / 0.35) transparent;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
+  }
+
+  /* stable gutter needs ~6px — breaks scroll in the 64px collapsed rail */
+  .sidebar-scroll--expanded {
+    scrollbar-gutter: stable;
   }
 
   .sidebar-scroll::-webkit-scrollbar {

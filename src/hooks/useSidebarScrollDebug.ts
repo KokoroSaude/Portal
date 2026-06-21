@@ -69,8 +69,9 @@ export function useSidebarScrollDebug(
       const before = nav.scrollTop;
       requestAnimationFrame(() => {
         const after = nav.scrollTop;
-        logSidebarScroll("wheel", {
-          deltaY: event.deltaY,
+      logSidebarScroll("wheel", {
+        collapsed,
+        deltaY: event.deltaY,
           deltaMode: event.deltaMode,
           defaultPrevented: event.defaultPrevented,
           targetTag: (event.target as Element | null)?.tagName ?? null,
