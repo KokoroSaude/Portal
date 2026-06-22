@@ -6,10 +6,7 @@ import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +17,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
+import { SettingsField } from "@/components/settings/SettingsField";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiClientError } from "@/lib/api";
 import { MORISKY_LEVEL_LABELS, FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
@@ -151,154 +151,112 @@ export function MoriskySettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Gatilhos de envio</CardTitle>
-          <CardDescription>Quando a avaliação MMAS-8 é aplicada via WhatsApp</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="moriskyEnabled">Habilitar MMAS-8</Label>
-              <p className="text-sm text-muted-foreground">
-                Ativa a escala Morisky para pacientes desta organização.
-              </p>
-            </div>
-            <Switch
-              id="moriskyEnabled"
-              checked={triggers.moriskyEnabled}
-              onCheckedChange={(checked) => patchTriggers({ moriskyEnabled: checked })}
-            />
-          </div>
+      <Tabs defaultValue="gatilhos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="gatilhos">Gatilhos</TabsTrigger>
+          <TabsTrigger value="manual">Disparo manual</TabsTrigger>
+          {scale && <TabsTrigger value="escala">Conteúdo da escala</TabsTrigger>}
+        </TabsList>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="moriskyOnOnboarding">Após onboarding</Label>
-              <p className="text-sm text-muted-foreground">
-                Envia ao concluir o cadastro do paciente.
-              </p>
-            </div>
-            <Switch
-              id="moriskyOnOnboarding"
-              checked={triggers.moriskyOnOnboarding}
-              onCheckedChange={(checked) => patchTriggers({ moriskyOnOnboarding: checked })}
-              disabled={!triggers.moriskyEnabled}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="moriskyPeriodicDays">Reaplicar a cada (dias)</Label>
-              <Input
-                id="moriskyPeriodicDays"
-                type="number"
-                min={0}
-                placeholder="Desligado"
-                value={triggers.moriskyPeriodicDays ?? ""}
-                disabled={!triggers.moriskyEnabled}
-                onChange={(e) =>
-                  patchTriggers({
-                    moriskyPeriodicDays:
-                      e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">Deixe vazio para desativar.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="moriskyTriggerAfterMisses">Após misses consecutivos</Label>
-              <Input
-                id="moriskyTriggerAfterMisses"
-                type="number"
-                min={0}
-                placeholder="Desligado"
-                value={triggers.moriskyTriggerAfterMisses ?? ""}
-                disabled={!triggers.moriskyEnabled}
-                onChange={(e) =>
-                  patchTriggers({
-                    moriskyTriggerAfterMisses:
-                      e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">Check-ins perdidos seguidos.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="moriskyCooldownDays">Intervalo mínimo (dias)</Label>
-              <Input
-                id="moriskyCooldownDays"
-                type="number"
-                min={1}
-                value={triggers.moriskyCooldownDays}
-                disabled={!triggers.moriskyEnabled}
-                onChange={(e) =>
-                  patchTriggers({ moriskyCooldownDays: Number(e.target.value) || 14 })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Entre avaliações automáticas. Disparos manuais ignoram este intervalo.
-              </p>
-            </div>
-          </div>
-
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-            <Save className="size-4" />
-            {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Disparo manual</CardTitle>
-          <CardDescription>
-            Envie o MMAS-8 fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
-            específico ou toda a base ativa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            Na ficha do paciente (aba MMAS-8) ou na lista de pacientes (seleção múltipla), use{" "}
-            <strong className="text-foreground">Enviar MMAS-8</strong>. O intervalo mínimo não se
-            aplica a disparos manuais.
-          </p>
-          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                disabled={!triggers.moriskyEnabled || bulkTriggerMutation.isPending}
-              >
-                <ClipboardList className="size-4" />
-                Enviar para todos os pacientes ativos
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Enviar MMAS-8 para todos os ativos?</DialogTitle>
-                <DialogDescription>
-                  Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp. Quem já
-                  estiver respondendo ou com check-in pendente será ignorado.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setBulkOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => bulkTriggerMutation.mutate()}
-                  disabled={bulkTriggerMutation.isPending}
-                >
-                  {bulkTriggerMutation.isPending ? "Enviando…" : "Confirmar envio"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
-
-      {scale && (
-        <>
+        <TabsContent value="gatilhos">
           <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Gatilhos de envio</CardTitle>
+              <CardDescription>
+                Quando a avaliação MMAS-8 é aplicada via WhatsApp. Passe o mouse sobre cada campo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <ScaleTriggersForm
+                scaleName="MMAS-8"
+                fields={{
+                  enabled: triggers.moriskyEnabled,
+                  onOnboarding: triggers.moriskyOnOnboarding,
+                  periodicDays: triggers.moriskyPeriodicDays,
+                  triggerAfterMisses: triggers.moriskyTriggerAfterMisses,
+                  cooldownDays: triggers.moriskyCooldownDays,
+                }}
+                enabledKey="moriskyEnabled"
+                onOnboardingKey="moriskyOnOnboarding"
+                periodicKey="moriskyPeriodicDays"
+                missesKey="moriskyTriggerAfterMisses"
+                cooldownKey="moriskyCooldownDays"
+                onChange={(patch) => patchTriggers({
+                  ...(patch.enabled !== undefined && { moriskyEnabled: patch.enabled }),
+                  ...(patch.onOnboarding !== undefined && { moriskyOnOnboarding: patch.onOnboarding }),
+                  ...(patch.periodicDays !== undefined && { moriskyPeriodicDays: patch.periodicDays }),
+                  ...(patch.triggerAfterMisses !== undefined && {
+                    moriskyTriggerAfterMisses: patch.triggerAfterMisses,
+                  }),
+                  ...(patch.cooldownDays !== undefined && { moriskyCooldownDays: patch.cooldownDays }),
+                })}
+              />
+
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                <Save className="size-4" />
+                {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Disparo manual</CardTitle>
+              <CardDescription>
+                Envie o MMAS-8 fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
+                específico ou toda a base ativa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <SettingsField
+                label="Enviar para todos os ativos"
+                hint="Dispara o MMAS-8 imediatamente para cada paciente ativo. Ignora quem já está respondendo ou com check-in pendente. Não respeita o intervalo mínimo."
+              >
+                <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={!triggers.moriskyEnabled || bulkTriggerMutation.isPending}
+                    >
+                      <ClipboardList className="size-4" />
+                      Enviar para todos os pacientes ativos
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Enviar MMAS-8 para todos os ativos?</DialogTitle>
+                      <DialogDescription>
+                        Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp.
+                        Quem já estiver respondendo ou com check-in pendente será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkTriggerMutation.mutate()}
+                        disabled={bulkTriggerMutation.isPending}
+                      >
+                        {bulkTriggerMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </SettingsField>
+              <p className="text-sm text-muted-foreground">
+                Na ficha do paciente (aba MMAS-8) ou na lista (seleção múltipla), use{" "}
+                <strong className="text-foreground">Enviar MMAS-8</strong>.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {scale && (
+          <TabsContent value="escala" className="space-y-4">
+            <Card>
             <CardHeader>
               <CardTitle className="text-base">Mensagens do fluxo</CardTitle>
               <CardDescription>Textos enviados no WhatsApp (padrão MMAS-8)</CardDescription>
@@ -364,8 +322,9 @@ export function MoriskySettingsPage() {
               ))}
             </CardContent>
           </Card>
-        </>
-      )}
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

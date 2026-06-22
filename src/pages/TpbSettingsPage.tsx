@@ -6,10 +6,7 @@ import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +17,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
+import { SettingsField } from "@/components/settings/SettingsField";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiClientError } from "@/lib/api";
 import { TPB_CONSTRUCT_LABELS, FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
@@ -160,152 +160,112 @@ export function TpbSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Gatilhos de envio</CardTitle>
-          <CardDescription>Quando a avaliação TCP é aplicada via WhatsApp</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="tpbEnabled">Habilitar TCP</Label>
-              <p className="text-sm text-muted-foreground">
-                Ativa a escala TCP para pacientes desta organização.
-              </p>
-            </div>
-            <Switch
-              id="tpbEnabled"
-              checked={triggers.tpbEnabled}
-              onCheckedChange={(checked) => patchTriggers({ tpbEnabled: checked })}
-            />
-          </div>
+      <Tabs defaultValue="gatilhos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="gatilhos">Gatilhos</TabsTrigger>
+          <TabsTrigger value="manual">Disparo manual</TabsTrigger>
+          {scale && <TabsTrigger value="escala">Conteúdo da escala</TabsTrigger>}
+        </TabsList>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="tpbOnOnboarding">Após onboarding</Label>
-              <p className="text-sm text-muted-foreground">
-                Envia ao concluir o cadastro do paciente.
-              </p>
-            </div>
-            <Switch
-              id="tpbOnOnboarding"
-              checked={triggers.tpbOnOnboarding}
-              onCheckedChange={(checked) => patchTriggers({ tpbOnOnboarding: checked })}
-              disabled={!triggers.tpbEnabled}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="tpbPeriodicDays">Reaplicar a cada (dias)</Label>
-              <Input
-                id="tpbPeriodicDays"
-                type="number"
-                min={0}
-                placeholder="Desligado"
-                value={triggers.tpbPeriodicDays ?? ""}
-                disabled={!triggers.tpbEnabled}
-                onChange={(e) =>
-                  patchTriggers({
-                    tpbPeriodicDays: e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">Deixe vazio para desativar.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tpbTriggerAfterMisses">Após misses consecutivos</Label>
-              <Input
-                id="tpbTriggerAfterMisses"
-                type="number"
-                min={0}
-                placeholder="Desligado"
-                value={triggers.tpbTriggerAfterMisses ?? ""}
-                disabled={!triggers.tpbEnabled}
-                onChange={(e) =>
-                  patchTriggers({
-                    tpbTriggerAfterMisses: e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">Check-ins perdidos seguidos.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tpbCooldownDays">Intervalo mínimo (dias)</Label>
-              <Input
-                id="tpbCooldownDays"
-                type="number"
-                min={1}
-                value={triggers.tpbCooldownDays}
-                disabled={!triggers.tpbEnabled}
-                onChange={(e) =>
-                  patchTriggers({ tpbCooldownDays: Number(e.target.value) || 30 })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Entre avaliações automáticas. Disparos manuais ignoram este intervalo.
-              </p>
-            </div>
-          </div>
-
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-            <Save className="size-4" />
-            {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Disparo manual</CardTitle>
-          <CardDescription>
-            Envie o TCP fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
-            específico ou toda a base ativa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            Na ficha do paciente (aba TCP) ou na lista de pacientes (seleção múltipla), use{" "}
-            <strong className="text-foreground">Enviar TCP</strong>. O intervalo mínimo não se
-            aplica a disparos manuais.
-          </p>
-          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                disabled={!triggers.tpbEnabled || bulkTriggerMutation.isPending}
-              >
-                <ClipboardList className="size-4" />
-                Enviar para todos os pacientes ativos
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Enviar TCP para todos os ativos?</DialogTitle>
-                <DialogDescription>
-                  Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp. Quem já
-                  estiver respondendo ou com check-in pendente será ignorado.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setBulkOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => bulkTriggerMutation.mutate()}
-                  disabled={bulkTriggerMutation.isPending}
-                >
-                  {bulkTriggerMutation.isPending ? "Enviando…" : "Confirmar envio"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
-
-      {scale && (
-        <>
+        <TabsContent value="gatilhos">
           <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Gatilhos de envio</CardTitle>
+              <CardDescription>
+                Quando a avaliação TCP é aplicada via WhatsApp. Passe o mouse sobre cada campo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <ScaleTriggersForm
+                scaleName="TCP"
+                fields={{
+                  enabled: triggers.tpbEnabled,
+                  onOnboarding: triggers.tpbOnOnboarding,
+                  periodicDays: triggers.tpbPeriodicDays,
+                  triggerAfterMisses: triggers.tpbTriggerAfterMisses,
+                  cooldownDays: triggers.tpbCooldownDays,
+                }}
+                enabledKey="tpbEnabled"
+                onOnboardingKey="tpbOnOnboarding"
+                periodicKey="tpbPeriodicDays"
+                missesKey="tpbTriggerAfterMisses"
+                cooldownKey="tpbCooldownDays"
+                onChange={(patch) => patchTriggers({
+                  ...(patch.enabled !== undefined && { tpbEnabled: patch.enabled }),
+                  ...(patch.onOnboarding !== undefined && { tpbOnOnboarding: patch.onOnboarding }),
+                  ...(patch.periodicDays !== undefined && { tpbPeriodicDays: patch.periodicDays }),
+                  ...(patch.triggerAfterMisses !== undefined && {
+                    tpbTriggerAfterMisses: patch.triggerAfterMisses,
+                  }),
+                  ...(patch.cooldownDays !== undefined && { tpbCooldownDays: patch.cooldownDays }),
+                })}
+              />
+
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                <Save className="size-4" />
+                {saveMutation.isPending ? "Salvando…" : "Salvar gatilhos"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Disparo manual</CardTitle>
+              <CardDescription>
+                Envie o TCP fora dos gatilhos automáticos — por exemplo, para reavaliar um paciente
+                específico ou toda a base ativa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <SettingsField
+                label="Enviar para todos os ativos"
+                hint="Dispara o TCP imediatamente para cada paciente ativo. Ignora quem já está respondendo ou com check-in pendente. Não respeita o intervalo mínimo."
+              >
+                <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={!triggers.tpbEnabled || bulkTriggerMutation.isPending}
+                    >
+                      <ClipboardList className="size-4" />
+                      Enviar para todos os pacientes ativos
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Enviar TCP para todos os ativos?</DialogTitle>
+                      <DialogDescription>
+                        Cada paciente com status &quot;Ativo&quot; receberá a pesquisa no WhatsApp.
+                        Quem já estiver respondendo ou com check-in pendente será ignorado.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setBulkOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => bulkTriggerMutation.mutate()}
+                        disabled={bulkTriggerMutation.isPending}
+                      >
+                        {bulkTriggerMutation.isPending ? "Enviando…" : "Confirmar envio"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </SettingsField>
+              <p className="text-sm text-muted-foreground">
+                Na ficha do paciente (aba TCP) ou na lista (seleção múltipla), use{" "}
+                <strong className="text-foreground">Enviar TCP</strong>.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {scale && (
+          <TabsContent value="escala" className="space-y-4">
+            <Card>
             <CardHeader>
               <CardTitle className="text-base">Mensagens do fluxo</CardTitle>
               <CardDescription>Textos enviados no WhatsApp</CardDescription>
@@ -364,8 +324,9 @@ export function TpbSettingsPage() {
               </ol>
             </CardContent>
           </Card>
-        </>
-      )}
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
