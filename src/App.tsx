@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthQuerySync } from "@/components/AuthQuerySync";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { GuestRoute, ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { HomePage, RequireGovPharmacy, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
@@ -115,6 +116,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AuthQuerySync />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>

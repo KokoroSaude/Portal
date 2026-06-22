@@ -13,6 +13,7 @@ export interface UserInfo {
   email: string;
   role: string;
   avatarUrl?: string | null;
+  tenantOperationMode?: TenantOperationMode;
 }
 
 export interface PlatformUserInfo {
