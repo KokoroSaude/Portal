@@ -35,25 +35,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api, ApiClientError } from "@/lib/api";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { formatDateTime } from "@/lib/utils";
 
 export function FarmaciaWaitlistPage() {
-  const { token, hasFeature, canWrite } = useAuth();
+  const { token, canWrite } = useAuth();
   const queryClient = useQueryClient();
   const [medicationFilter, setMedicationFilter] = useState<string>("all");
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [enrollPatientId, setEnrollPatientId] = useState("");
   const [enrollMedicationId, setEnrollMedicationId] = useState("");
-
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const pickupEnabled = canAccessPickup(hasFeature, settings);
+  const { pickupAccess: pickupEnabled, settings } = useTenantSettings();
 
   const medications = useQuery({
     queryKey: ["medications-catalog"],

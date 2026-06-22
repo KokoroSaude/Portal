@@ -26,27 +26,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api, ApiClientError } from "@/lib/api";
 import { PICKUP_ORDER_STATUS_LABELS } from "@/lib/constants";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { formatDateTime } from "@/lib/utils";
 import type { PickupDashboardOrder } from "@/types/api";
 
 const ACTIONABLE = new Set(["Allocated", "AwaitingPickup", "PatientArrived"]);
 
 export function FarmaciaRetiradasPage() {
-  const { token, hasFeature, canWrite } = useAuth();
+  const { token, canWrite } = useAuth();
   const queryClient = useQueryClient();
   const [rescheduleOrder, setRescheduleOrder] = useState<PickupDashboardOrder | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
-
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const pickupEnabled = canAccessPickup(hasFeature, settings);
+  const { pickupAccess: pickupEnabled } = useTenantSettings();
 
   const { data: dashboard, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["pickup-dashboard"],

@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api, ApiClientError } from "@/lib/api";
 import { PICKUP_ORDER_STATUS_LABELS } from "@/lib/constants";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -56,16 +56,9 @@ function StatCard({
 }
 
 export function FarmaciaDashboardPage() {
-  const { token, hasFeature } = useAuth();
+  const { token } = useAuth();
   const queryClient = useQueryClient();
-
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const pickupEnabled = canAccessPickup(hasFeature, settings);
+  const { pickupAccess: pickupEnabled, settings } = useTenantSettings();
 
   const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ["pickup-dashboard"],

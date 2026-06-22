@@ -42,7 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
-import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
 import type { ClinicalPriorityTier, TimelineEvent } from "@/types/api";
@@ -113,15 +113,15 @@ export function PatientDetailPage() {
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
-  const { data: tenantSettings, isLoading: settingsLoading, isError: settingsError } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
+  const {
+    settings: tenantSettings,
+    govMode,
+    isLoading: settingsLoading,
+    isError: settingsError,
+  } = useTenantSettings();
 
   const voiceTenantEnabled = tenantSettings?.voiceMessagesEnabled ?? false;
   const canSetAudioChannel = voiceFeatureEnabled && voiceTenantEnabled;
-  const govMode = isGovPharmacyMode(tenantSettings);
 
   const { data: platformAi } = useQuery({
     queryKey: ["admin-platform-ai"],

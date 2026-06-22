@@ -1,22 +1,19 @@
 import { useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
 export function FarmaciaTvPage() {
-  const { token } = useAuth();
+  const { token, isTenant } = useAuth();
   const [searchParams] = useSearchParams();
   const urlToken = searchParams.get("token");
+  const { settings, pickupAccess, isLoading: settingsLoading } = useTenantSettings();
 
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token && !urlToken,
-  });
-
-  const tvToken = urlToken ?? settings?.pickupTvDisplayToken ?? null;
+  const tvToken =
+    urlToken ?? (pickupAccess ? (settings?.pickupTvDisplayToken ?? null) : null);
 
   const { data, isError } = useQuery({
     queryKey: ["pickup-tv", tvToken],
@@ -33,6 +30,19 @@ export function FarmaciaTvPage() {
   }, []);
 
   const history = useMemo(() => data?.recentCalls?.slice(1, 8) ?? [], [data]);
+
+  if (token && isTenant && !urlToken) {
+    if (settingsLoading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white/60">
+          Carregando…
+        </div>
+      );
+    }
+    if (!pickupAccess) {
+      return <Navigate to="/" replace />;
+    }
+  }
 
   if (!tvToken) {
     return (

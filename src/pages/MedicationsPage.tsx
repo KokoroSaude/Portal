@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { Pencil, Plus, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
-import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
 import type { MedicationCatalogItem } from "@/types/api";
 
 export function MedicationsPage() {
@@ -30,13 +30,7 @@ export function MedicationsPage() {
     enabled: !!token,
   });
 
-  const { data: tenantSettings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const govMode = isGovPharmacyMode(tenantSettings);
+  const { govMode } = useTenantSettings();
 
   const createMutation = useMutation({
     mutationFn: () =>

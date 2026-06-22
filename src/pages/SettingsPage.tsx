@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { tenantSettingsQueryKey } from "@/hooks/useTenantSettings";
 import { getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
 import { normalizeVoiceToneSelectValue } from "@/lib/adminTemplateTones";
@@ -71,7 +72,8 @@ function SettingsSaveButton({
 }
 
 export function SettingsPage() {
-  const { token, isAdmin, hasFeature } = useAuth();
+  const { token, isAdmin, hasFeature, auth } = useAuth();
+  const tenantId = auth?.user?.tenantId ?? null;
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
@@ -82,9 +84,9 @@ export function SettingsPage() {
     tabParam === "operacional" ? "operacao" : isSettingsTab(tabParam) ? tabParam : "operacao";
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["settings"],
+    queryKey: tenantSettingsQueryKey(tenantId),
     queryFn: () => api.getSettings(token!),
-    enabled: !!token,
+    enabled: !!token && !!tenantId,
   });
 
   const { data: locales } = useQuery({
@@ -180,7 +182,7 @@ export function SettingsPage() {
     mutationFn: (payload: Partial<TenantSettings>) => api.updateSettings(token!, payload),
     onSuccess: () => {
       toast.success("Configurações salvas");
-      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      queryClient.invalidateQueries({ queryKey: tenantSettingsQueryKey(tenantId) });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar");

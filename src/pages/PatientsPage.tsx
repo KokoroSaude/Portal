@@ -42,7 +42,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
-import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import { maskCpf, stripCpf } from "@/lib/cpf";
 
@@ -74,13 +74,7 @@ export function PatientsPage() {
     carePlanMedicationIds: [] as string[],
   });
 
-  const { data: tenantSettings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const govMode = isGovPharmacyMode(tenantSettings);
+  const { settings: tenantSettings, govMode } = useTenantSettings();
 
   const { data: medicationsCatalog } = useQuery({
     queryKey: ["medications-catalog"],

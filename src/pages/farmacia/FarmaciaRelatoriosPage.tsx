@@ -28,9 +28,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { formatPercent, formatDateTime } from "@/lib/utils";
 
 function defaultRange() {
@@ -46,14 +46,7 @@ export function FarmaciaRelatoriosPage() {
   const [groupBy, setGroupBy] = useState("medication");
   const [procurementWeeks, setProcurementWeeks] = useState(4);
   const range = useMemo(() => defaultRange(), []);
-
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token,
-  });
-
-  const pickupEnabled = canAccessPickup(hasFeature, settings);
+  const { pickupAccess: pickupEnabled } = useTenantSettings();
 
   const attendance = useQuery({
     queryKey: ["pickup-attendance", range.from, range.to, groupBy],
