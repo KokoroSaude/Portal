@@ -95,6 +95,21 @@ import type {
   MetaEmbeddedSignupFlowResult,
   WhatsAppBusinessProfile,
   UpdateWhatsAppBusinessProfilePayload,
+  PickupDashboard,
+  PickupInsights,
+  PickupTvDisplay,
+  PickupAttendanceReport,
+  PickupOperationsFunnel,
+  PickupDemandForecastItem,
+  PickupOperationsReport,
+  MedicationWaitlistEntry,
+  PickupAnomalyAlert,
+  ProcurementSuggestion,
+  ProcurementExportRecord,
+  PatientCareDelegate,
+  UpsertPatientCareDelegatePayload,
+  ImportPatientsResult,
+  ClinicalPriorityTier,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -256,14 +271,39 @@ export const api = {
       cpf?: string;
       sendWelcome?: boolean;
       preferredMessageChannel?: "Text" | "Audio";
+      carePlanMedicationIds?: string[];
     },
   ) =>
     request<CreatePatientResponse>("/api/patients", { method: "POST", token, body: payload }),
 
+  importPatientsCsv: async (token: string, file: File, sendWelcome = false) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (sendWelcome) form.append("sendWelcome", "true");
+    const res = await fetch(`${API_BASE}/api/patients/import`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : undefined;
+    if (!res.ok) {
+      const err = data as { error?: string } | undefined;
+      throw new ApiClientError(err?.error ?? `Erro ${res.status}`, res.status, data);
+    }
+    return data as ImportPatientsResult;
+  },
+
   updatePatient: (
     token: string,
     id: string,
-    payload: { phone?: string; name?: string; cpf?: string; preferredMessageChannel?: string },
+    payload: {
+      phone?: string;
+      name?: string;
+      cpf?: string;
+      preferredMessageChannel?: string;
+      clinicalPriorityTier?: ClinicalPriorityTier | null;
+    },
   ) =>
     request<void>(`/api/patients/${id}`, { method: "PUT", token, body: payload }),
 
@@ -461,7 +501,13 @@ export const api = {
 
   createMedication: (
     token: string,
-    payload: { canonicalName: string; dcbCode?: string; aliases?: string[] },
+    payload: {
+      canonicalName: string;
+      dcbCode?: string;
+      catmatCode?: string;
+      clinicalPriorityBoost?: number;
+      aliases?: string[];
+    },
   ) =>
     request<{ id: string }>("/api/medications", { method: "POST", token, body: payload }),
 
@@ -471,6 +517,8 @@ export const api = {
     payload: {
       canonicalName?: string;
       dcbCode?: string;
+      catmatCode?: string;
+      clinicalPriorityBoost?: number;
       isActive?: boolean;
       aliases?: string[];
     },
@@ -810,6 +858,162 @@ export const api = {
 
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>
     request<void>("/api/settings", { method: "PUT", token, body: payload }),
+
+  getPickupDashboard: (token: string) =>
+    request<PickupDashboard>("/api/pickup/dashboard", { token }),
+
+  getPickupStockRiskInsights: (token: string, horizonDays = 7) =>
+    request<PickupInsights>(`/api/pickup/insights/stock-risk${qs({ horizonDays })}`, { token }),
+
+  pickupArriveOrder: (token: string, orderId: string, delegateId?: string) =>
+    request<{ status: string; queuePassword?: string; outsidePickupWindow?: boolean }>(
+      `/api/pickup/orders/${orderId}/arrive`,
+      {
+        method: "POST",
+        token,
+        body: { delegateId },
+      },
+    ),
+
+  pickupRescheduleOrder: (
+    token: string,
+    orderId: string,
+    payload: { expectedPickupDate: string; windowStart?: string; windowEnd?: string },
+  ) =>
+    request<{ status: string }>(`/api/pickup/orders/${orderId}/reschedule`, {
+      method: "PATCH",
+      token,
+      body: payload,
+    }),
+
+  listPickupAnomalies: (token: string, includeDismissed = false) =>
+    request<PickupAnomalyAlert[]>(
+      `/api/pickup/anomalies${qs({ includeDismissed: includeDismissed ? "true" : undefined })}`,
+      { token },
+    ),
+
+  dismissPickupAnomaly: (token: string, alertId: string) =>
+    request<void>(`/api/pickup/anomalies/${alertId}/dismiss`, { method: "POST", token }),
+
+  getProcurementSuggestions: (token: string, weeks = 4) =>
+    request<ProcurementSuggestion[]>(
+      `/api/pickup/procurement/suggestions${qs({ weeks })}`,
+      { token },
+    ),
+
+  exportProcurementCsv: async (token: string, weeks = 4) => {
+    const res = await fetch(`${API_BASE}/api/pickup/procurement/export${qs({ weeks })}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new ApiClientError(body || res.statusText, res.status);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition");
+    const fileName =
+      disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? `pedido-sugestao-${weeks}w.csv`;
+    return { blob, fileName };
+  },
+
+  listProcurementExports: (token: string) =>
+    request<ProcurementExportRecord[]>("/api/pickup/procurement/exports", { token }),
+
+  pickupCompleteOrder: (
+    token: string,
+    orderId: string,
+    payload?: { quantity?: number; pickedUpByDelegateId?: string; pickedUpByName?: string },
+  ) =>
+    request<{ status: string; dispensingId?: string }>(
+      `/api/pickup/orders/${orderId}/complete`,
+      { method: "POST", token, body: payload ?? {} },
+    ),
+
+  pickupCancelOrder: (token: string, orderId: string, reason?: string) =>
+    request<{ status: string; reallocated?: boolean }>(`/api/pickup/orders/${orderId}/cancel`, {
+      method: "POST",
+      token,
+      body: { reason },
+    }),
+
+  getPickupAttendanceReport: (
+    token: string,
+    params?: { from?: string; to?: string; groupBy?: string },
+  ) =>
+    request<PickupAttendanceReport>(
+      `/api/pickup/reports/attendance${qs(params ?? {})}`,
+      { token },
+    ),
+
+  getPickupOperationsFunnel: (token: string, params?: { from?: string; to?: string }) =>
+    request<PickupOperationsFunnel>(
+      `/api/pickup/reports/operations-funnel${qs(params ?? {})}`,
+      { token },
+    ),
+
+  getPickupDemandForecast: (token: string, weeks = 4) =>
+    request<PickupDemandForecastItem[]>(
+      `/api/pickup/reports/demand-forecast${qs({ weeks })}`,
+      { token },
+    ),
+
+  getPickupOperationsReport: (token: string, params?: { from?: string; to?: string }) =>
+    request<PickupOperationsReport>(
+      `/api/pickup/reports/operations${qs(params ?? {})}`,
+      { token },
+    ),
+
+  listMedicationWaitlist: (token: string, medicationId?: string) =>
+    request<MedicationWaitlistEntry[]>(
+      `/api/pickup/waitlist${qs({ medicationId })}`,
+      { token },
+    ),
+
+  enrollMedicationWaitlist: (token: string, patientId: string, medicationId: string) =>
+    request<MedicationWaitlistEntry>("/api/pickup/waitlist", {
+      method: "POST",
+      token,
+      body: { patientId, medicationId },
+    }),
+
+  removeMedicationWaitlist: (token: string, entryId: string) =>
+    request<void>(`/api/pickup/waitlist/${entryId}`, { method: "DELETE", token }),
+
+  listPatientCareDelegates: (token: string, patientId: string) =>
+    request<PatientCareDelegate[]>(`/api/patients/${patientId}/delegates`, { token }),
+
+  createPatientCareDelegate: (
+    token: string,
+    patientId: string,
+    payload: UpsertPatientCareDelegatePayload,
+  ) =>
+    request<PatientCareDelegate>(`/api/patients/${patientId}/delegates`, {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  updatePatientCareDelegate: (
+    token: string,
+    patientId: string,
+    delegateId: string,
+    payload: UpsertPatientCareDelegatePayload,
+  ) =>
+    request<PatientCareDelegate>(`/api/patients/${patientId}/delegates/${delegateId}`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  deletePatientCareDelegate: (token: string, patientId: string, delegateId: string) =>
+    request<void>(`/api/patients/${patientId}/delegates/${delegateId}`, {
+      method: "DELETE",
+      token,
+    }),
+
+  getPickupTvDisplay: (tvToken: string) =>
+    request<PickupTvDisplay>(`/api/pickup/tv/display${qs({ token: tvToken })}`),
 
   getSubscription: (token: string) =>
     request<TenantSubscription>("/api/subscription/me", { token }),

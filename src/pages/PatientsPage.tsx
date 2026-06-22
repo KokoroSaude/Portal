@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Brain, ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star } from "lucide-react";
+import { Brain, ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -42,6 +42,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import { maskCpf, stripCpf } from "@/lib/cpf";
 
@@ -61,18 +62,30 @@ export function PatientsPage() {
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
   const [status, setStatus] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importSendWelcome, setImportSendWelcome] = useState(false);
   const [form, setForm] = useState({
     phone: "",
     name: "",
     cpf: "",
     sendWelcome: true,
     preferredMessageChannel: "Text" as "Text" | "Audio",
+    carePlanMedicationIds: [] as string[],
   });
 
   const { data: tenantSettings } = useQuery({
     queryKey: ["settings"],
     queryFn: () => api.getSettings(token!),
     enabled: !!token,
+  });
+
+  const govMode = isGovPharmacyMode(tenantSettings);
+
+  const { data: medicationsCatalog } = useQuery({
+    queryKey: ["medications-catalog"],
+    queryFn: () => api.listMedications(token!),
+    enabled: !!token && govMode,
   });
 
   const canSetAudioChannel =
@@ -167,11 +180,22 @@ export function PatientsPage() {
         cpf: stripCpf(form.cpf) || undefined,
         sendWelcome: form.sendWelcome,
         preferredMessageChannel: canSetAudioChannel ? form.preferredMessageChannel : undefined,
+        carePlanMedicationIds:
+          govMode && form.carePlanMedicationIds.length > 0
+            ? form.carePlanMedicationIds
+            : undefined,
       }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setCreateOpen(false);
-      setForm({ phone: "", name: "", cpf: "", sendWelcome: true, preferredMessageChannel: "Text" });
+      setForm({
+        phone: "",
+        name: "",
+        cpf: "",
+        sendWelcome: true,
+        preferredMessageChannel: "Text",
+        carePlanMedicationIds: [],
+      });
 
       if (!result.created) {
         toast.info("Este telefone já está cadastrado.");
@@ -190,6 +214,33 @@ export function PatientsPage() {
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao cadastrar"),
   });
+
+  const importMutation = useMutation({
+    mutationFn: () => api.importPatientsCsv(token!, importFile!, importSendWelcome),
+    onSuccess: (result) => {
+      setImportOpen(false);
+      setImportFile(null);
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      toast.success(
+        `Importação: ${result.created} criado(s), ${result.skipped} ignorado(s), ${result.failed} falha(s)`,
+      );
+      if (result.errors.length > 0) {
+        toast.warning(
+          `${result.errors.length} erro(s). Ex.: linha ${result.errors[0]?.line} — ${result.errors[0]?.error}`,
+          { duration: 8000 },
+        );
+      }
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro na importação CSV"),
+  });
+
+  const canSubmitCreate =
+    form.phone.trim() &&
+    (!govMode ||
+      (form.name.trim() &&
+        stripCpf(form.cpf).length === 11 &&
+        form.carePlanMedicationIds.length > 0));
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
   const pageIds = data?.items.map((p) => p.id) ?? [];
@@ -253,9 +304,60 @@ export function PatientsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl">Pacientes</h1>
-          <p className="text-muted-foreground">Gerencie e acompanhe pacientes do programa</p>
+          <p className="text-muted-foreground">
+            {govMode
+              ? "Pré-cadastro com CPF, nome e medicamentos do plano de cuidado"
+              : "Gerencie e acompanhe pacientes do programa"}
+          </p>
         </div>
         {canWrite && (
+          <div className="flex flex-wrap gap-2">
+            {govMode && (
+              <Dialog open={importOpen} onOpenChange={setImportOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Upload className="size-4" />
+                    Importar CSV
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Importar pacientes (CSV)</DialogTitle>
+                    <DialogDescription>
+                      Colunas esperadas: telefone, nome, cpf, medicamentos (separados por ponto e
+                      vírgula).
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Input
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                    />
+                    <div className="flex items-center justify-between rounded-lg border px-3 py-3">
+                      <div>
+                        <p className="text-sm font-medium">Enviar boas-vindas</p>
+                        <p className="text-xs text-muted-foreground">
+                          Dispara mensagem de ativação após importar.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={importSendWelcome}
+                        onCheckedChange={setImportSendWelcome}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={() => importMutation.mutate()}
+                      disabled={!importFile || importMutation.isPending}
+                    >
+                      {importMutation.isPending ? "Importando…" : "Importar"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -267,7 +369,9 @@ export function PatientsPage() {
               <DialogHeader>
                 <DialogTitle>Cadastrar paciente</DialogTitle>
                 <DialogDescription>
-                  Informe o WhatsApp do paciente. Se já existir, abriremos a ficha existente.
+                  {govMode
+                    ? "Informe WhatsApp, CPF, nome completo e ao menos um medicamento do plano de cuidado."
+                    : "Informe o WhatsApp do paciente. Se já existir, abriremos a ficha existente."}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -281,7 +385,9 @@ export function PatientsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="patient-name">Nome (opcional)</Label>
+                  <Label htmlFor="patient-name">
+                    Nome{govMode ? "" : " (opcional)"}
+                  </Label>
                   <Input
                     id="patient-name"
                     placeholder="Nome do paciente"
@@ -290,7 +396,9 @@ export function PatientsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="patient-cpf">CPF (opcional)</Label>
+                  <Label htmlFor="patient-cpf">
+                    CPF{govMode ? "" : " (opcional)"}
+                  </Label>
                   <Input
                     id="patient-cpf"
                     placeholder="000.000.000-00"
@@ -301,6 +409,37 @@ export function PatientsPage() {
                     Ajuda a identificar o paciente além do WhatsApp. Único por farmácia.
                   </p>
                 </div>
+                {govMode && (
+                  <div className="space-y-2 rounded-lg border p-3">
+                    <Label>Medicamentos do plano de cuidado</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione os medicamentos SUS que o paciente utiliza.
+                    </p>
+                    <div className="max-h-40 space-y-2 overflow-y-auto pt-1">
+                      {(medicationsCatalog ?? []).map((med) => (
+                        <label key={med.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={form.carePlanMedicationIds.includes(med.id)}
+                            onCheckedChange={(checked) =>
+                              setForm((f) => ({
+                                ...f,
+                                carePlanMedicationIds: checked
+                                  ? [...f.carePlanMedicationIds, med.id]
+                                  : f.carePlanMedicationIds.filter((id) => id !== med.id),
+                              }))
+                            }
+                          />
+                          {med.canonicalName}
+                        </label>
+                      ))}
+                      {(medicationsCatalog ?? []).length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Cadastre medicamentos em Configurações → Catálogo.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between rounded-lg border px-3 py-3">
                   <div>
                     <p className="text-sm font-medium">Enviar boas-vindas</p>
@@ -342,13 +481,14 @@ export function PatientsPage() {
               <DialogFooter>
                 <Button
                   onClick={() => createMutation.mutate()}
-                  disabled={!form.phone.trim() || createMutation.isPending}
+                  disabled={!canSubmitCreate || createMutation.isPending}
                 >
                   {createMutation.isPending ? "Cadastrando…" : "Cadastrar"}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
@@ -359,15 +499,29 @@ export function PatientsPage() {
             <div>
               <CardTitle className="text-base">Como entram novos pacientes</CardTitle>
               <CardDescription className="mt-1">
-                {tenantSettings?.requirePreRegisteredPatients
-                  ? "Cadastre primeiro no portal — o WhatsApp só atende números já incluídos."
-                  : "Duas formas equivalentes — o sistema verifica se o telefone já existe antes de criar."}
+                {govMode
+                  ? "Pacientes devem ser pré-cadastrados com CPF, nome e medicamentos antes do WhatsApp."
+                  : tenantSettings?.requirePreRegisteredPatients
+                    ? "Cadastre primeiro no portal — o WhatsApp só atende números já incluídos."
+                    : "Duas formas equivalentes — o sistema verifica se o telefone já existe antes de criar."}
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          {tenantSettings?.requirePreRegisteredPatients ? (
+          {govMode ? (
+            <>
+              <p>
+                <strong className="text-foreground">Pré-cadastro:</strong> use &quot;Novo paciente&quot; ou
+                importação CSV com CPF, nome e medicamentos. O paciente recebe consentimento de retirada
+                e adesão pelo WhatsApp.
+              </p>
+              <p>
+                <strong className="text-foreground">Plano de cuidado:</strong> medicamentos selecionados no
+                cadastro geram lembretes de adesão e entram na fila quando houver estoque.
+              </p>
+            </>
+          ) : tenantSettings?.requirePreRegisteredPatients ? (
             <>
               <p>
                 <strong className="text-foreground">Pelo portal:</strong> use &quot;Novo paciente&quot; para

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, RefreshCw } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,18 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import type { MedicationCatalogItem } from "@/types/api";
 
 export function MedicationsPage() {
   const { token, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [canonicalName, setCanonicalName] = useState("");
   const [aliases, setAliases] = useState("");
+  const [catmatCode, setCatmatCode] = useState("");
+  const [clinicalPriorityBoost, setClinicalPriorityBoost] = useState("0");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCatmat, setEditCatmat] = useState("");
+  const [editBoost, setEditBoost] = useState("0");
 
   const medications = useQuery({
     queryKey: ["medications-catalog"],
@@ -27,6 +33,8 @@ export function MedicationsPage() {
     mutationFn: () =>
       api.createMedication(token!, {
         canonicalName: canonicalName.trim(),
+        catmatCode: catmatCode.trim() || undefined,
+        clinicalPriorityBoost: Number(clinicalPriorityBoost) || 0,
         aliases: aliases
           .split(",")
           .map((a) => a.trim())
@@ -36,10 +44,27 @@ export function MedicationsPage() {
       toast.success("Medicamento cadastrado");
       setCanonicalName("");
       setAliases("");
+      setCatmatCode("");
+      setClinicalPriorityBoost("0");
       void queryClient.invalidateQueries({ queryKey: ["medications-catalog"] });
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao cadastrar"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (med: MedicationCatalogItem) =>
+      api.updateMedication(token!, med.id, {
+        catmatCode: editCatmat.trim() || undefined,
+        clinicalPriorityBoost: Number(editBoost) || 0,
+      }),
+    onSuccess: () => {
+      toast.success("Medicamento atualizado");
+      setEditingId(null);
+      void queryClient.invalidateQueries({ queryKey: ["medications-catalog"] });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar"),
   });
 
   const backfillMutation = useMutation({
@@ -50,6 +75,12 @@ export function MedicationsPage() {
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro no backfill"),
   });
+
+  function startEdit(med: MedicationCatalogItem) {
+    setEditingId(med.id);
+    setEditCatmat(med.catmatCode ?? "");
+    setEditBoost(String(med.clinicalPriorityBoost ?? 0));
+  }
 
   if (!isAdmin) {
     return (
@@ -66,7 +97,7 @@ export function MedicationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Catálogo de medicamentos"
-        description="Cadastro de nomes canônicos e aliases. Usado ao vincular planos de cuidado e para filtrar relatórios/programas com precisão."
+        description="Cadastro de nomes canônicos, CATMAT e prioridade clínica para fila SUS."
         actions={
           <Button
             variant="outline"
@@ -84,7 +115,7 @@ export function MedicationsPage() {
           <CardTitle className="font-serif text-lg">Novo medicamento</CardTitle>
           <CardDescription>Aliases separados por vírgula (ex.: Glifage, metformina 850)</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 max-w-xl">
+        <CardContent className="grid max-w-xl gap-4">
           <div className="space-y-2">
             <Label>Nome canônico</Label>
             <Input
@@ -92,6 +123,25 @@ export function MedicationsPage() {
               onChange={(e) => setCanonicalName(e.target.value)}
               placeholder="Metformina"
             />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Código CATMAT</Label>
+              <Input
+                value={catmatCode}
+                onChange={(e) => setCatmatCode(e.target.value)}
+                placeholder="Opcional — exigido se regras SUS ativas"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Prioridade clínica (boost)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={clinicalPriorityBoost}
+                onChange={(e) => setClinicalPriorityBoost(e.target.value)}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Aliases</Label>
@@ -119,10 +169,51 @@ export function MedicationsPage() {
           {medications.isLoading && <Skeleton className="h-20 w-full" />}
           {(medications.data ?? []).map((med) => (
             <div key={med.id} className="rounded-md border p-3">
-              <p className="font-medium">{med.canonicalName}</p>
-              {med.aliases.length > 0 && (
-                <p className="text-sm text-muted-foreground">Aliases: {med.aliases.join(", ")}</p>
-              )}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{med.canonicalName}</p>
+                  {med.aliases.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Aliases: {med.aliases.join(", ")}
+                    </p>
+                  )}
+                  {editingId === med.id ? (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">CATMAT</Label>
+                        <Input value={editCatmat} onChange={(e) => setEditCatmat(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Boost prioridade</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editBoost}
+                          onChange={(e) => setEditBoost(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        className="sm:col-span-2 w-fit"
+                        onClick={() => updateMutation.mutate(med)}
+                        disabled={updateMutation.isPending}
+                      >
+                        <Save className="mr-1 size-3.5" />
+                        Salvar
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      CATMAT: {med.catmatCode ?? "—"} · Boost: {med.clinicalPriorityBoost ?? 0}
+                    </p>
+                  )}
+                </div>
+                {editingId !== med.id && (
+                  <Button variant="ghost" size="icon" onClick={() => startEdit(med)}>
+                    <Pencil className="size-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
           {medications.data?.length === 0 && !medications.isLoading && (

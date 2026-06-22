@@ -15,6 +15,7 @@ import {
   MessageCircle,
   MessageSquare,
   Megaphone,
+  Monitor,
   PanelLeft,
   PanelLeftClose,
   Pill,
@@ -22,12 +23,16 @@ import {
   Shield,
   Users,
   Wrench,
+  ListOrdered,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
 import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { SidebarSubmenuFlyout } from "@/components/layout/SidebarSubmenuFlyout";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -45,12 +50,14 @@ export type NavItem = {
   end?: boolean;
   feature?: string;
   adminOnly?: boolean;
+  pickupNav?: boolean;
   children?: NavItem[];
 };
 
 export type NavSectionConfig = {
   title: string;
   items: NavItem[];
+  pickupSection?: boolean;
 };
 
 export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
@@ -88,6 +95,23 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           },
         ],
       },
+    ],
+  },
+  {
+    title: "Farmácia",
+    pickupSection: true,
+    items: [
+      { to: "/farmacia", label: "Painel", icon: LayoutDashboard, pickupNav: true },
+      { to: "/farmacia/retiradas", label: "Retiradas", icon: ListOrdered, pickupNav: true },
+      { to: "/farmacia/fila-cronica", label: "Fila crônica", icon: ClipboardList, pickupNav: true },
+      {
+        to: "/farmacia/relatorios",
+        label: "Relatórios",
+        icon: BarChart3,
+        pickupNav: true,
+        feature: FEATURE_KEYS.reportsBasic,
+      },
+      { to: "/farmacia/tv", label: "Painel TV", icon: Monitor, pickupNav: true },
     ],
   },
   {
@@ -212,11 +236,19 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
 
 export const PLATFORM_NAV: NavItem[] = PLATFORM_NAV_SECTIONS.flatMap((section) => section.items);
 
-function isNavItemVisible(item: NavItem, hasFeature: (key: string) => boolean, isAdmin: boolean): boolean {
+function isNavItemVisible(
+  item: NavItem,
+  hasFeature: (key: string) => boolean,
+  isAdmin: boolean,
+  pickupAccess: boolean,
+): boolean {
+  if (item.pickupNav && !pickupAccess) return false;
   if (item.adminOnly && !isAdmin) return false;
   if (item.feature && !hasFeature(item.feature)) return false;
   if (item.children?.length) {
-    return item.children.some((child) => isNavItemVisible(child, hasFeature, isAdmin));
+    return item.children.some((child) =>
+      isNavItemVisible(child, hasFeature, isAdmin, pickupAccess),
+    );
   }
   return true;
 }
@@ -277,6 +309,7 @@ function NavGroup({
   item,
   hasFeature,
   isAdmin,
+  pickupAccess,
   onNavigate,
   collapsed,
   pathname,
@@ -284,11 +317,15 @@ function NavGroup({
   item: NavItem;
   hasFeature: (key: string) => boolean;
   isAdmin: boolean;
+  pickupAccess?: boolean;
   onNavigate?: () => void;
   collapsed?: boolean;
   pathname: string;
 }) {
-  const visibleChildren = (item.children ?? []).filter((child) => isNavItemVisible(child, hasFeature, isAdmin));
+  const pickup = pickupAccess ?? true;
+  const visibleChildren = (item.children ?? []).filter((child) =>
+    isNavItemVisible(child, hasFeature, isAdmin, pickup),
+  );
   const Icon = item.icon;
   const isGroupActive = visibleChildren.some(
     (child) => child.to && (pathname === child.to || pathname.startsWith(`${child.to}/`)),
@@ -375,18 +412,26 @@ function NavSection({
   items,
   hasFeature,
   isAdmin,
+  pickupAccess,
   onNavigate,
   collapsed,
+  hideSection,
 }: {
   title: string;
   items: NavItem[];
   hasFeature: (key: string) => boolean;
   isAdmin: boolean;
+  pickupAccess?: boolean;
   onNavigate?: () => void;
   collapsed?: boolean;
+  hideSection?: boolean;
 }) {
   const { pathname } = useLocation();
-  const visible = items.filter((item) => isNavItemVisible(item, hasFeature, isAdmin));
+  if (hideSection) return null;
+  const pickup = pickupAccess ?? true;
+  const visible = items.filter((item) =>
+    isNavItemVisible(item, hasFeature, isAdmin, pickup),
+  );
   if (visible.length === 0) return null;
 
   return (
@@ -403,6 +448,7 @@ function NavSection({
             item={item}
             hasFeature={hasFeature}
             isAdmin={isAdmin}
+            pickupAccess={pickup}
             onNavigate={onNavigate}
             collapsed={collapsed}
             pathname={pathname}
@@ -441,8 +487,16 @@ export function AppSidebar({
   collapsible = false,
   onToggleCollapsed,
 }: AppSidebarProps) {
-  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl } =
+  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl, token } =
     useAuth();
+
+  const { data: tenantSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token && isTenant,
+  });
+
+  const pickupAccess = canAccessPickup(hasFeature, tenantSettings);
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 
@@ -571,8 +625,10 @@ export function AppSidebar({
                   items={section.items}
                   hasFeature={hasFeature}
                   isAdmin={isAdmin}
+                  pickupAccess={pickupAccess}
                   onNavigate={onNavigate}
                   collapsed={collapsed}
+                  hideSection={section.pickupSection && !pickupAccess}
                 />
               ))}
             {isPlatform &&

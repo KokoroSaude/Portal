@@ -28,12 +28,14 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAiAvailability } from "@/lib/ai-status";
 import { api, ApiClientError } from "@/lib/api";
 import { normalizeVoiceToneSelectValue } from "@/lib/adminTemplateTones";
-import { LOCALE_LABELS, VOICE_TONES, FEATURE_KEYS } from "@/lib/constants";
+import { LOCALE_LABELS, VOICE_TONES, FEATURE_KEYS, TENANT_OPERATION_MODE_LABELS, PICKUP_NOTIFICATION_ROUTING_LABELS } from "@/lib/constants";
+import { GOV_PHARMACY_DEFAULT_HINTS, isGovPharmacyMode } from "@/lib/gov-pharmacy";
 import type { TenantSettings } from "@/types/api";
 
 const SETTINGS_TABS = [
@@ -104,6 +106,37 @@ export function SettingsPage() {
         onboardingSurveyRandomPickEnabled: settings.onboardingSurveyRandomPickEnabled ?? false,
         requirePreRegisteredPatients: settings.requirePreRegisteredPatients ?? false,
         defaultPromoMessage: settings.defaultPromoMessage ?? "",
+        tenantOperationMode: settings.tenantOperationMode ?? "AdherenceProgram",
+        govPharmacyPickupEnabled: settings.govPharmacyPickupEnabled ?? false,
+        pickupQueuePrefix: settings.pickupQueuePrefix ?? "A",
+        pickupAutoNotifyOnStockArrival: settings.pickupAutoNotifyOnStockArrival ?? false,
+        pickupNotificationLeadDays: settings.pickupNotificationLeadDays ?? 3,
+        pickupMaxNotificationsPerDay: settings.pickupMaxNotificationsPerDay ?? 10,
+        pickupOrderExpiryDays: settings.pickupOrderExpiryDays ?? 7,
+        pickupDefaultDailyDose: settings.pickupDefaultDailyDose ?? 1,
+        pickupExpectedPickupDaysAfterNotify: settings.pickupExpectedPickupDaysAfterNotify ?? 0,
+        pickupNoShowReminderEnabled: settings.pickupNoShowReminderEnabled ?? true,
+        pickupMaxNoShowReminders: settings.pickupMaxNoShowReminders ?? 2,
+        pickupIntegrationApiKey: settings.pickupIntegrationApiKey ?? "",
+        pickupTvDisplayToken: settings.pickupTvDisplayToken ?? "",
+        pickupCnesCode: settings.pickupCnesCode ?? "",
+        pickupSusRulesEnabled: settings.pickupSusRulesEnabled ?? false,
+        pickupQrCheckInEnabled: settings.pickupQrCheckInEnabled ?? false,
+        pickupCheckInTokenTtlDays: settings.pickupCheckInTokenTtlDays ?? 7,
+        pickupNotificationRouting: settings.pickupNotificationRouting ?? "Both",
+        adherenceNotificationRouting: settings.adherenceNotificationRouting ?? "Both",
+        pickupSmartPriorityEnabled: settings.pickupSmartPriorityEnabled ?? true,
+        pickupRunOutPriorityWeight: settings.pickupRunOutPriorityWeight ?? 10,
+        pickupEmergencyReservePercent: settings.pickupEmergencyReservePercent ?? 20,
+        pickupCriticalWaitlistThreshold: settings.pickupCriticalWaitlistThreshold ?? 20,
+        pickupBoostPriorityOnLowAdherence: settings.pickupBoostPriorityOnLowAdherence ?? true,
+        pickupCsatEnabled: settings.pickupCsatEnabled ?? true,
+        pickupDefaultWindowHours: settings.pickupDefaultWindowHours ?? 2,
+        pickupMaxReschedulesPerOrder: settings.pickupMaxReschedulesPerOrder ?? 2,
+        pickupArrivalOutsideWindowWarn: settings.pickupArrivalOutsideWindowWarn ?? true,
+        pickupDuplicateDispenseAlertDays: settings.pickupDuplicateDispenseAlertDays ?? 7,
+        pickupDelegateHighVolumeDailyLimit: settings.pickupDelegateHighVolumeDailyLimit ?? 5,
+        pickupProcurementWebhookUrl: settings.pickupProcurementWebhookUrl ?? "",
       });
     }
   }, [settings]);
@@ -192,6 +225,7 @@ export function SettingsPage() {
 
   const save = () => saveMutation.mutate(form);
   const savePending = saveMutation.isPending;
+  const govMode = isGovPharmacyMode(form);
 
   return (
     <div className="space-y-6">
@@ -338,6 +372,339 @@ export function SettingsPage() {
               <SettingsSaveButton onSave={save} pending={savePending} />
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tipo de organização</CardTitle>
+              <CardDescription>
+                Programa de adesão comercial ou operação de farmácia governamental (SUS).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Modo operacional</Label>
+                  <Select
+                    value={form.tenantOperationMode ?? "AdherenceProgram"}
+                    onValueChange={(v) =>
+                      update("tenantOperationMode", v as TenantSettings["tenantOperationMode"])
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="govPharmacyPickupEnabled">Retirada farmácia ativa</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Habilita fila de retirada, painel TV e integrações ERP.
+                    </p>
+                  </div>
+                  <Switch
+                    id="govPharmacyPickupEnabled"
+                    checked={form.govPharmacyPickupEnabled ?? false}
+                    onCheckedChange={(checked) => update("govPharmacyPickupEnabled", checked)}
+                  />
+                </div>
+              </div>
+
+              {govMode && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+                  <p className="font-medium text-foreground">Sugestões para farmácia governamental</p>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
+                    <li>Exigir pré-cadastro com CPF, nome e plano de cuidado</li>
+                    <li>Prefixo de senha: {GOV_PHARMACY_DEFAULT_HINTS.pickupQueuePrefix}</li>
+                    <li>
+                      Aviso {GOV_PHARMACY_DEFAULT_HINTS.pickupNotificationLeadDays} dias antes do fim do
+                      estoque
+                    </li>
+                    <li>Regras SUS e prioridade inteligente habilitadas</li>
+                    <li>
+                      Limite crítico da fila crônica:{" "}
+                      {GOV_PHARMACY_DEFAULT_HINTS.pickupCriticalWaitlistThreshold} pacientes
+                    </li>
+                  </ul>
+                </div>
+              )}
+
+              <SettingsSaveButton onSave={save} pending={savePending} />
+            </CardContent>
+          </Card>
+
+          {(govMode || form.govPharmacyPickupEnabled) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Retirada de medicamentos</CardTitle>
+                <CardDescription>
+                  Fila, notificações, integração ERP, painel TV e regras SUS.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Prefixo da senha</Label>
+                    <Input
+                      value={form.pickupQueuePrefix ?? "A"}
+                      onChange={(e) => update("pickupQueuePrefix", e.target.value)}
+                      placeholder="A"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dias de antecedência do aviso</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.pickupNotificationLeadDays ?? 3}
+                      onChange={(e) =>
+                        update("pickupNotificationLeadDays", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Máx. avisos por dia</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupMaxNotificationsPerDay ?? 10}
+                      onChange={(e) =>
+                        update("pickupMaxNotificationsPerDay", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Expiração da ordem (dias)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupOrderExpiryDays ?? 7}
+                      onChange={(e) => update("pickupOrderExpiryDays", Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dose diária padrão</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupDefaultDailyDose ?? 1}
+                      onChange={(e) => update("pickupDefaultDailyDose", Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Limite fila crônica (alerta)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupCriticalWaitlistThreshold ?? 20}
+                      onChange={(e) =>
+                        update("pickupCriticalWaitlistThreshold", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CNES</Label>
+                    <Input
+                      value={form.pickupCnesCode ?? ""}
+                      onChange={(e) => update("pickupCnesCode", e.target.value)}
+                      placeholder="0000000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Reserva emergencial (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={form.pickupEmergencyReservePercent ?? 20}
+                      onChange={(e) =>
+                        update("pickupEmergencyReservePercent", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Peso run-out (prioridade)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.pickupRunOutPriorityWeight ?? 10}
+                      onChange={(e) =>
+                        update("pickupRunOutPriorityWeight", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Janela padrão (horas)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={8}
+                      value={form.pickupDefaultWindowHours ?? 2}
+                      onChange={(e) =>
+                        update("pickupDefaultWindowHours", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Máx. reagendamentos por ordem</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.pickupMaxReschedulesPerOrder ?? 2}
+                      onChange={(e) =>
+                        update("pickupMaxReschedulesPerOrder", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Alerta dispensação duplicada (dias)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupDuplicateDispenseAlertDays ?? 7}
+                      onChange={(e) =>
+                        update("pickupDuplicateDispenseAlertDays", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Limite diário delegate (alerta)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupDelegateHighVolumeDailyLimit ?? 5}
+                      onChange={(e) =>
+                        update("pickupDelegateHighVolumeDailyLimit", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Webhook pós-export compras</Label>
+                    <Input
+                      value={form.pickupProcurementWebhookUrl ?? ""}
+                      onChange={(e) => update("pickupProcurementWebhookUrl", e.target.value)}
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Roteamento — retirada</Label>
+                    <Select
+                      value={form.pickupNotificationRouting ?? "Both"}
+                      onValueChange={(v) =>
+                        update(
+                          "pickupNotificationRouting",
+                          v as TenantSettings["pickupNotificationRouting"],
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PICKUP_NOTIFICATION_ROUTING_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Roteamento — adesão</Label>
+                    <Select
+                      value={form.adherenceNotificationRouting ?? "Both"}
+                      onValueChange={(v) =>
+                        update(
+                          "adherenceNotificationRouting",
+                          v as TenantSettings["adherenceNotificationRouting"],
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PICKUP_NOTIFICATION_ROUTING_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Chave API integração ERP</Label>
+                    <PasswordInput
+                      value={form.pickupIntegrationApiKey ?? ""}
+                      onChange={(e) => update("pickupIntegrationApiKey", e.target.value)}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Token painel TV</Label>
+                    <PasswordInput
+                      value={form.pickupTvDisplayToken ?? ""}
+                      onChange={(e) => update("pickupTvDisplayToken", e.target.value)}
+                      placeholder="Token para /farmacia/tv"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      ["pickupAutoNotifyOnStockArrival", "Notificar ao receber lote"],
+                      ["pickupNoShowReminderEnabled", "Lembrete de não-retirada"],
+                      ["pickupSusRulesEnabled", "Regras SUS (CATMAT/CNES)"],
+                      ["pickupQrCheckInEnabled", "Check-in por QR"],
+                      ["pickupSmartPriorityEnabled", "Prioridade inteligente"],
+                      ["pickupBoostPriorityOnLowAdherence", "Priorizar baixa adesão"],
+                      ["pickupCsatEnabled", "CSAT pós-retirada"],
+                      ["pickupArrivalOutsideWindowWarn", "Alerta chegada fora da janela"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                      <Label htmlFor={key}>{label}</Label>
+                      <Switch
+                        id={key}
+                        checked={form[key] ?? false}
+                        onCheckedChange={(checked) => update(key, checked)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {form.pickupQrCheckInEnabled && (
+                  <div className="max-w-xs space-y-2">
+                    <Label>Validade token QR (dias)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pickupCheckInTokenTtlDays ?? 7}
+                      onChange={(e) =>
+                        update("pickupCheckInTokenTtlDays", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                )}
+
+                <SettingsSaveButton onSave={save} pending={savePending} />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="ia" className="space-y-4">

@@ -73,6 +73,26 @@ const AdminMetaTemplatesPage = lazyPage(
   () => import("@/pages/admin/AdminMetaTemplatesPage"),
   "AdminMetaTemplatesPage",
 );
+const FarmaciaDashboardPage = lazyPage(
+  () => import("@/pages/farmacia/FarmaciaDashboardPage"),
+  "FarmaciaDashboardPage",
+);
+const FarmaciaRetiradasPage = lazyPage(
+  () => import("@/pages/farmacia/FarmaciaRetiradasPage"),
+  "FarmaciaRetiradasPage",
+);
+const FarmaciaTvPage = lazyPage(
+  () => import("@/pages/farmacia/FarmaciaTvPage"),
+  "FarmaciaTvPage",
+);
+const FarmaciaRelatoriosPage = lazyPage(
+  () => import("@/pages/farmacia/FarmaciaRelatoriosPage"),
+  "FarmaciaRelatoriosPage",
+);
+const FarmaciaWaitlistPage = lazyPage(
+  () => import("@/pages/farmacia/FarmaciaWaitlistPage"),
+  "FarmaciaWaitlistPage",
+);
 
 function PageLoader() {
   return (
@@ -104,6 +124,8 @@ export default function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
               </Route>
 
+              <Route path="/farmacia/tv" element={<FarmaciaTvPage />} />
+
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route index element={<HomePage />} />
@@ -129,6 +151,10 @@ export default function App() {
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
+                    <Route path="farmacia" element={<FarmaciaDashboardPage />} />
+                    <Route path="farmacia/retiradas" element={<FarmaciaRetiradasPage />} />
+                    <Route path="farmacia/relatorios" element={<FarmaciaRelatoriosPage />} />
+                    <Route path="farmacia/fila-cronica" element={<FarmaciaWaitlistPage />} />
                   </Route>
 
                   <Route element={<RequirePlatform />}>

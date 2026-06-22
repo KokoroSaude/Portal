@@ -47,6 +47,7 @@ export interface Patient {
   name: string | null;
   phone: string;
   cpf?: string | null;
+  clinicalPriorityTier?: ClinicalPriorityTier | null;
   status: string;
   medication: string | null;
   preferredMessageChannel?: "Text" | "Audio";
@@ -307,6 +308,8 @@ export interface MedicationCatalogItem {
   id: string;
   canonicalName: string;
   dcbCode: string | null;
+  catmatCode?: string | null;
+  clinicalPriorityBoost?: number;
   isActive: boolean;
   aliases: string[];
 }
@@ -599,6 +602,233 @@ export interface TenantSettings {
   defaultPromoMessage?: string | null;
   outboundContentMode?: "TemplateOnly" | "AiOnly" | "Alternate";
   outboundAlternateStrategy?: "PerPatient" | "PerMessageKind";
+  tenantOperationMode?: TenantOperationMode;
+  govPharmacyPickupEnabled?: boolean;
+  pickupQueuePrefix?: string;
+  pickupAutoNotifyOnStockArrival?: boolean;
+  pickupNotificationLeadDays?: number;
+  pickupMaxNotificationsPerDay?: number;
+  pickupOrderExpiryDays?: number;
+  pickupDefaultDailyDose?: number;
+  pickupExpectedPickupDaysAfterNotify?: number;
+  pickupNoShowReminderEnabled?: boolean;
+  pickupMaxNoShowReminders?: number;
+  pickupIntegrationApiKey?: string | null;
+  pickupTvDisplayToken?: string | null;
+  pickupCnesCode?: string | null;
+  pickupSusRulesEnabled?: boolean;
+  pickupQrCheckInEnabled?: boolean;
+  pickupCheckInTokenTtlDays?: number;
+  pickupNotificationRouting?: PickupNotificationRouting;
+  adherenceNotificationRouting?: AdherenceNotificationRouting;
+  pickupSmartPriorityEnabled?: boolean;
+  pickupRunOutPriorityWeight?: number;
+  pickupEmergencyReservePercent?: number;
+  pickupCriticalWaitlistThreshold?: number;
+  pickupBoostPriorityOnLowAdherence?: boolean;
+  pickupCsatEnabled?: boolean;
+  pickupDefaultWindowHours?: number;
+  pickupMaxReschedulesPerOrder?: number;
+  pickupArrivalOutsideWindowWarn?: boolean;
+  pickupDuplicateDispenseAlertDays?: number;
+  pickupDelegateHighVolumeDailyLimit?: number;
+  pickupProcurementWebhookUrl?: string | null;
+}
+
+export type TenantOperationMode = "AdherenceProgram" | "GovPharmacy";
+export type ClinicalPriorityTier = "Normal" | "Elderly" | "Pregnant" | "ChronicCritical";
+export type PickupNotificationRouting = "Patient" | "Delegate" | "Both";
+export type AdherenceNotificationRouting = "Patient" | "Delegate" | "Both";
+export type DelegateRelationship = "Filho" | "Cuidador" | "Conjuge" | "Irmao" | "Outro";
+
+export interface PickupDashboardBatch {
+  id: string;
+  medicationName: string;
+  quantityAvailable: number;
+  quantityAllocated: number;
+  emergencyReserveRemaining: number;
+  status: string;
+  batchExpiryDate: string | null;
+  receivedAt: string;
+}
+
+export interface PickupDashboardOrder {
+  id: string;
+  patientId: string;
+  patientName: string | null;
+  medicationName: string;
+  status: string;
+  priorityRank: number;
+  priorityScore: number;
+  queuePassword: string | null;
+  expectedPickupDate: string | null;
+  expectedPickupWindowLabel: string | null;
+  readyNotifiedAt: string | null;
+  arrivedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface PickupDashboardWaitlistAlert {
+  medicationId: string;
+  medicationName: string;
+  activeCount: number;
+  isCritical: boolean;
+}
+
+export interface PickupDashboard {
+  activeBatches: PickupDashboardBatch[];
+  todayOrders: PickupDashboardOrder[];
+  waitlistAlerts: PickupDashboardWaitlistAlert[];
+  awaitingPickupCount: number;
+  arrivedCount: number;
+  openAnomalyCount: number;
+}
+
+export interface PickupAnomalyAlert {
+  id: string;
+  type: string;
+  severity: number;
+  isDismissed: boolean;
+  createdAt: string;
+  details: string | null;
+  pickupOrderId: string | null;
+  patientId: string | null;
+  patientName: string | null;
+}
+
+export interface ProcurementSuggestion {
+  medicationId: string;
+  medicationName: string;
+  catmatCode: string | null;
+  forecastUnits: number;
+  waitlistCount: number;
+  confidence: string;
+}
+
+export interface ProcurementExportRecord {
+  id: string;
+  exportedAt: string;
+  format: string;
+  weeksHorizon: number;
+  fileName: string | null;
+  lineCount: number;
+}
+
+export interface PickupStockRiskItem {
+  medicationId: string;
+  medicationName: string;
+  patientsAtRisk: number;
+  earliestRunOut: string | null;
+}
+
+export interface PickupInsights {
+  horizonDays: number;
+  stockRisk: PickupStockRiskItem[];
+  summary: string;
+  aiGenerated: boolean;
+}
+
+export interface PickupTvDisplayEntry {
+  queuePassword: string;
+  patientName: string | null;
+  medicationName: string;
+  issuedAt: string;
+}
+
+export interface PickupTvDisplay {
+  recentCalls: PickupTvDisplayEntry[];
+  generatedAt: string;
+}
+
+export interface PickupAttendanceSlice {
+  key: string;
+  label: string;
+  notified: number;
+  arrived: number;
+  completed: number;
+  noShow: number;
+  cancelled: number;
+  attendanceRate: number;
+}
+
+export interface PickupAttendanceReport {
+  from: string;
+  to: string;
+  groupBy: string;
+  slices: PickupAttendanceSlice[];
+}
+
+export interface PickupOperationsFunnel {
+  from: string;
+  to: string;
+  medianNotifyToArriveMinutes: number | null;
+  medianArriveToCompleteMinutes: number | null;
+  medianNotifyToCompleteMinutes: number | null;
+  sampleSize: number;
+}
+
+export interface PickupDemandForecastItem {
+  medicationId: string;
+  medicationName: string;
+  forecastUnits: number;
+  confidence: string;
+}
+
+export interface PickupOperationsReport {
+  from: string;
+  to: string;
+  batchesReceived: number;
+  ordersAllocated: number;
+  ordersNotified: number;
+  ordersCompleted: number;
+  ordersCancelled: number;
+  ordersExpired: number;
+  emergencyDispenses: number;
+  activeWaitlistEntries: number;
+}
+
+export interface MedicationWaitlistEntry {
+  id: string;
+  tenantId: string;
+  patientId: string;
+  medicationId: string;
+  enrolledAt: string;
+  priorityScore: number;
+  isActive: boolean;
+}
+
+export interface PatientCareDelegate {
+  id: string;
+  name: string;
+  cpf: string | null;
+  phone: string;
+  relationship: string;
+  canPickup: boolean;
+  receivesPickupNotifications: boolean;
+  receivesAdherenceMessages: boolean;
+  canReportCheckin: boolean;
+  householdLabel: string | null;
+  isActive: boolean;
+}
+
+export interface UpsertPatientCareDelegatePayload {
+  name: string;
+  phone: string;
+  cpf?: string;
+  relationship?: string;
+  canPickup?: boolean;
+  receivesPickupNotifications?: boolean;
+  receivesAdherenceMessages?: boolean;
+  canReportCheckin?: boolean;
+  householdLabel?: string;
+  isActive?: boolean;
+}
+
+export interface ImportPatientsResult {
+  created: number;
+  skipped: number;
+  failed: number;
+  errors: Array<{ line: number; phone: string | null; error: string }>;
 }
 
 export interface PatientAchievementItem {

@@ -21,7 +21,43 @@ export const FEATURE_KEYS = {
   whatsappConversations: "whatsapp.conversations",
   whatsappVoice: "whatsapp.voice",
   whatsappPrescription: "whatsapp.prescription",
+  pharmacyPickup: "pharmacy.pickup",
 } as const;
+
+export const TENANT_OPERATION_MODE_LABELS: Record<string, string> = {
+  AdherenceProgram: "Programa de adesão",
+  GovPharmacy: "Farmácia governamental (SUS)",
+};
+
+export const CLINICAL_PRIORITY_TIER_LABELS: Record<string, string> = {
+  Normal: "Normal",
+  Elderly: "Idoso",
+  Pregnant: "Gestante",
+  ChronicCritical: "Crônico crítico",
+};
+
+export const PICKUP_ORDER_STATUS_LABELS: Record<string, string> = {
+  Allocated: "Alocado",
+  AwaitingPickup: "Aguardando retirada",
+  PatientArrived: "No balcão",
+  Completed: "Concluído",
+  Cancelled: "Cancelado",
+  Expired: "Expirado",
+};
+
+export const DELEGATE_RELATIONSHIP_LABELS: Record<string, string> = {
+  Filho: "Filho(a)",
+  Cuidador: "Cuidador",
+  Conjuge: "Cônjuge",
+  Irmao: "Irmão(ã)",
+  Outro: "Outro",
+};
+
+export const PICKUP_NOTIFICATION_ROUTING_LABELS: Record<string, string> = {
+  Patient: "Paciente",
+  Delegate: "Rede de cuidado",
+  Both: "Paciente e rede",
+};
 
 export const ROLE_LABELS: Record<string, string> = {
   Admin: "Administrador",

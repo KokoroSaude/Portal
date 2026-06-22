@@ -14,6 +14,7 @@ import {
 } from "@/components/patients/PatientInsightPreviewModeToggle";
 import { PatientInsightPromptDialog } from "@/components/patients/PatientInsightPromptDialog";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
+import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { Button } from "@/components/ui/button";
@@ -40,10 +41,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
-import { FEATURE_KEYS } from "@/lib/constants";
+import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
+import { canAccessPickup } from "@/lib/gov-pharmacy";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
-import type { TimelineEvent } from "@/types/api";
+import type { ClinicalPriorityTier, TimelineEvent } from "@/types/api";
 
 const EVENT_LABELS: Record<string, string> = {
   message_inbound: "Mensagem recebida",
@@ -67,6 +69,7 @@ export function PatientDetailPage() {
   const [phoneInput, setPhoneInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [cpfInput, setCpfInput] = useState("");
+  const [priorityInput, setPriorityInput] = useState<ClinicalPriorityTier>("Normal");
   const [channelInput, setChannelInput] = useState<"Text" | "Audio">("Text");
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
@@ -118,6 +121,7 @@ export function PatientDetailPage() {
 
   const voiceTenantEnabled = tenantSettings?.voiceMessagesEnabled ?? false;
   const canSetAudioChannel = voiceFeatureEnabled && voiceTenantEnabled;
+  const pickupAccess = canAccessPickup(hasFeature, tenantSettings);
 
   const { data: platformAi } = useQuery({
     queryKey: ["admin-platform-ai"],
@@ -222,6 +226,7 @@ export function PatientDetailPage() {
         name: nameInput,
         cpf: cpfInput.trim() === "" ? "" : stripCpf(cpfInput) || undefined,
         preferredMessageChannel: channelInput,
+        clinicalPriorityTier: pickupAccess ? priorityInput : undefined,
       }),
     onSuccess: () => {
       toast.success("Dados do paciente atualizados");
@@ -253,6 +258,7 @@ export function PatientDetailPage() {
       setNameInput(patient.name ?? "");
       setCpfInput(patient.cpf ? formatCpfDisplay(patient.cpf) : "");
       setChannelInput(patient.preferredMessageChannel === "Audio" ? "Audio" : "Text");
+      setPriorityInput(patient.clinicalPriorityTier ?? "Normal");
     }
   }, [patient]);
 
@@ -304,6 +310,12 @@ export function PatientDetailPage() {
               <span className="font-mono text-sm text-muted-foreground">
                 CPF {formatCpfDisplay(patient.cpf)}
               </span>
+            )}
+            {pickupAccess && patient.clinicalPriorityTier && patient.clinicalPriorityTier !== "Normal" && (
+              <Badge variant="secondary">
+                {CLINICAL_PRIORITY_TIER_LABELS[patient.clinicalPriorityTier] ??
+                  patient.clinicalPriorityTier}
+              </Badge>
             )}
             {canWrite && (
               <Dialog open={phoneOpen} onOpenChange={setPhoneOpen}>
@@ -365,6 +377,30 @@ export function PatientDetailPage() {
                             <SelectItem value="Audio">Áudio</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+                    {pickupAccess && (
+                      <div className="space-y-2">
+                        <Label>Prioridade clínica</Label>
+                        <Select
+                          value={priorityInput}
+                          onValueChange={(v) => setPriorityInput(v as ClinicalPriorityTier)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CLINICAL_PRIORITY_TIER_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Influencia a ordem na fila de retirada quando prioridade inteligente está
+                          ativa.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -585,6 +621,10 @@ export function PatientDetailPage() {
           previewMode={insightPreviewMode}
           onTriggerTpb={() => triggerTpbMutation.mutate()}
         />
+      )}
+
+      {token && id && pickupAccess && (
+        <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
       )}
 
       <Tabs defaultValue="timeline">
