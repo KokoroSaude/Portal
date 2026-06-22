@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { GuestRoute, ProtectedRoute } from "@/components/layout/ProtectedRoute";
-import { HomePage, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
+import { HomePage, RequireGovPharmacy, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
 
 function lazyPage(
   loader: () => Promise<Record<string, ComponentType<unknown>>>,
@@ -151,10 +151,12 @@ export default function App() {
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
-                    <Route path="farmacia" element={<FarmaciaDashboardPage />} />
-                    <Route path="farmacia/retiradas" element={<FarmaciaRetiradasPage />} />
-                    <Route path="farmacia/relatorios" element={<FarmaciaRelatoriosPage />} />
-                    <Route path="farmacia/fila-cronica" element={<FarmaciaWaitlistPage />} />
+                    <Route element={<RequireGovPharmacy />}>
+                      <Route path="farmacia" element={<FarmaciaDashboardPage />} />
+                      <Route path="farmacia/retiradas" element={<FarmaciaRetiradasPage />} />
+                      <Route path="farmacia/relatorios" element={<FarmaciaRelatoriosPage />} />
+                      <Route path="farmacia/fila-cronica" element={<FarmaciaWaitlistPage />} />
+                    </Route>
                   </Route>
 
                   <Route element={<RequirePlatform />}>

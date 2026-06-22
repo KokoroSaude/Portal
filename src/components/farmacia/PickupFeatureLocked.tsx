@@ -5,7 +5,7 @@ export function PickupFeatureLocked() {
   return (
     <FeatureLocked
       title="Retirada farmácia indisponível"
-      description="Ative o modo farmácia governamental ou o recurso de retirada nas configurações da organização."
+      description="Este módulo é exclusivo de organizações cadastradas como farmácia governamental (SUS). O tipo de organização é definido pelo administrador da plataforma."
     />
   );
 }

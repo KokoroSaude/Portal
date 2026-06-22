@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
 import type { MedicationCatalogItem } from "@/types/api";
 
 export function MedicationsPage() {
@@ -29,12 +30,20 @@ export function MedicationsPage() {
     enabled: !!token,
   });
 
+  const { data: tenantSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.getSettings(token!),
+    enabled: !!token,
+  });
+
+  const govMode = isGovPharmacyMode(tenantSettings);
+
   const createMutation = useMutation({
     mutationFn: () =>
       api.createMedication(token!, {
         canonicalName: canonicalName.trim(),
-        catmatCode: catmatCode.trim() || undefined,
-        clinicalPriorityBoost: Number(clinicalPriorityBoost) || 0,
+        catmatCode: govMode ? catmatCode.trim() || undefined : undefined,
+        clinicalPriorityBoost: govMode ? Number(clinicalPriorityBoost) || 0 : undefined,
         aliases: aliases
           .split(",")
           .map((a) => a.trim())
@@ -55,8 +64,8 @@ export function MedicationsPage() {
   const updateMutation = useMutation({
     mutationFn: (med: MedicationCatalogItem) =>
       api.updateMedication(token!, med.id, {
-        catmatCode: editCatmat.trim() || undefined,
-        clinicalPriorityBoost: Number(editBoost) || 0,
+        catmatCode: govMode ? editCatmat.trim() || undefined : undefined,
+        clinicalPriorityBoost: govMode ? Number(editBoost) || 0 : undefined,
       }),
     onSuccess: () => {
       toast.success("Medicamento atualizado");
@@ -97,7 +106,11 @@ export function MedicationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Catálogo de medicamentos"
-        description="Cadastro de nomes canônicos, CATMAT e prioridade clínica para fila SUS."
+        description={
+          govMode
+            ? "Cadastro de nomes canônicos, CATMAT e prioridade clínica para fila SUS."
+            : "Cadastro de nomes canônicos e aliases para padronizar medicamentos entre filiais."
+        }
         actions={
           <Button
             variant="outline"
@@ -124,25 +137,27 @@ export function MedicationsPage() {
               placeholder="Metformina"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Código CATMAT</Label>
-              <Input
-                value={catmatCode}
-                onChange={(e) => setCatmatCode(e.target.value)}
-                placeholder="Opcional — exigido se regras SUS ativas"
-              />
+          {govMode && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Código CATMAT</Label>
+                <Input
+                  value={catmatCode}
+                  onChange={(e) => setCatmatCode(e.target.value)}
+                  placeholder="Opcional — exigido se regras SUS ativas"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Prioridade clínica (boost)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={clinicalPriorityBoost}
+                  onChange={(e) => setClinicalPriorityBoost(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Prioridade clínica (boost)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={clinicalPriorityBoost}
-                onChange={(e) => setClinicalPriorityBoost(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
           <div className="space-y-2">
             <Label>Aliases</Label>
             <Input
@@ -178,6 +193,7 @@ export function MedicationsPage() {
                     </p>
                   )}
                   {editingId === med.id ? (
+                    govMode ? (
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1">
                         <Label className="text-xs">CATMAT</Label>
@@ -202,13 +218,14 @@ export function MedicationsPage() {
                         Salvar
                       </Button>
                     </div>
-                  ) : (
+                    ) : null
+                  ) : govMode ? (
                     <p className="mt-1 text-xs text-muted-foreground">
                       CATMAT: {med.catmatCode ?? "—"} · Boost: {med.clinicalPriorityBoost ?? 0}
                     </p>
-                  )}
+                  ) : null}
                 </div>
-                {editingId !== med.id && (
+                {govMode && editingId !== med.id && (
                   <Button variant="ghost" size="icon" onClick={() => startEdit(med)}>
                     <Pencil className="size-4" />
                   </Button>

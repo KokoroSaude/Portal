@@ -29,10 +29,8 @@ import { KokoroLogo } from "@/components/KokoroLogo";
 import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { SidebarSubmenuFlyout } from "@/components/layout/SidebarSubmenuFlyout";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -322,7 +320,7 @@ function NavGroup({
   collapsed?: boolean;
   pathname: string;
 }) {
-  const pickup = pickupAccess ?? true;
+  const pickup = pickupAccess === true;
   const visibleChildren = (item.children ?? []).filter((child) =>
     isNavItemVisible(child, hasFeature, isAdmin, pickup),
   );
@@ -428,7 +426,7 @@ function NavSection({
 }) {
   const { pathname } = useLocation();
   if (hideSection) return null;
-  const pickup = pickupAccess ?? true;
+  const pickup = pickupAccess === true;
   const visible = items.filter((item) =>
     isNavItemVisible(item, hasFeature, isAdmin, pickup),
   );
@@ -487,16 +485,10 @@ export function AppSidebar({
   collapsible = false,
   onToggleCollapsed,
 }: AppSidebarProps) {
-  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl, token } =
+  const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl } =
     useAuth();
 
-  const { data: tenantSettings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => api.getSettings(token!),
-    enabled: !!token && isTenant,
-  });
-
-  const pickupAccess = canAccessPickup(hasFeature, tenantSettings);
+  const { pickupAccess } = useTenantSettings();
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 

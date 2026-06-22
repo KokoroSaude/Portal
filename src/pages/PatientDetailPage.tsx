@@ -42,7 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
-import { canAccessPickup } from "@/lib/gov-pharmacy";
+import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
 import type { ClinicalPriorityTier, TimelineEvent } from "@/types/api";
@@ -121,7 +121,7 @@ export function PatientDetailPage() {
 
   const voiceTenantEnabled = tenantSettings?.voiceMessagesEnabled ?? false;
   const canSetAudioChannel = voiceFeatureEnabled && voiceTenantEnabled;
-  const pickupAccess = canAccessPickup(hasFeature, tenantSettings);
+  const govMode = isGovPharmacyMode(tenantSettings);
 
   const { data: platformAi } = useQuery({
     queryKey: ["admin-platform-ai"],
@@ -226,7 +226,7 @@ export function PatientDetailPage() {
         name: nameInput,
         cpf: cpfInput.trim() === "" ? "" : stripCpf(cpfInput) || undefined,
         preferredMessageChannel: channelInput,
-        clinicalPriorityTier: pickupAccess ? priorityInput : undefined,
+        clinicalPriorityTier: govMode ? priorityInput : undefined,
       }),
     onSuccess: () => {
       toast.success("Dados do paciente atualizados");
@@ -311,7 +311,7 @@ export function PatientDetailPage() {
                 CPF {formatCpfDisplay(patient.cpf)}
               </span>
             )}
-            {pickupAccess && patient.clinicalPriorityTier && patient.clinicalPriorityTier !== "Normal" && (
+            {govMode && patient.clinicalPriorityTier && patient.clinicalPriorityTier !== "Normal" && (
               <Badge variant="secondary">
                 {CLINICAL_PRIORITY_TIER_LABELS[patient.clinicalPriorityTier] ??
                   patient.clinicalPriorityTier}
@@ -379,7 +379,7 @@ export function PatientDetailPage() {
                         </Select>
                       </div>
                     )}
-                    {pickupAccess && (
+                    {govMode && (
                       <div className="space-y-2">
                         <Label>Prioridade clínica</Label>
                         <Select
@@ -623,7 +623,7 @@ export function PatientDetailPage() {
         />
       )}
 
-      {token && id && pickupAccess && (
+      {token && id && govMode && (
         <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
       )}
 

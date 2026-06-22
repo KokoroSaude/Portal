@@ -1,16 +1,15 @@
-import { FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
 
 export function isGovPharmacyMode(settings?: TenantSettings | null): boolean {
-  const mode = settings?.tenantOperationMode;
-  return mode === "GovPharmacy" || settings?.govPharmacyPickupEnabled === true;
+  return settings?.tenantOperationMode === "GovPharmacy";
 }
 
+/** Módulo /farmacia e retirada SUS — apenas organizações em modo farmácia governamental. */
 export function canAccessPickup(
-  hasFeature: (key: string) => boolean,
+  _hasFeature: (key: string) => boolean,
   settings?: TenantSettings | null,
 ): boolean {
-  return hasFeature(FEATURE_KEYS.pharmacyPickup) || isGovPharmacyMode(settings);
+  return isGovPharmacyMode(settings);
 }
 
 export const GOV_PHARMACY_DEFAULT_HINTS: Partial<TenantSettings> = {
