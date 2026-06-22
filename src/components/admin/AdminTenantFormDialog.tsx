@@ -136,13 +136,14 @@ export function AdminTenantFormDialog(props: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,720px)] max-w-lg flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-2">
+          <div className="grid gap-4">
           <div className="space-y-2">
             <Label htmlFor="tenant-name">Nome</Label>
             <Input
@@ -156,6 +157,33 @@ export function AdminTenantFormDialog(props: Props) {
               placeholder="Farmácia Municipal Centro"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de organização</Label>
+            <Select
+              value={form.tenantOperationMode}
+              onValueChange={(value) =>
+                mode === "create"
+                  ? updateCreate("tenantOperationMode", value as TenantOperationMode)
+                  : updateEdit("tenantOperationMode", value as TenantOperationMode)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-[100]">
+                {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Programa de adesão comercial ou farmácia governamental (SUS). Só o superadmin define
+              isso no cadastro.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -193,33 +221,6 @@ export function AdminTenantFormDialog(props: Props) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Tipo de organização</Label>
-            <Select
-              value={form.tenantOperationMode}
-              onValueChange={(value) =>
-                mode === "create"
-                  ? updateCreate("tenantOperationMode", value as TenantOperationMode)
-                  : updateEdit("tenantOperationMode", value as TenantOperationMode)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Define se a organização opera programa de adesão ou farmácia governamental (SUS). Só
-              o superadmin pode alterar.
-            </p>
           </div>
 
           {mode === "create" && (
@@ -284,9 +285,10 @@ export function AdminTenantFormDialog(props: Props) {
               }
             />
           </div>
+          </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t px-6 py-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

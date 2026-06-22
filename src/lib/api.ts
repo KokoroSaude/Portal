@@ -114,6 +114,7 @@ import type {
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
+import { normalizeAdminTenant } from "@/lib/normalize-admin-tenant";
 
 export class ApiClientError extends Error {
   status: number;
@@ -1068,7 +1069,13 @@ export const api = {
     request<void>("/api/journey/onboarding", { method: "DELETE", token }),
 
   // Admin
-  adminListTenants: (token: string) => request<AdminTenant[]>("/api/admin/tenants", { token }),
+  adminListTenants: async (token: string): Promise<AdminTenant[]> => {
+    const rows = await request<Parameters<typeof normalizeAdminTenant>[0][]>(
+      "/api/admin/tenants",
+      { token },
+    );
+    return rows.map(normalizeAdminTenant);
+  },
 
   adminCreateTenant: (
     token: string,
