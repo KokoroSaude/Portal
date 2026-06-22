@@ -201,10 +201,7 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl">Configurações</h1>
-        <p className="text-muted-foreground">
-          Preferências operacionais da organização. Passe o mouse sobre cada campo para ver o que ele
-          faz.
-        </p>
+        <p className="text-muted-foreground">Preferências operacionais da organização</p>
       </div>
 
       <Tabs defaultValue={defaultTab} key={defaultTab}>

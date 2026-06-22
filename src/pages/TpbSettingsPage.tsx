@@ -172,7 +172,7 @@ export function TpbSettingsPage() {
             <CardHeader>
               <CardTitle className="text-base">Gatilhos de envio</CardTitle>
               <CardDescription>
-                Quando a avaliação TCP é aplicada via WhatsApp. Passe o mouse sobre cada campo.
+                Quando a avaliação TCP é aplicada via WhatsApp.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

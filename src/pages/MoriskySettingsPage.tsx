@@ -163,7 +163,7 @@ export function MoriskySettingsPage() {
             <CardHeader>
               <CardTitle className="text-base">Gatilhos de envio</CardTitle>
               <CardDescription>
-                Quando a avaliação MMAS-8 é aplicada via WhatsApp. Passe o mouse sobre cada campo.
+                Quando a avaliação MMAS-8 é aplicada via WhatsApp.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

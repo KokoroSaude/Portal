@@ -24,20 +24,17 @@ export function SettingsField({
         "group/field space-y-2 rounded-lg border border-transparent p-2 transition-colors hover:border-border hover:bg-muted/30",
         className,
       )}
-      title={hint}
     >
       <div className="flex items-start gap-1.5">
-        <Label htmlFor={htmlFor} className="cursor-help leading-snug">
+        <Label htmlFor={htmlFor} className="leading-snug">
           {label}
         </Label>
         <HelpCircle
-          className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-50 group-hover/field:opacity-100"
+          className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/70"
           aria-hidden
         />
       </div>
-      <p className="text-xs leading-relaxed text-muted-foreground opacity-0 transition-opacity group-hover/field:opacity-100">
-        {hint}
-      </p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>
       {children}
     </div>
   );
@@ -61,23 +58,18 @@ export function SettingsSwitchField({
   disabled,
 }: SettingsSwitchFieldProps) {
   return (
-    <div
-      className="group/field flex items-start justify-between gap-3 rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-muted/30"
-      title={hint}
-    >
+    <div className="group/field flex items-start justify-between gap-3 rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-muted/30">
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start gap-1.5">
-          <Label htmlFor={id} className="cursor-help leading-snug">
+          <Label htmlFor={id} className="leading-snug">
             {label}
           </Label>
           <HelpCircle
-            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-50 group-hover/field:opacity-100"
+            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/70"
             aria-hidden
           />
         </div>
-        <p className="text-xs leading-relaxed text-muted-foreground opacity-0 transition-opacity group-hover/field:opacity-100">
-          {hint}
-        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>
       </div>
       <Switch
         id={id}
