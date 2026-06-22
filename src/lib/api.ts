@@ -79,6 +79,7 @@ import type {
   SimulatorStatus,
   TenantFeature,
   TenantSettings,
+  TenantOperationMode,
   TenantSubscription,
   UpsertTemplateResponse,
   KnowledgeDocument,
@@ -1075,6 +1076,7 @@ export const api = {
       name: string;
       slug: string;
       planId?: string;
+      tenantOperationMode?: TenantOperationMode;
       adminName: string;
       adminEmail: string;
       adminPassword: string;
@@ -1095,6 +1097,7 @@ export const api = {
       name: string;
       slug: string;
       planId: string;
+      tenantOperationMode: TenantOperationMode;
       isActive: boolean;
       aiEnabled: boolean;
     },

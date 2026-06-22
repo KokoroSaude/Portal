@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
+import { TENANT_OPERATION_MODE_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import type { AdminTenant } from "@/types/api";
 
@@ -56,6 +57,7 @@ export function AdminTenantsPage() {
         name: form.name,
         slug: form.slug,
         planId: form.planId,
+        tenantOperationMode: form.tenantOperationMode,
         adminName: form.adminName,
         adminEmail: form.adminEmail,
         adminPassword: form.adminPassword,
@@ -113,7 +115,7 @@ export function AdminTenantsPage() {
   const filteredTenants = useMemo(() => {
     const all = tenants.data ?? [];
     return all.filter((t) =>
-      matchesGridSearch(query, t.name, t.slug, t.planKey, t.isActive ? "ativo" : "inativo"),
+      matchesGridSearch(query, t.name, t.slug, t.planKey, t.isActive ? "ativo" : "inativo", TENANT_OPERATION_MODE_LABELS[t.tenantOperationMode] ?? ""),
     );
   }, [tenants.data, query]);
 
@@ -151,6 +153,7 @@ export function AdminTenantsPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Plano</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>IA</TableHead>
                   <TableHead />
@@ -162,7 +165,7 @@ export function AdminTenantsPage() {
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={9}
+                    colSpan={10}
                     message={
                       query.trim()
                         ? "Nenhuma organização corresponde à busca."
@@ -176,6 +179,11 @@ export function AdminTenantsPage() {
                     <TableCell className="font-mono text-xs">{t.slug}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{planLabel(t.planKey)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={t.tenantOperationMode === "GovPharmacy" ? "default" : "outline"}>
+                        {TENANT_OPERATION_MODE_LABELS[t.tenantOperationMode] ?? t.tenantOperationMode}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>

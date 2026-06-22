@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { TENANT_PLAN_OPTIONS } from "@/lib/constants";
-import type { AdminTenant } from "@/types/api";
+import { TENANT_PLAN_OPTIONS, TENANT_OPERATION_MODE_LABELS } from "@/lib/constants";
+import type { AdminTenant, TenantOperationMode } from "@/types/api";
 
 function slugify(value: string) {
   return value
@@ -34,6 +34,7 @@ export type AdminTenantCreateForm = {
   name: string;
   slug: string;
   planId: string;
+  tenantOperationMode: TenantOperationMode;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -45,6 +46,7 @@ export type AdminTenantEditForm = {
   name: string;
   slug: string;
   planId: string;
+  tenantOperationMode: TenantOperationMode;
   isActive: boolean;
   aiEnabled: boolean;
 };
@@ -55,6 +57,7 @@ const emptyCreate: AdminTenantCreateForm = {
   name: "",
   slug: "",
   planId: defaultPlanId,
+  tenantOperationMode: "AdherenceProgram",
   adminName: "",
   adminEmail: "",
   adminPassword: "",
@@ -67,6 +70,7 @@ function toEditForm(tenant: AdminTenant): AdminTenantEditForm {
     name: tenant.name,
     slug: tenant.slug,
     planId: tenant.planId,
+    tenantOperationMode: tenant.tenantOperationMode ?? "AdherenceProgram",
     isActive: tenant.isActive,
     aiEnabled: tenant.aiEnabled,
   };
@@ -128,7 +132,7 @@ export function AdminTenantFormDialog(props: Props) {
   const description =
     mode === "create"
       ? "Cria a farmácia/clínica e o primeiro usuário administrador."
-      : "Atualiza nome, slug, plano e status da organização.";
+      : "Atualiza nome, slug, plano, tipo de operação e status da organização.";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -189,6 +193,33 @@ export function AdminTenantFormDialog(props: Props) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de organização</Label>
+            <Select
+              value={form.tenantOperationMode}
+              onValueChange={(value) =>
+                mode === "create"
+                  ? updateCreate("tenantOperationMode", value as TenantOperationMode)
+                  : updateEdit("tenantOperationMode", value as TenantOperationMode)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Define se a organização opera programa de adesão ou farmácia governamental (SUS). Só
+              o superadmin pode alterar.
+            </p>
           </div>
 
           {mode === "create" && (

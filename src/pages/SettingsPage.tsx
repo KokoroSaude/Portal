@@ -6,6 +6,7 @@ import { RefreshCw, Sparkles, Star } from "lucide-react";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { SettingsUsersTab } from "@/components/settings/SettingsUsersTab";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -245,6 +246,40 @@ export function SettingsPage() {
         </TabsList>
 
         <TabsContent value="operacao" className="space-y-4">
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Tipo de organização</CardTitle>
+              <CardDescription>
+                Definido pelo administrador da plataforma no cadastro da organização. A equipe não
+                pode alterar este tipo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Badge variant={govMode ? "default" : "outline"}>
+                {TENANT_OPERATION_MODE_LABELS[form.tenantOperationMode ?? "AdherenceProgram"] ??
+                  "Programa de adesão"}
+              </Badge>
+              {govMode && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+                  <p className="font-medium text-foreground">Operação farmácia governamental (SUS)</p>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
+                    <li>Pré-cadastro com CPF, nome e plano de cuidado</li>
+                    <li>Prefixo de senha sugerido: {GOV_PHARMACY_DEFAULT_HINTS.pickupQueuePrefix}</li>
+                    <li>
+                      Aviso {GOV_PHARMACY_DEFAULT_HINTS.pickupNotificationLeadDays} dias antes do fim
+                      do estoque
+                    </li>
+                    <li>Regras SUS e prioridade inteligente habilitadas</li>
+                    <li>
+                      Limite crítico da fila crônica:{" "}
+                      {GOV_PHARMACY_DEFAULT_HINTS.pickupCriticalWaitlistThreshold} pacientes
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Operação</CardTitle>
@@ -373,74 +408,7 @@ export function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tipo de organização</CardTitle>
-              <CardDescription>
-                Programa de adesão comercial ou operação de farmácia governamental (SUS).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Modo operacional</Label>
-                  <Select
-                    value={form.tenantOperationMode ?? "AdherenceProgram"}
-                    onValueChange={(v) =>
-                      update("tenantOperationMode", v as TenantSettings["tenantOperationMode"])
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="govPharmacyPickupEnabled">Retirada farmácia ativa</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Habilita fila de retirada, painel TV e integrações ERP.
-                    </p>
-                  </div>
-                  <Switch
-                    id="govPharmacyPickupEnabled"
-                    checked={form.govPharmacyPickupEnabled ?? false}
-                    onCheckedChange={(checked) => update("govPharmacyPickupEnabled", checked)}
-                  />
-                </div>
-              </div>
-
-              {govMode && (
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
-                  <p className="font-medium text-foreground">Sugestões para farmácia governamental</p>
-                  <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
-                    <li>Exigir pré-cadastro com CPF, nome e plano de cuidado</li>
-                    <li>Prefixo de senha: {GOV_PHARMACY_DEFAULT_HINTS.pickupQueuePrefix}</li>
-                    <li>
-                      Aviso {GOV_PHARMACY_DEFAULT_HINTS.pickupNotificationLeadDays} dias antes do fim do
-                      estoque
-                    </li>
-                    <li>Regras SUS e prioridade inteligente habilitadas</li>
-                    <li>
-                      Limite crítico da fila crônica:{" "}
-                      {GOV_PHARMACY_DEFAULT_HINTS.pickupCriticalWaitlistThreshold} pacientes
-                    </li>
-                  </ul>
-                </div>
-              )}
-
-              <SettingsSaveButton onSave={save} pending={savePending} />
-            </CardContent>
-          </Card>
-
-          {(govMode || form.govPharmacyPickupEnabled) && (
+          {govMode && (
             <Card>
               <CardHeader>
                 <CardTitle>Retirada de medicamentos</CardTitle>

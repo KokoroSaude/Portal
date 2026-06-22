@@ -1295,6 +1295,8 @@ export interface AdminTenant {
   slug: string;
   planId: string;
   planKey: string;
+  tenantOperationMode: TenantOperationMode;
+  govPharmacyPickupEnabled: boolean;
   isActive: boolean;
   aiEnabled: boolean;
   createdAt: string;
