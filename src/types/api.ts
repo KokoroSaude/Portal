@@ -1293,6 +1293,8 @@ export interface AdminTenant {
   id: string;
   name: string;
   slug: string;
+  planId: string;
+  planKey: string;
   isActive: boolean;
   aiEnabled: boolean;
   createdAt: string;

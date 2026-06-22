@@ -29,6 +29,12 @@ export const TENANT_OPERATION_MODE_LABELS: Record<string, string> = {
   GovPharmacy: "Farmácia governamental (SUS)",
 };
 
+export const TENANT_PLAN_OPTIONS = [
+  { id: "00000000-0000-0000-0001-000000000001", key: "essential", label: "Essential" },
+  { id: "00000000-0000-0000-0001-000000000002", key: "professional", label: "Professional" },
+  { id: "00000000-0000-0000-0001-000000000003", key: "enterprise", label: "Enterprise" },
+] as const;
+
 export const CLINICAL_PRIORITY_TIER_LABELS: Record<string, string> = {
   Normal: "Normal",
   Elderly: "Idoso",

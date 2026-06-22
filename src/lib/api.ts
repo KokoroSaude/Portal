@@ -1069,6 +1069,42 @@ export const api = {
   // Admin
   adminListTenants: (token: string) => request<AdminTenant[]>("/api/admin/tenants", { token }),
 
+  adminCreateTenant: (
+    token: string,
+    payload: {
+      name: string;
+      slug: string;
+      planId?: string;
+      adminName: string;
+      adminEmail: string;
+      adminPassword: string;
+      isActive?: boolean;
+      aiEnabled?: boolean;
+    },
+  ) =>
+    request<{ tenantId: string; adminUserId: string }>("/api/admin/tenants", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  adminUpdateTenant: (
+    token: string,
+    tenantId: string,
+    payload: {
+      name: string;
+      slug: string;
+      planId: string;
+      isActive: boolean;
+      aiEnabled: boolean;
+    },
+  ) =>
+    request<void>(`/api/admin/tenants/${tenantId}`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
   adminGetAdherenceReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
     request<AdminAdherenceReport>(
       `/api/admin/reports/adherence${adminReportQs({ from, to }, tenantIds)}`,

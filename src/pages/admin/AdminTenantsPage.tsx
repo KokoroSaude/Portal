@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Eye, Users } from "lucide-react";
+import { Eye, Pencil, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  AdminTenantFormDialog,
+  type AdminTenantCreateForm,
+  type AdminTenantEditForm,
+} from "@/components/admin/AdminTenantFormDialog";
 import { AdminTenantUsersDialog } from "@/components/admin/AdminTenantUsersDialog";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
@@ -26,17 +31,54 @@ import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import type { AdminTenant } from "@/types/api";
 
+function planLabel(planKey: string) {
+  return planKey.charAt(0).toUpperCase() + planKey.slice(1);
+}
+
 export function AdminTenantsPage() {
   const { token, impersonateTenant } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
   const [usersTenant, setUsersTenant] = useState<AdminTenant | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editTenant, setEditTenant] = useState<AdminTenant | null>(null);
 
   const tenants = useQuery({
     queryKey: ["admin-tenants"],
     queryFn: () => api.adminListTenants(token!),
     enabled: !!token,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (form: AdminTenantCreateForm) =>
+      api.adminCreateTenant(token!, {
+        name: form.name,
+        slug: form.slug,
+        planId: form.planId,
+        adminName: form.adminName,
+        adminEmail: form.adminEmail,
+        adminPassword: form.adminPassword,
+        isActive: form.isActive,
+        aiEnabled: form.aiEnabled,
+      }),
+    onSuccess: () => {
+      toast.success("Organização criada");
+      setCreateOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao criar"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: { tenantId: string; form: AdminTenantEditForm }) =>
+      api.adminUpdateTenant(token!, payload.tenantId, payload.form),
+    onSuccess: () => {
+      toast.success("Organização atualizada");
+      setEditTenant(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar"),
   });
 
   const aiMutation = useMutation({
@@ -71,13 +113,22 @@ export function AdminTenantsPage() {
   const filteredTenants = useMemo(() => {
     const all = tenants.data ?? [];
     return all.filter((t) =>
-      matchesGridSearch(query, t.name, t.slug, t.isActive ? "ativo" : "inativo"),
+      matchesGridSearch(query, t.name, t.slug, t.planKey, t.isActive ? "ativo" : "inativo"),
     );
   }, [tenants.data, query]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Organizações" description="Farmácias e clínicas cadastradas na plataforma" />
+      <PageHeader
+        title="Organizações"
+        description="Farmácias e clínicas cadastradas na plataforma"
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 size-4" />
+            Nova organização
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader className="space-y-4">
@@ -85,7 +136,7 @@ export function AdminTenantsPage() {
           <GridSearchBar
             value={input}
             onChange={setInput}
-            placeholder="Buscar por nome ou slug"
+            placeholder="Buscar por nome, slug ou plano"
             resultCount={filteredTenants.length}
             totalCount={tenants.data?.length}
           />
@@ -99,8 +150,10 @@ export function AdminTenantsPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
+                  <TableHead>Plano</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>IA</TableHead>
+                  <TableHead />
                   <TableHead />
                   <TableHead />
                   <TableHead />
@@ -109,7 +162,7 @@ export function AdminTenantsPage() {
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={7}
+                    colSpan={9}
                     message={
                       query.trim()
                         ? "Nenhuma organização corresponde à busca."
@@ -121,6 +174,9 @@ export function AdminTenantsPage() {
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell className="font-mono text-xs">{t.slug}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{planLabel(t.planKey)}</Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>
                         {t.isActive ? "Ativo" : "Inativo"}
@@ -149,11 +205,13 @@ export function AdminTenantsPage() {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setUsersTenant(t)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setEditTenant(t)}>
+                        <Pencil className="size-4" />
+                        Editar
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => setUsersTenant(t)}>
                         <Users className="size-4" />
                         Usuários
                       </Button>
@@ -166,7 +224,7 @@ export function AdminTenantsPage() {
                         onClick={() => impersonateMutation.mutate(t.id)}
                       >
                         <Eye className="size-4" />
-                        Entrar como organização
+                        Entrar
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -176,6 +234,26 @@ export function AdminTenantsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AdminTenantFormDialog
+        mode="create"
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        loading={createMutation.isPending}
+        onSubmit={(form) => createMutation.mutate(form)}
+      />
+
+      <AdminTenantFormDialog
+        mode="edit"
+        open={editTenant !== null}
+        onOpenChange={(open) => !open && setEditTenant(null)}
+        tenant={editTenant}
+        loading={updateMutation.isPending}
+        onSubmit={(form) => {
+          if (!editTenant) return;
+          updateMutation.mutate({ tenantId: editTenant.id, form });
+        }}
+      />
 
       <AdminTenantUsersDialog
         tenant={usersTenant}
