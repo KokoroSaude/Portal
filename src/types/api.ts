@@ -66,6 +66,7 @@ export interface CreatePatientResponse {
   created: boolean;
   welcomeSent: boolean;
   welcomeUsedMetaTemplate?: boolean;
+  welcomeFailureReason?: string | null;
 }
 
 export interface SimulatorMessage {

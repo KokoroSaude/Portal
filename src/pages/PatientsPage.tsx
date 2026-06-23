@@ -207,7 +207,9 @@ export function PatientsPage() {
         }
       } else if (form.sendWelcome) {
         toast.warning(
-          "Paciente cadastrado, mas a boas-vindas não foi enviada. Verifique remetente WhatsApp ativo e template kokoro_boas_vindas aprovado no WABA da organização.",
+          result.welcomeFailureReason
+            ? `Paciente cadastrado, mas a boas-vindas não foi enviada: ${result.welcomeFailureReason}`
+            : "Paciente cadastrado, mas a boas-vindas não foi enviada. Verifique remetente WhatsApp ativo e template kokoro_boas_vindas aprovado no WABA da organização.",
         );
       } else {
         toast.success("Paciente cadastrado.");
