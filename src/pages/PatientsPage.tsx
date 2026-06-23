@@ -198,7 +198,13 @@ export function PatientsPage() {
       }
 
       if (result.welcomeSent) {
-        toast.success("Paciente cadastrado — boas-vindas enviadas no WhatsApp.");
+        if (form.preferredMessageChannel === "Audio" && result.welcomeUsedMetaTemplate) {
+          toast.success(
+            "Paciente cadastrado — boas-vindas enviada como template do WhatsApp (obrigatório fora da janela de 24h). As próximas mensagens serão em áudio quando o paciente responder.",
+          );
+        } else {
+          toast.success("Paciente cadastrado — boas-vindas enviadas no WhatsApp.");
+        }
       } else if (form.sendWelcome) {
         toast.warning(
           "Paciente cadastrado, mas a boas-vindas não foi enviada. Verifique remetente WhatsApp ativo e template kokoro_boas_vindas aprovado no WABA da organização.",

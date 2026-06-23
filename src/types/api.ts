@@ -65,6 +65,7 @@ export interface CreatePatientResponse {
   status: string;
   created: boolean;
   welcomeSent: boolean;
+  welcomeUsedMetaTemplate?: boolean;
 }
 
 export interface SimulatorMessage {
