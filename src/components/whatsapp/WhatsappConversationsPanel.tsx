@@ -29,9 +29,27 @@ function parseMessageContext(contextJson: string | null | undefined) {
       parseType?: string;
       source?: string;
       confidence?: number;
+      failureReason?: string;
+      deliveryStatus?: string;
+      deliveryErrors?: { code?: number | null; title?: string | null; message?: string | null }[];
     };
   } catch {
     return null;
+  }
+}
+
+function outboundDeliveryLabel(status: string): string | null {
+  switch (status) {
+    case "Sent":
+      return "Enviada à Meta";
+    case "Delivered":
+      return "Entregue no WhatsApp";
+    case "Read":
+      return "Lida";
+    case "Failed":
+      return "Falha na entrega";
+    default:
+      return null;
   }
 }
 
@@ -57,9 +75,16 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
   const isPrescriptionMedia =
     !outbound && (message.messageType === "image" || message.messageType === "document");
   const sourceLabel = contentSourceLabel(message.contentSource);
-  const ctx = !outbound ? parseMessageContext(message.contextJson) : null;
-  const understandingSource = ctx?.source ? contentSourceLabel(ctx.source) : null;
-  const understandingKind = ctx?.intentKind ?? ctx?.parseType;
+  const ctx = parseMessageContext(message.contextJson);
+  const understandingSource = !outbound && ctx?.source ? contentSourceLabel(ctx.source) : null;
+  const understandingKind = !outbound ? (ctx?.intentKind ?? ctx?.parseType) : null;
+  const deliveryLabel = outbound ? outboundDeliveryLabel(message.status) : null;
+  const deliveryError =
+    outbound && message.status === "Failed"
+      ? ctx?.deliveryErrors?.[0]?.message ??
+        ctx?.deliveryErrors?.[0]?.title ??
+        ctx?.failureReason
+      : null;
   const displayText =
     !outbound && isAudio && message.transcript
       ? message.transcript
@@ -115,7 +140,21 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
               {message.templateKey}
             </Badge>
           )}
+          {deliveryLabel && (
+            <Badge
+              variant={message.status === "Failed" ? "destructive" : "outline"}
+              className={cn(
+                "text-[10px]",
+                message.status !== "Failed" && outbound && "bg-primary-foreground/15 text-primary-foreground",
+              )}
+            >
+              {deliveryLabel}
+            </Badge>
+          )}
         </div>
+        {deliveryError && (
+          <p className="mb-1 text-[10px] font-medium text-destructive">{deliveryError}</p>
+        )}
         {!outbound && isAudio && message.transcript && message.transcript !== message.content && (
           <p className="mb-1 text-[10px] opacity-70">Transcrição automática</p>
         )}
