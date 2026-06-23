@@ -1683,3 +1683,38 @@ export interface PromoCampaignRecipient {
 export interface PromoCampaignDetail extends PromoCampaignListItem {
   recipients: PromoCampaignRecipient[];
 }
+
+export interface AdminVoiceCacheState {
+  alias: string;
+  voiceId: string;
+  displayName: string;
+  cached: boolean;
+  cachedBytes: number | null;
+}
+
+export interface AdminVoiceCatalogEntry {
+  id: string;
+  templateKey: string | null;
+  label: string;
+  sampleText: string;
+  preparedText: string;
+  isBuiltIn: boolean;
+  voices: AdminVoiceCacheState[];
+}
+
+export interface AdminVoiceCatalogResponse {
+  synthesisSpeed: number;
+  cacheTtlHours: number;
+  warmCacheOnStartup: boolean;
+  voices: { alias: string; voiceId: string; label: string }[];
+  entries: AdminVoiceCatalogEntry[];
+}
+
+export interface AdminVoiceWarmResult {
+  configured: boolean;
+  warmed: number;
+  cacheHits: number;
+  failed: number;
+  totalAttempts: number;
+  voiceIds: string[];
+}

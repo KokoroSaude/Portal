@@ -24,6 +24,7 @@ import {
   Users,
   Wrench,
   ListOrdered,
+  Volume2,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -215,6 +216,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     items: [
       { to: "/admin/onboarding", label: "Onboarding", icon: GitBranch },
       { to: "/admin/templates-meta", label: "Templates Meta", icon: MessageSquare },
+      { to: "/admin/vozes", label: "Catálogo de vozes", icon: Volume2 },
       { to: "/admin/mensagens", label: "Mensagens operacionais", icon: FileText },
     ],
   },

@@ -26,6 +26,9 @@ import type {
   AdminSenderPerformance,
   AdminMoriskyReport,
   AdminTenant,
+  AdminVoiceCatalogEntry,
+  AdminVoiceCatalogResponse,
+  AdminVoiceWarmResult,
   AdherenceReport,
   CsatBulkTriggerResult,
   CsatManualTriggerResult,
@@ -1513,6 +1516,60 @@ export const api = {
       `/api/admin/simulator/patients/${patientId}/trigger-milestone`,
       { method: "POST", token, body: { days } },
     ),
+
+  adminGetVoiceCatalog: (token: string) =>
+    request<AdminVoiceCatalogResponse>("/api/admin/voice/cache/catalog", { token }),
+
+  adminUpdateVoiceCatalogEntry: (
+    token: string,
+    entryId: string,
+    payload: { sampleText: string; label?: string },
+  ) =>
+    request<AdminVoiceCatalogEntry>(`/api/admin/voice/cache/catalog/${entryId}`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  adminWarmVoiceCache: (
+    token: string,
+    payload?: {
+      entryIds?: string[];
+      voices?: string[];
+      forceRegenerate?: boolean;
+    },
+  ) =>
+    request<AdminVoiceWarmResult>("/api/admin/voice/cache/warm", {
+      method: "POST",
+      token,
+      body: payload ?? {},
+    }),
+
+  adminPreviewVoiceAudio: async (
+    token: string,
+    params: { entryId: string; voice: "feminine" | "masculine"; force?: boolean },
+  ): Promise<Blob> => {
+    const qs = new URLSearchParams({
+      entryId: params.entryId,
+      voice: params.voice,
+      force: String(params.force ?? false),
+    });
+    const res = await fetch(`${API_BASE}/api/admin/voice/cache/preview?${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let message = `Erro ${res.status}`;
+      try {
+        const data = JSON.parse(text) as { error?: string };
+        if (data.error) message = data.error;
+      } catch {
+        // ignore
+      }
+      throw new ApiClientError(message, res.status);
+    }
+    return res.blob();
+  },
 };
 
 export function getSimulatorToken(): string | null {
