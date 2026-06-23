@@ -200,7 +200,9 @@ export function PatientsPage() {
       if (result.welcomeSent) {
         toast.success("Paciente cadastrado — boas-vindas enviadas no WhatsApp.");
       } else if (form.sendWelcome) {
-        toast.success("Paciente cadastrado. Conecte um remetente WhatsApp ativo para enviar boas-vindas.");
+        toast.warning(
+          "Paciente cadastrado, mas a boas-vindas não foi enviada. Verifique remetente WhatsApp ativo e template kokoro_boas_vindas aprovado no WABA da organização.",
+        );
       } else {
         toast.success("Paciente cadastrado.");
       }
