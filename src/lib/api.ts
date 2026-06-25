@@ -67,7 +67,12 @@ import type {
   MedicationSuggestion,
   SenderPerformance,
   JourneyStep,
+  LoginApiResponse,
   LoginResponse,
+  LoginTwoFactorChallengeResponse,
+  BeginTwoFactorSetupResponse,
+  ConfirmTwoFactorSetupResponse,
+  TwoFactorStatus,
   MessageTemplate,
   MoriskyScaleViewResponse,
   OnboardingJourney,
@@ -97,6 +102,11 @@ import type {
   WhatsappSender,
   MetaEmbeddedSignupConfig,
   MetaEmbeddedSignupFlowResult,
+  WhatsAppActivationStartResult,
+  WhatsAppActivationVerifyResult,
+  WhatsAppActivationResendResult,
+  WhatsAppActivationStatusDto,
+  WhatsAppTrialStartResult,
   WhatsAppBusinessProfile,
   UpdateWhatsAppBusinessProfilePayload,
   PickupDashboard,
@@ -118,6 +128,12 @@ import type {
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
 import { normalizeAdminTenant } from "@/lib/normalize-admin-tenant";
+
+export function isTwoFactorChallenge(
+  res: LoginApiResponse,
+): res is LoginTwoFactorChallengeResponse {
+  return "requiresTwoFactor" in res && res.requiresTwoFactor === true;
+}
 
 export class ApiClientError extends Error {
   status: number;
@@ -206,7 +222,46 @@ function adminReportQs(
 
 export const api = {
   login: (email: string, password: string) =>
-    request<LoginResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
+    request<LoginApiResponse>("/api/auth/login", { method: "POST", body: { email, password } }),
+
+  verifyTwoFactorLogin: (
+    challengeId: string,
+    payload: { code?: string; recoveryCode?: string },
+  ) =>
+    request<LoginResponse>("/api/auth/2fa/verify", {
+      method: "POST",
+      body: { challengeId, ...payload },
+    }),
+
+  getTwoFactorStatus: (token: string) =>
+    request<TwoFactorStatus>("/api/auth/2fa/status", { token }),
+
+  beginTwoFactorSetup: (token: string) =>
+    request<BeginTwoFactorSetupResponse>("/api/auth/2fa/setup/begin", {
+      method: "POST",
+      token,
+    }),
+
+  confirmTwoFactorSetup: (token: string, code: string) =>
+    request<ConfirmTwoFactorSetupResponse>("/api/auth/2fa/setup/confirm", {
+      method: "POST",
+      token,
+      body: { code },
+    }),
+
+  disableTwoFactor: (token: string, password: string, code: string) =>
+    request<void>("/api/auth/2fa/disable", {
+      method: "POST",
+      token,
+      body: { password, code },
+    }),
+
+  regenerateRecoveryCodes: (token: string, password: string, code: string) =>
+    request<{ recoveryCodes: string[] }>("/api/auth/2fa/recovery/regenerate", {
+      method: "POST",
+      token,
+      body: { password, code },
+    }),
 
   refreshToken: (token: string) =>
     request<LoginResponse>("/api/auth/refresh", { method: "POST", token }),
@@ -277,6 +332,8 @@ export const api = {
       sendWelcome?: boolean;
       preferredMessageChannel?: "Text" | "Audio";
       carePlanMedicationIds?: string[];
+      senderId?: string;
+      senderPhone?: string;
     },
   ) =>
     request<CreatePatientResponse>("/api/patients", { method: "POST", token, body: payload }),
@@ -713,6 +770,42 @@ export const api = {
 
   deleteSender: (token: string, senderId: string) =>
     request<void>(`/api/senders/${senderId}`, { method: "DELETE", token }),
+
+  getWhatsAppActivationStatus: (token: string) =>
+    request<WhatsAppActivationStatusDto>("/api/whatsapp/activation/status", { token }),
+
+  startWhatsAppActivation: (
+    token: string,
+    payload: { phone: string; purpose?: number },
+  ) =>
+    request<WhatsAppActivationStartResult>("/api/whatsapp/activation/start", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  verifyWhatsAppActivation: (token: string, payload: { sessionId: string; otp: string }) =>
+    request<WhatsAppActivationVerifyResult>("/api/whatsapp/activation/verify", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  resendWhatsAppActivation: (
+    token: string,
+    payload: { sessionId: string; useVoice?: boolean },
+  ) =>
+    request<WhatsAppActivationResendResult>("/api/whatsapp/activation/resend", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  startWhatsAppTrial: (token: string) =>
+    request<WhatsAppTrialStartResult>("/api/whatsapp/activation/trial/start", {
+      method: "POST",
+      token,
+    }),
 
   getMetaEmbeddedSignupConfig: (token: string) =>
     request<MetaEmbeddedSignupConfig>("/api/meta/embedded-signup/config", {

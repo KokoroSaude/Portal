@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveAdminTenants } from "@/hooks/useAdminTenants";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
@@ -17,11 +18,7 @@ export function AdminOverviewPage() {
   const { token } = useAuth();
   const { input, setInput, query } = useGridSearch();
 
-  const tenants = useQuery({
-    queryKey: ["admin-tenants"],
-    queryFn: () => api.adminListTenants(token!),
-    enabled: !!token,
-  });
+  const { tenants: activeTenantsList, isLoading } = useActiveAdminTenants();
 
   const productMetrics = useQuery({
     queryKey: ["admin-product-metrics"],
@@ -29,16 +26,15 @@ export function AdminOverviewPage() {
     enabled: !!token,
   });
 
-  const loading = tenants.isLoading;
-  const activeTenants = tenants.data?.filter((t) => t.isActive).length ?? 0;
+  const loading = isLoading;
+  const activeTenants = activeTenantsList.length;
 
   const filteredRecentTenants = useMemo(() => {
-    const all = tenants.data ?? [];
-    return [...all]
+    return [...activeTenantsList]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .filter((t) => matchesGridSearch(query, t.name, t.slug))
       .slice(0, 8);
-  }, [tenants.data, query]);
+  }, [activeTenantsList, query]);
 
   return (
     <div className="space-y-6">
@@ -97,7 +93,7 @@ export function AdminOverviewPage() {
           icon={Building2}
           label="Organizações ativas"
           value={activeTenants}
-          sub={`${tenants.data?.length ?? 0} total`}
+          sub={`${activeTenantsList.length} ativas`}
         />
       )}
 
@@ -112,7 +108,7 @@ export function AdminOverviewPage() {
             onChange={setInput}
             placeholder="Buscar organizações por nome ou slug"
             resultCount={filteredRecentTenants.length}
-            totalCount={tenants.data?.length}
+            totalCount={activeTenantsList.length}
           />
         </CardHeader>
         <CardContent>

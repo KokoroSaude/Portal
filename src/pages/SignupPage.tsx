@@ -46,9 +46,14 @@ export function SignupPage() {
     setLoading(true);
     try {
       await api.createTenant(form);
-      const scope = await login(form.adminEmail, form.adminPassword);
+      const outcome = await login(form.adminEmail, form.adminPassword);
+      if (outcome.status === "two_factor") {
+        toast.success("Conta criada. Conclua a verificação em duas etapas no login.");
+        navigate("/login");
+        return;
+      }
       toast.success("Conta criada com sucesso!");
-      navigate(scope === "platform" ? "/" : "/");
+      navigate("/");
     } catch (err) {
       const msg = err instanceof ApiClientError ? err.message : "Erro ao criar tenant";
       toast.error(msg);

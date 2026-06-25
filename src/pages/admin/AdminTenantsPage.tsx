@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, Pencil, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminTenantsList } from "@/hooks/useAdminTenants";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
@@ -44,11 +45,7 @@ export function AdminTenantsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTenant, setEditTenant] = useState<AdminTenant | null>(null);
 
-  const tenants = useQuery({
-    queryKey: ["admin-tenants"],
-    queryFn: () => api.adminListTenants(token!),
-    enabled: !!token,
-  });
+  const tenants = useAdminTenantsList();
 
   const createMutation = useMutation({
     mutationFn: (form: AdminTenantCreateForm) =>
@@ -95,12 +92,28 @@ export function AdminTenantsPage() {
   const statusMutation = useMutation({
     mutationFn: ({ tenantId, isActive }: { tenantId: string; isActive: boolean }) =>
       api.adminUpdateTenantStatus(token!, tenantId, isActive),
-    onSuccess: () => {
-      toast.success("Status da organização atualizado");
+    onSuccess: (_data, variables) => {
+      toast.success(
+        variables.isActive
+          ? "Organização reativada"
+          : "Organização desabilitada — não aparecerá em relatórios nem seletores",
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
+
+  function handleToggleStatus(tenant: AdminTenant) {
+    if (tenant.isActive) {
+      const ok = window.confirm(
+        `Desabilitar "${tenant.name}"?\n\nA organização continuará visível apenas nesta listagem. Relatórios, métricas e seletores não a incluirão. Usuários não conseguirão entrar no portal.`,
+      );
+      if (!ok) return;
+      statusMutation.mutate({ tenantId: tenant.id, isActive: false });
+      return;
+    }
+    statusMutation.mutate({ tenantId: tenant.id, isActive: true });
+  }
 
   const impersonateMutation = useMutation({
     mutationFn: (tenantId: string) => impersonateTenant(tenantId),
@@ -180,7 +193,7 @@ export function AdminTenantsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>
-                        {t.isActive ? "Ativo" : "Inativo"}
+                        {t.isActive ? "Ativa" : "Desabilitada"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -195,14 +208,12 @@ export function AdminTenantsPage() {
                     </TableCell>
                     <TableCell>
                       <Button
-                        variant="outline"
+                        variant={t.isActive ? "outline" : "default"}
                         size="sm"
                         disabled={statusMutation.isPending}
-                        onClick={() =>
-                          statusMutation.mutate({ tenantId: t.id, isActive: !t.isActive })
-                        }
+                        onClick={() => handleToggleStatus(t)}
                       >
-                        {t.isActive ? "Desativar" : "Ativar"}
+                        {t.isActive ? "Desabilitar" : "Reativar"}
                       </Button>
                     </TableCell>
                     <TableCell>

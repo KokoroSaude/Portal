@@ -1,17 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { X } from "lucide-react";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -25,8 +18,6 @@ import { matchesGridSearch } from "@/lib/gridSearch";
 import { cn } from "@/lib/utils";
 import type { AdminTenant } from "@/types/api";
 
-type StatusFilter = "active" | "inactive" | "all";
-
 type Props = {
   tenants: AdminTenant[];
   selectedIds: Set<string>;
@@ -35,15 +26,10 @@ type Props = {
 
 export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Props) {
   const { input, setInput, query } = useGridSearch();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
   const filteredTenants = useMemo(() => {
-    return tenants.filter((t) => {
-      if (statusFilter === "active" && !t.isActive) return false;
-      if (statusFilter === "inactive" && t.isActive) return false;
-      return matchesGridSearch(query, t.name, t.slug);
-    });
-  }, [tenants, query, statusFilter]);
+    return tenants.filter((t) => matchesGridSearch(query, t.name, t.slug));
+  }, [tenants, query]);
 
   const selectedTenants = useMemo(
     () => tenants.filter((t) => selectedIds.has(t.id)),
@@ -71,8 +57,6 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
     onChange(next);
   };
 
-  const activeTenants = tenants.filter((t) => t.isActive);
-
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -80,8 +64,8 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
           <CardTitle className="font-serif text-lg">Organizações no relatório</CardTitle>
           <CardDescription>
             {selectedIds.size === 0
-              ? "Selecione ao menos uma organização"
-              : `${selectedIds.size} de ${tenants.length} organização(ões) selecionada(s)`}
+              ? "Selecione ao menos uma organização ativa"
+              : `${selectedIds.size} de ${tenants.length} organização(ões) ativa(s) selecionada(s)`}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -89,17 +73,9 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => onChange(new Set(activeTenants.map((t) => t.id)))}
-          >
-            Todos ativos
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
             onClick={() => onChange(new Set(tenants.map((t) => t.id)))}
           >
-            Todos
+            Todas ativas
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => onChange(new Set())}>
             Limpar
@@ -131,35 +107,19 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1">
-            <GridSearchBar
-              value={input}
-              onChange={setInput}
-              placeholder="Buscar por nome ou slug"
-              resultCount={filteredTenants.length}
-              totalCount={tenants.length}
-            />
-          </div>
-          <div className="w-full sm:w-44">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger aria-label="Filtrar por status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Somente ativos</SelectItem>
-                <SelectItem value="inactive">Somente inativos</SelectItem>
-                <SelectItem value="all">Todos os status</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <GridSearchBar
+          value={input}
+          onChange={setInput}
+          placeholder="Buscar por nome ou slug"
+          resultCount={filteredTenants.length}
+          totalCount={tenants.length}
+        />
 
         {filteredTenants.length > 0 && (
           <div className="flex justify-end">
             <Button type="button" variant="outline" size="sm" onClick={toggleAllFiltered}>
               {allFilteredSelected ? "Desmarcar visíveis" : "Selecionar visíveis"}
-              {query.trim() || statusFilter !== "all" ? ` (${filteredTenants.length})` : ""}
+              {query.trim() ? ` (${filteredTenants.length})` : ""}
             </Button>
           </div>
         )}
@@ -177,14 +137,13 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
                     />
                   </TableHead>
                   <TableHead>Organização</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTenants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
-                      Nenhuma organização corresponde aos filtros.
+                    <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">
+                      Nenhuma organização ativa corresponde à busca.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -203,11 +162,6 @@ export function AdminReportTenantSelector({ tenants, selectedIds, onChange }: Pr
                       <TableCell>
                         <div className="font-medium">{t.name}</div>
                         <div className="font-mono text-xs text-muted-foreground">{t.slug}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={t.isActive ? "success" : "muted"}>
-                          {t.isActive ? "Ativo" : "Inativo"}
-                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))

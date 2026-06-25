@@ -38,19 +38,25 @@ import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBus
 
 function senderConnectionLabel(sender: WhatsappSender): string {
   if (sender.connectionSource === "EmbeddedSignup") return "Meta";
+  if (sender.connectionSource === "PlatformOnboarding") return "Kokoro OTP";
   return "Manual";
 }
 
 function SenderConnectionBadge({ sender }: { sender: WhatsappSender }) {
   const viaMeta = sender.connectionSource === "EmbeddedSignup";
+  const viaPlatform = sender.connectionSource === "PlatformOnboarding";
   return (
-    <Badge variant={viaMeta ? "default" : "outline"}>
-      {viaMeta ? "Conectado via Meta" : "Manual"}
+    <Badge variant={viaMeta || viaPlatform ? "default" : "outline"}>
+      {viaMeta ? "Conectado via Meta" : viaPlatform ? "Conectado via Kokoro" : "Manual"}
     </Badge>
   );
 }
 
-export function SettingsSendersTab() {
+type SettingsSendersTabProps = {
+  onAddViaOtp?: () => void;
+};
+
+export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
@@ -173,16 +179,23 @@ export function SettingsSendersTab() {
         <div>
           <CardTitle>Números cadastrados</CardTitle>
           <CardDescription>
-            Conecte pela Meta, edite o perfil público (foto, descrição, sites) ou cadastre IDs manualmente.
+            Números conectados por OTP, Meta ou cadastro manual. Edite perfil, foto e sites.
           </CardDescription>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
+        <div className="flex flex-wrap gap-2">
+          {onAddViaOtp && (
+            <Button onClick={onAddViaOtp}>
               <Plus className="size-4" />
-              Inserir IDs manualmente
+              Adicionar número (OTP)
             </Button>
-          </DialogTrigger>
+          )}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="size-4" />
+                Inserir IDs manualmente
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Cadastro manual de remetente</DialogTitle>
@@ -225,6 +238,7 @@ export function SettingsSendersTab() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <GridSearchBar

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { FEATURE_KEYS } from "@/lib/constants";
+import { FEATURE_KEYS, WHATSAPP_ACTIVATION_STATUS } from "@/lib/constants";
 import {
   isChecklistStepMarked,
   markChecklistFromPath,
@@ -33,6 +33,13 @@ export function useTenantOnboardingChecklist() {
     staleTime: 60_000,
   });
 
+  const activationQuery = useQuery({
+    queryKey: ["whatsapp-activation-status", "checklist"],
+    queryFn: () => api.getWhatsAppActivationStatus(token!),
+    enabled: !!token && isTenant && hasFeature(FEATURE_KEYS.whatsappSendersManage),
+    staleTime: 60_000,
+  });
+
   const patientsQuery = useQuery({
     queryKey: ["patients", "checklist"],
     queryFn: () => api.getPatients(token!, { page: 1, pageSize: 1 }),
@@ -47,7 +54,12 @@ export function useTenantOnboardingChecklist() {
     staleTime: 60_000,
   });
 
+  const activationReady =
+    activationQuery.data?.status === WHATSAPP_ACTIVATION_STATUS.Ready ||
+    activationQuery.data?.status === WHATSAPP_ACTIVATION_STATUS.TrialActive;
+
   const whatsappDone =
+    activationReady ||
     (sendersQuery.data?.some((s) => s.isActive && s.wabaId && s.phoneId) ?? false) ||
     isChecklistStepMarked("whatsapp");
 
@@ -60,7 +72,7 @@ export function useTenantOnboardingChecklist() {
     {
       key: "whatsapp",
       title: "Conectar WhatsApp",
-      description: "Cadastre WABA ID e Phone ID na Meta Business API.",
+      description: "Cadastre o telefone da farmácia com código SMS ou use o trial Kokoro.",
       to: "/whatsapp/configuracao",
       done: whatsappDone,
     },
@@ -87,7 +99,7 @@ export function useTenantOnboardingChecklist() {
     items,
     completedCount,
     totalCount: items.length,
-    isLoading: sendersQuery.isLoading || patientsQuery.isLoading,
+    isLoading: sendersQuery.isLoading || patientsQuery.isLoading || activationQuery.isLoading,
     enabled: isTenant,
   };
 }

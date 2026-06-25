@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveAdminTenants } from "@/hooks/useAdminTenants";
 import { api, ApiClientError } from "@/lib/api";
 import type { AdminMetaTemplateItem } from "@/types/api";
 
@@ -76,11 +77,7 @@ export function AdminMetaTemplatesPage() {
 
   const resolvedTenantId = tenantId === "platform" ? undefined : tenantId;
 
-  const { data: tenants } = useQuery({
-    queryKey: ["admin-tenants"],
-    queryFn: () => api.adminListTenants(token!),
-    enabled: !!token,
-  });
+  const { tenants: activeTenants } = useActiveAdminTenants();
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-meta-templates", resolvedTenantId ?? "platform"],
@@ -213,7 +210,7 @@ export function AdminMetaTemplatesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="platform">Plataforma (remetente padrão)</SelectItem>
-                {(tenants ?? []).map((t) => (
+                {activeTenants.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
                   </SelectItem>

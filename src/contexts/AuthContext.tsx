@@ -13,11 +13,16 @@ import {
   AUTH_STORAGE_KEY,
   clearAuth,
   IMPERSONATION_STORAGE_KEY,
+  isTwoFactorChallenge,
   loadAuth,
   saveAuth,
   type StoredAuth,
 } from "@/lib/api";
 import type { LoginResponse, TenantFeature } from "@/types/api";
+
+export type LoginOutcome =
+  | { status: "authenticated"; scope: "tenant" | "platform" }
+  | { status: "two_factor"; challengeId: string; expiresInSeconds: number };
 
 interface AuthContextValue {
   auth: StoredAuth | null;
@@ -30,7 +35,11 @@ interface AuthContextValue {
   isImpersonating: boolean;
   displayName: string;
   role: string | null;
-  login: (email: string, password: string) => Promise<"tenant" | "platform">;
+  login: (email: string, password: string) => Promise<LoginOutcome>;
+  completeTwoFactorLogin: (
+    challengeId: string,
+    payload: { code?: string; recoveryCode?: string },
+  ) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
   impersonateTenant: (tenantId: string) => Promise<void>;
@@ -93,13 +102,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [auth?.expiresAt, auth?.token, refreshSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginOutcome> => {
     localStorage.removeItem(IMPERSONATION_STORAGE_KEY);
     const res = await api.login(email, password);
+    if (isTwoFactorChallenge(res)) {
+      return {
+        status: "two_factor",
+        challengeId: res.challengeId,
+        expiresInSeconds: res.expiresInSeconds,
+      };
+    }
     const stored = applyLoginResponse(res);
     setAuth(stored);
-    return res.scope;
+    return { status: "authenticated", scope: res.scope };
   }, []);
+
+  const completeTwoFactorLogin = useCallback(
+    async (
+      challengeId: string,
+      payload: { code?: string; recoveryCode?: string },
+    ): Promise<void> => {
+      const res = await api.verifyTwoFactorLogin(challengeId, payload);
+      const stored = applyLoginResponse(res);
+      setAuth(stored);
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     clearAuth();
@@ -181,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName,
       role,
       login,
+      completeTwoFactorLogin,
       logout,
       refreshSession,
       impersonateTenant,
@@ -201,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isViewer,
       login,
+      completeTwoFactorLogin,
       logout,
       refreshSession,
       role,

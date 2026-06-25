@@ -142,7 +142,7 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
           )}
           {deliveryLabel && (
             <Badge
-              variant={message.status === "Failed" ? "destructive" : "outline"}
+              variant={message.status === "Failed" ? "warning" : "outline"}
               className={cn(
                 "text-[10px]",
                 message.status !== "Failed" && outbound && "bg-primary-foreground/15 text-primary-foreground",
@@ -162,6 +162,9 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
           <p className="mb-1 text-[10px] opacity-70">Texto extraído da receita</p>
         )}
         <p className="whitespace-pre-wrap break-words">{displayText}</p>
+        {!outbound && isAudio && !message.transcript && (
+          <p className="mt-1 text-[10px] opacity-70">Transcrição indisponível</p>
+        )}
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
       </div>
     </div>

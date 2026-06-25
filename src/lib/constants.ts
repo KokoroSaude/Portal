@@ -71,6 +71,37 @@ export const ROLE_LABELS: Record<string, string> = {
   Viewer: "Visualizador",
 };
 
+export const WHATSAPP_ACTIVATION_STATUS = {
+  NoSender: 0,
+  AwaitingOtp: 1,
+  Provisioning: 2,
+  WaitingTemplates: 3,
+  Ready: 4,
+  TrialActive: 5,
+  TrialExpired: 6,
+} as const;
+
+export const WHATSAPP_ACTIVATION_STATUS_LABELS: Record<number, string> = {
+  0: "Sem número",
+  1: "Aguardando código",
+  2: "Configurando…",
+  3: "Sincronizando templates",
+  4: "Pronto",
+  5: "Trial ativo",
+  6: "Trial expirado",
+};
+
+export const WHATSAPP_SENDER_PURPOSE_LABELS: Record<number, string> = {
+  0: "Geral",
+  1: "Adesão",
+  2: "Promoções",
+};
+
+export const WHATSAPP_MODE_LABELS: Record<number, string> = {
+  0: "Trial (número Kokoro)",
+  1: "Produção (número próprio)",
+};
+
 export const PATIENT_STATUS_LABELS: Record<string, string> = {
   Onboarding: "Onboarding",
   Active: "Ativo",

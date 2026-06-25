@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveAdminTenants } from "@/hooks/useAdminTenants";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api } from "@/lib/api";
 import { PATIENT_STATUS_LABELS, MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS } from "@/lib/constants";
@@ -106,18 +107,22 @@ export function AdminReportsPage() {
   const [initialized, setInitialized] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  const tenantsQuery = useQuery({
-    queryKey: ["admin-tenants"],
-    queryFn: () => api.adminListTenants(token!),
-    enabled: !!token,
-  });
+  const { tenants: activeTenants, isLoading: tenantsLoading } = useActiveAdminTenants();
 
   useEffect(() => {
-    if (tenantsQuery.data && !initialized) {
-      setSelectedIds(new Set(tenantsQuery.data.filter((t) => t.isActive).map((t) => t.id)));
+    if (activeTenants.length > 0 && !initialized) {
+      setSelectedIds(new Set(activeTenants.map((t) => t.id)));
       setInitialized(true);
     }
-  }, [tenantsQuery.data, initialized]);
+  }, [activeTenants, initialized]);
+
+  useEffect(() => {
+    const activeIds = new Set(activeTenants.map((t) => t.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => activeIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [activeTenants]);
 
   const tenantFilter = useMemo(() => {
     if (selectedIds.size === 0) return undefined;
@@ -229,9 +234,8 @@ export function AdminReportsPage() {
   });
 
   const selectedTenantNames = useMemo(() => {
-    if (!tenantsQuery.data) return [];
-    return tenantsQuery.data.filter((t) => selectedIds.has(t.id)).map((t) => t.name);
-  }, [tenantsQuery.data, selectedIds]);
+    return activeTenants.filter((t) => selectedIds.has(t.id)).map((t) => t.name);
+  }, [activeTenants, selectedIds]);
 
   const handleExportPdf = async () => {
     if (!adherence.data) {
@@ -287,15 +291,15 @@ export function AdminReportsPage() {
         }
       />
 
-      {tenantsQuery.isLoading ? (
+      {tenantsLoading ? (
         <Skeleton className="h-40 w-full" />
-      ) : tenantsQuery.data ? (
+      ) : (
         <AdminReportTenantSelector
-          tenants={tenantsQuery.data}
+          tenants={activeTenants}
           selectedIds={selectedIds}
           onChange={setSelectedIds}
         />
-      ) : null}
+      )}
 
       {selectedIds.size === 0 ? (
         <Card>

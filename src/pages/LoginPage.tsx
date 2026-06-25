@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, completeTwoFactorLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
@@ -32,11 +32,30 @@ export function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState<{
+    challengeId: string;
+    expiresInSeconds: number;
+  } | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
+      const outcome = await login(email, password);
+      if (outcome.status === "two_factor") {
+        setTwoFactorChallenge({
+          challengeId: outcome.challengeId,
+          expiresInSeconds: outcome.expiresInSeconds,
+        });
+        setTotpCode("");
+        setRecoveryCode("");
+        setUseRecovery(false);
+        return;
+      }
       toast.success("Login realizado");
       navigate(from, { replace: true });
     } catch (err) {
@@ -45,6 +64,33 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleVerifyTwoFactor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!twoFactorChallenge) return;
+
+    setVerifyLoading(true);
+    try {
+      await completeTwoFactorLogin(
+        twoFactorChallenge.challengeId,
+        useRecovery ? { recoveryCode: recoveryCode.trim() } : { code: totpCode },
+      );
+      toast.success("Login realizado");
+      navigate(from, { replace: true });
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? err.message : "Código inválido";
+      toast.error(msg);
+    } finally {
+      setVerifyLoading(false);
+    }
+  }
+
+  function resetToCredentials() {
+    setTwoFactorChallenge(null);
+    setTotpCode("");
+    setRecoveryCode("");
+    setUseRecovery(false);
   }
 
   return (
@@ -82,91 +128,157 @@ export function LoginPage() {
 
         <Card className="w-full max-w-md shadow-soft-lg">
           <CardHeader className="space-y-1 pb-2 text-center">
-            <CardTitle className="font-serif text-2xl">Entrar</CardTitle>
+            <CardTitle className="font-serif text-2xl">
+              {twoFactorChallenge ? "Verificação em duas etapas" : "Entrar"}
+            </CardTitle>
             <CardDescription>
-              Entre com o e-mail e a senha da sua organização.
+              {twoFactorChallenge
+                ? "Informe o código do app autenticador ou um código de recuperação."
+                : "Entre com o e-mail e a senha da sua organização."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seuemail@email.com"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-                    <DialogTrigger asChild>
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-primary hover:underline"
-                      >
-                        Esqueci a senha
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Recuperar senha</DialogTitle>
-                        <DialogDescription>
-                          Informe seu e-mail. Se estiver cadastrado, enviaremos instruções. Caso
-                          contrário, contate o administrador da sua organização.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-2">
-                        <Label htmlFor="forgot-email">E-mail</Label>
-                        <Input
-                          id="forgot-email"
-                          type="email"
-                          value={forgotEmail}
-                          onChange={(e) => setForgotEmail(e.target.value)}
-                        />
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          onClick={async () => {
-                            setForgotLoading(true);
-                            try {
-                              const res = await api.forgotPassword(forgotEmail);
-                              toast.success(res.message);
-                              setForgotOpen(false);
-                              setForgotEmail("");
-                            } catch (err) {
-                              toast.error(
-                                err instanceof ApiClientError ? err.message : "Erro ao solicitar",
-                              );
-                            } finally {
-                              setForgotLoading(false);
-                            }
-                          }}
-                          disabled={forgotLoading || !forgotEmail}
-                        >
-                          {forgotLoading ? "Enviando…" : "Enviar"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+            {twoFactorChallenge ? (
+              <form onSubmit={handleVerifyTwoFactor} className="space-y-4">
+                {!useRecovery ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="totp">Código de 6 dígitos</Label>
+                    <Input
+                      id="totp"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={8}
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="000000"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="recovery">Código de recuperação</Label>
+                    <Input
+                      id="recovery"
+                      value={recoveryCode}
+                      onChange={(e) => setRecoveryCode(e.target.value)}
+                      placeholder="XXXX-XXXX"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={
+                    verifyLoading ||
+                    (!useRecovery && totpCode.length < 6) ||
+                    (useRecovery && !recoveryCode.trim())
+                  }
+                >
+                  {verifyLoading ? "Verificando…" : "Confirmar"}
+                </Button>
+
+                <div className="flex flex-col gap-2 text-center text-sm">
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => setUseRecovery((v) => !v)}
+                  >
+                    {useRecovery ? "Usar código do autenticador" : "Usar código de recuperação"}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:underline"
+                    onClick={resetToCredentials}
+                  >
+                    Voltar ao login
+                  </button>
                 </div>
-                <PasswordInput
-                  id="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Entrando…" : "Entrar"}
-              </Button>
-            </form>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seuemail@email.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Senha</Label>
+                    <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                      <DialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          Esqueci a senha
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Recuperar senha</DialogTitle>
+                          <DialogDescription>
+                            Informe seu e-mail. Se estiver cadastrado, enviaremos instruções. Caso
+                            contrário, contate o administrador da sua organização.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-email">E-mail</Label>
+                          <Input
+                            id="forgot-email"
+                            type="email"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={async () => {
+                              setForgotLoading(true);
+                              try {
+                                const res = await api.forgotPassword(forgotEmail);
+                                toast.success(res.message);
+                                setForgotOpen(false);
+                                setForgotEmail("");
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof ApiClientError ? err.message : "Erro ao solicitar",
+                                );
+                              } finally {
+                                setForgotLoading(false);
+                              }
+                            }}
+                            disabled={forgotLoading || !forgotEmail}
+                          >
+                            {forgotLoading ? "Enviando…" : "Enviar"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <PasswordInput
+                    id="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Entrando…" : "Entrar"}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

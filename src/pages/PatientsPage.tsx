@@ -72,6 +72,7 @@ export function PatientsPage() {
     sendWelcome: true,
     preferredMessageChannel: "Text" as "Text" | "Audio",
     carePlanMedicationIds: [] as string[],
+    senderId: "",
   });
 
   const { settings: tenantSettings, govMode } = useTenantSettings();
@@ -108,7 +109,9 @@ export function PatientsPage() {
     enabled: !!token && hasFeature(FEATURE_KEYS.whatsappSendersManage),
   });
 
-  const activeSender = senders.find((s) => s.isActive) ?? senders[0];
+  const activeSenders = senders.filter((s) => s.isActive);
+  const showSenderPicker = activeSenders.length > 1;
+  const defaultSender = activeSenders[0];
 
   const bulkMoriskyMutation = useMutation({
     mutationFn: (patientIds: string[]) => api.triggerMoriskyBulk(token!, { patientIds }),
@@ -178,6 +181,7 @@ export function PatientsPage() {
           govMode && form.carePlanMedicationIds.length > 0
             ? form.carePlanMedicationIds
             : undefined,
+        senderId: form.senderId || undefined,
       }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
@@ -189,6 +193,7 @@ export function PatientsPage() {
         sendWelcome: true,
         preferredMessageChannel: "Text",
         carePlanMedicationIds: [],
+        senderId: "",
       });
 
       if (!result.created) {
@@ -444,6 +449,35 @@ export function PatientsPage() {
                     </div>
                   </div>
                 )}
+                {showSenderPicker && (
+                  <div className="space-y-2">
+                    <Label htmlFor="patient-sender">Número WhatsApp</Label>
+                    <Select
+                      value={form.senderId || "__default__"}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          senderId: v === "__default__" ? "" : v,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="patient-sender">
+                        <SelectValue placeholder="Padrão (mais recente)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__default__">Padrão (mais recente)</SelectItem>
+                        {activeSenders.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.displayName} · {maskPhone(s.phoneNumber)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Escolha por qual número o paciente receberá lembretes e boas-vindas.
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between rounded-lg border px-3 py-3">
                   <div>
                     <p className="text-sm font-medium">Enviar boas-vindas</p>
@@ -535,8 +569,8 @@ export function PatientsPage() {
               <p>
                 <strong className="text-foreground">Pelo WhatsApp:</strong> só funciona depois do cadastro. Se
                 alguém não cadastrado enviar mensagem para{" "}
-                {activeSender ? (
-                  <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
+                {defaultSender ? (
+                  <span className="font-mono text-foreground">{maskPhone(defaultSender.phoneNumber)}</span>
                 ) : (
                   <Link to="/whatsapp/configuracao" className="text-primary underline">
                     seu número conectado
@@ -549,8 +583,8 @@ export function PatientsPage() {
             <>
               <p>
                 <strong className="text-foreground">Pelo WhatsApp:</strong> o paciente envia qualquer mensagem para{" "}
-                {activeSender ? (
-                  <span className="font-mono text-foreground">{maskPhone(activeSender.phoneNumber)}</span>
+                {defaultSender ? (
+                  <span className="font-mono text-foreground">{maskPhone(defaultSender.phoneNumber)}</span>
                 ) : (
                   <Link to="/whatsapp/configuracao" className="text-primary underline">
                     seu número conectado

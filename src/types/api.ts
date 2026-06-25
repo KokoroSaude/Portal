@@ -43,6 +43,28 @@ export interface LoginResponse {
   expiresIn: number;
 }
 
+export interface LoginTwoFactorChallengeResponse {
+  requiresTwoFactor: true;
+  challengeId: string;
+  expiresInSeconds: number;
+}
+
+export type LoginApiResponse = LoginResponse | LoginTwoFactorChallengeResponse;
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  recoveryCodesRemaining: number;
+}
+
+export interface BeginTwoFactorSetupResponse {
+  secret: string;
+  authenticatorUri: string;
+}
+
+export interface ConfirmTwoFactorSetupResponse {
+  recoveryCodes: string[];
+}
+
 export interface Patient {
   id: string;
   name: string | null;
@@ -1433,9 +1455,70 @@ export interface WhatsappSender {
   phoneId: string;
   isActive: boolean;
   createdAt: string;
-  connectionSource: "Manual" | "EmbeddedSignup";
+  connectionSource: "Manual" | "EmbeddedSignup" | "PlatformOnboarding";
   connectedAt: string | null;
   hasEmbeddedToken: boolean;
+}
+
+/** Matches Kokoro.Domain.Enums.WhatsAppActivationStatus (JSON numeric). */
+export type WhatsAppActivationStatus =
+  | 0 // NoSender
+  | 1 // AwaitingOtp
+  | 2 // Provisioning
+  | 3 // WaitingTemplates
+  | 4 // Ready
+  | 5 // TrialActive
+  | 6; // TrialExpired
+
+/** Matches Kokoro.Domain.Enums.TenantWhatsAppMode (JSON numeric). */
+export type TenantWhatsAppMode = 0 | 1; // Trial | Production
+
+/** Matches Kokoro.Domain.Enums.WhatsAppSenderPurpose (JSON numeric). */
+export type WhatsAppSenderPurpose = 0 | 1 | 2; // General | Adherence | Promo
+
+export interface WhatsAppActivationStartResult {
+  sessionId: string;
+  phoneNumber: string;
+  codeMethod: string;
+  expiresAt: string;
+}
+
+export interface WhatsAppActivationVerifyResult {
+  senderId: string;
+  phoneId: string;
+  phoneNumber: string;
+  displayName: string;
+  webhookConfigured: boolean;
+  templatesReady: boolean;
+  status: WhatsAppActivationStatus;
+}
+
+export interface WhatsAppActivationResendResult {
+  codeMethod: string;
+  expiresAt: string;
+}
+
+export interface WhatsAppActivationSenderDto {
+  id: string;
+  phoneNumber: string;
+  displayName: string;
+  purpose: WhatsAppSenderPurpose;
+  isActive: boolean;
+  connectedAt: string | null;
+}
+
+export interface WhatsAppActivationStatusDto {
+  status: WhatsAppActivationStatus;
+  whatsAppMode: TenantWhatsAppMode;
+  trialExpiresAt: string | null;
+  senders: WhatsAppActivationSenderDto[];
+  activeSessionId: string | null;
+  message: string | null;
+}
+
+export interface WhatsAppTrialStartResult {
+  trialExpiresAt: string;
+  platformPhoneId: string;
 }
 
 export interface MetaEmbeddedSignupConfig {

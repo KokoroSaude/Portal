@@ -4,6 +4,7 @@ import { Camera, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PageHeader } from "@/components/PageHeader";
+import { PlatformTwoFactorCard } from "@/components/profile/PlatformTwoFactorCard";
 import { SettingsPasswordTab } from "@/components/settings/SettingsPasswordTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ const ACCEPT = "image/jpeg,image/png,image/webp";
 const MAX_MB = 2;
 
 export function ProfilePage() {
-  const { token, displayName, avatarUrl, updateAvatarUrl } = useAuth();
+  const { token, displayName, avatarUrl, updateAvatarUrl, isPlatform } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
@@ -109,6 +110,8 @@ export function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {isPlatform && <PlatformTwoFactorCard />}
 
       <Card>
         <CardHeader>
