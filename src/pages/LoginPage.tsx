@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { KokoroLogo } from "@/components/KokoroLogo";
@@ -40,6 +40,33 @@ export function LoginPage() {
   const [recoveryCode, setRecoveryCode] = useState("");
   const [useRecovery, setUseRecovery] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [challengeSecondsLeft, setChallengeSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!twoFactorChallenge) {
+      setChallengeSecondsLeft(null);
+      return;
+    }
+
+    setChallengeSecondsLeft(twoFactorChallenge.expiresInSeconds);
+
+    const interval = window.setInterval(() => {
+      setChallengeSecondsLeft((prev) => {
+        if (prev === null || prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [twoFactorChallenge?.challengeId, twoFactorChallenge?.expiresInSeconds]);
+
+  const challengeExpired = challengeSecondsLeft === 0;
+  const challengeCountdownLabel =
+    challengeSecondsLeft === null
+      ? null
+      : challengeSecondsLeft <= 0
+        ? "Expirado — volte e faça login novamente"
+        : `Expira em ${Math.floor(challengeSecondsLeft / 60)}m ${challengeSecondsLeft % 60}s`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -140,6 +167,15 @@ export function LoginPage() {
           <CardContent>
             {twoFactorChallenge ? (
               <form onSubmit={handleVerifyTwoFactor} className="space-y-4">
+                {challengeCountdownLabel && (
+                  <p
+                    className={`text-center text-sm ${
+                      challengeExpired ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {challengeCountdownLabel}
+                  </p>
+                )}
                 {!useRecovery ? (
                   <div className="space-y-2">
                     <Label htmlFor="totp">Código de 6 dígitos</Label>
@@ -174,6 +210,7 @@ export function LoginPage() {
                   className="w-full"
                   disabled={
                     verifyLoading ||
+                    challengeExpired ||
                     (!useRecovery && totpCode.length < 6) ||
                     (useRecovery && !recoveryCode.trim())
                   }

@@ -1513,6 +1513,7 @@ export interface WhatsAppActivationStatusDto {
   trialExpiresAt: string | null;
   senders: WhatsAppActivationSenderDto[];
   activeSessionId: string | null;
+  activeSessionPhone?: string | null;
   message: string | null;
 }
 

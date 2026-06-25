@@ -174,4 +174,15 @@ export const TENANT_TOUR_OPTIONAL: TourStep[] = [
     route: "/templates",
     openMobileNav: true,
   },
+  {
+    id: "farmacia",
+    target: '[data-tour="nav-farmacia"]',
+    title: "Farmácia",
+    subtitle: "Retirada de medicamentos.",
+    description:
+      "Painel operacional, fila do dia, fila crônica e relatórios de comparecimento — para farmácias no modo SUS.",
+    feature: FEATURE_KEYS.pharmacyPickup,
+    route: "/farmacia",
+    openMobileNav: true,
+  },
 ];

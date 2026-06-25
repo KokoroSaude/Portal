@@ -6,6 +6,7 @@ import { AdminReportTenantSelector } from "@/components/admin/AdminReportTenantS
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import {
   AdherenceTrendChart,
   CheckinsByHourChart,
@@ -326,7 +327,13 @@ export function AdminReportsPage() {
             </TabsList>
 
             <TabsContent value="adherence" className="space-y-6">
-              {adherence.isLoading ? (
+              {adherence.isError ? (
+                <QueryErrorState
+                  message="Não foi possível carregar o relatório de adesão."
+                  error={adherence.error}
+                  onRetry={() => void adherence.refetch()}
+                />
+              ) : adherence.isLoading ? (
                 <Skeleton className="h-48 w-full" />
               ) : adherence.data ? (
                 <>

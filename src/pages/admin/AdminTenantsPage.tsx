@@ -12,6 +12,7 @@ import { AdminTenantUsersDialog } from "@/components/admin/AdminTenantUsersDialo
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,6 +159,12 @@ export function AdminTenantsPage() {
         <CardContent>
           {tenants.isLoading ? (
             <Skeleton className="h-48 w-full" />
+          ) : tenants.isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar as organizações."
+              error={tenants.error}
+              onRetry={() => void tenants.refetch()}
+            />
           ) : (
             <Table>
               <TableHeader>

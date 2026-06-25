@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Shield, ShieldCheck, ShieldOff } from "lucide-react";
+import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function PlatformTwoFactorCard() {
 
   const [setupStep, setSetupStep] = useState<SetupStep>("idle");
   const [setupSecret, setSetupSecret] = useState<string | null>(null);
+  const [setupAuthenticatorUri, setSetupAuthenticatorUri] = useState<string | null>(null);
   const [confirmCode, setConfirmCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
 
@@ -51,6 +53,7 @@ export function PlatformTwoFactorCard() {
     mutationFn: () => api.beginTwoFactorSetup(token!),
     onSuccess: (res) => {
       setSetupSecret(res.secret);
+      setSetupAuthenticatorUri(res.authenticatorUri);
       setSetupStep("scan");
       setConfirmCode("");
     },
@@ -64,6 +67,7 @@ export function PlatformTwoFactorCard() {
       setRecoveryCodes(res.recoveryCodes);
       setSetupStep("recovery");
       setSetupSecret(null);
+      setSetupAuthenticatorUri(null);
       setConfirmCode("");
       void queryClient.invalidateQueries({ queryKey: ["two-factor-status"] });
       toast.success("Autenticação em duas etapas ativada");
@@ -159,8 +163,13 @@ export function PlatformTwoFactorCard() {
           {setupStep === "scan" && setupSecret && (
             <div className="max-w-md space-y-4 rounded-lg border bg-muted/30 p-4">
               <p className="text-sm">
-                Adicione uma nova conta no seu app autenticador e informe esta chave manualmente:
+                Escaneie o QR code no app autenticador ou informe a chave manualmente:
               </p>
+              {setupAuthenticatorUri && (
+                <div className="mx-auto w-fit rounded-lg bg-white p-3">
+                  <QRCode value={setupAuthenticatorUri} size={160} />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <code className="flex-1 break-all rounded bg-background px-3 py-2 text-sm font-mono">
                   {setupSecret}
@@ -200,6 +209,7 @@ export function PlatformTwoFactorCard() {
                   onClick={() => {
                     setSetupStep("idle");
                     setSetupSecret(null);
+                    setSetupAuthenticatorUri(null);
                     setConfirmCode("");
                   }}
                 >

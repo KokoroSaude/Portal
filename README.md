@@ -53,6 +53,8 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | `tenant` | Dashboard de adesão | Operação |
 | `platform` | Visão geral | Plataforma (tenants, relatórios) |
 
+Superadmins podem ativar **2FA (TOTP)** em **Meu perfil** (`/perfil`). Após ativar, o login pede código do autenticador.
+
 ## Credenciais (seed)
 
 | Papel | E-mail | Senha |
@@ -75,13 +77,21 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | `/templates` | Mensagens automáticas |
 | `/jornada` | Onboarding |
 | `/whatsapp` | Números WhatsApp (Meta) |
+| `/whatsapp/configuracao` | Ativação OTP / Embedded Signup |
+| `/whatsapp/conversas` | Inbox operador |
 | `/configuracoes` | Settings operacionais |
+| `/perfil` | Foto, senha e 2FA (superadmin) |
+| `/farmacia` | Dashboard farmácia gov (quando habilitado) |
+| `/farmacia/retiradas` | Fila de retiradas |
+| `/farmacia/relatorios` | Relatórios de retirada |
 
 ### Plataforma (superadmin)
 
 | Rota | Descrição |
 |------|-----------|
-| `/admin/tenants` | Tenants |
+| `/admin/tenants` | Tenants (inclui desabilitadas) |
+| `/admin/relatorios` | Relatórios cross-tenant |
+| `/admin/templates-meta` | Templates Meta |
 | `/admin/usuarios` | Superadmins |
 | `/admin/mensagens` | Mensagens padrão globais |
 | `/admin/simulador` | Simulador WhatsApp |
@@ -92,7 +102,9 @@ Cors__AllowedOrigins__0=https://portal.kokorosaude.com.br
 | Rota | Descrição |
 |------|-----------|
 | `/login` | Login |
-| `/cadastro` | Criar tenant |
+| `/reset-password` | Redefinir senha (link do e-mail) |
+
+> `/cadastro` redireciona para `/login`. Novos tenants são criados pelo superadmin.
 
 ## Variáveis
 

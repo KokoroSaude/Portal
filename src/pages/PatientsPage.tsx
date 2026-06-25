@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -91,7 +92,7 @@ export function PatientsPage() {
     setSelectedIds(new Set());
   }, [search, status]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["patients", page, search, status],
     queryFn: () =>
       api.getPatients(token!, {
@@ -766,6 +767,12 @@ export function PatientsPage() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
+          ) : isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar a lista de pacientes."
+              error={error}
+              onRetry={() => void refetch()}
+            />
           ) : (
             <>
               <Table>

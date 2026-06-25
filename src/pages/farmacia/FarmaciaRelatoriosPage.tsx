@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
@@ -18,6 +18,7 @@ import { PickupFeatureLocked } from "@/components/farmacia/PickupFeatureLocked";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -45,7 +46,7 @@ export function FarmaciaRelatoriosPage() {
   const queryClient = useQueryClient();
   const [groupBy, setGroupBy] = useState("medication");
   const [procurementWeeks, setProcurementWeeks] = useState(4);
-  const range = useMemo(() => defaultRange(), []);
+  const [range, setRange] = useState(defaultRange);
   const { pickupAccess: pickupEnabled } = useTenantSettings();
 
   const attendance = useQuery({
@@ -144,8 +145,37 @@ export function FarmaciaRelatoriosPage() {
     <div className="space-y-8">
       <PageHeader
         title="Relatórios de retirada"
-        description="Últimos 30 dias — comparecimento, gargalos operacionais e previsão de demanda"
+        description="Comparecimento, gargalos operacionais e previsão de demanda"
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-lg">Período</CardTitle>
+          <CardDescription>Filtro aplicado aos relatórios de comparecimento e funil</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="pickup-from">De</Label>
+            <Input
+              id="pickup-from"
+              type="date"
+              value={range.from.slice(0, 10)}
+              onChange={(e) =>
+                setRange({ ...range, from: new Date(e.target.value).toISOString() })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pickup-to">Até</Label>
+            <Input
+              id="pickup-to"
+              type="date"
+              value={range.to.slice(0, 10)}
+              onChange={(e) => setRange({ ...range, to: new Date(e.target.value).toISOString() })}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {hasFeature(FEATURE_KEYS.reportsBasic) && (
         <Card>

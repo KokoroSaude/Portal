@@ -241,6 +241,34 @@ export const TENANT_GUIDE: PortalGuide = {
         },
       ],
     },
+    {
+      id: "farmacia",
+      title: "5. Farmácia (SUS)",
+      description: "Retirada de medicamentos, fila crônica e relatórios operacionais.",
+      steps: [
+        {
+          id: "farmacia-dashboard",
+          title: "Painel da farmácia",
+          description: "Visão do dia: lotes, fila de retirada e alertas de estoque.",
+          to: "/farmacia",
+          feature: FEATURE_KEYS.pharmacyPickup,
+        },
+        {
+          id: "farmacia-retiradas",
+          title: "Retiradas do dia",
+          description: "Registre chegada, conclusão, reagendamento e cancelamento na fila operacional.",
+          to: "/farmacia/retiradas",
+          feature: FEATURE_KEYS.pharmacyPickup,
+        },
+        {
+          id: "farmacia-relatorios",
+          title: "Relatórios de retirada",
+          description: "Comparecimento, funil operacional, previsão de demanda e exportação de compras.",
+          to: "/farmacia/relatorios",
+          feature: FEATURE_KEYS.pharmacyPickup,
+        },
+      ],
+    },
   ],
 };
 

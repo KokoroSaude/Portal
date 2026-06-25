@@ -53,6 +53,17 @@ export function WhatsappConfigPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">OTP (código SMS):</strong> informe o número da
+              farmácia aqui no portal — sem login na Meta. Ideal para começar rápido ou quando a
+              conta Business ainda não está pronta.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Embedded Signup (Meta):</strong> conecte uma WABA
+              já existente com login Facebook/Meta, na seção opcional abaixo. Use quando a farmácia
+              já administra a conta Business separadamente.
+            </p>
+
             <WhatsAppActivationWizard
               startOnPhone={addNumberRequested}
               onStartOnPhoneConsumed={() => setAddNumberRequested(false)}

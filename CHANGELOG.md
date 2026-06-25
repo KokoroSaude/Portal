@@ -6,6 +6,29 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-06-25
+
+### Added
+
+- **2FA para superadmin:** QR code e chave manual no perfil; countdown de expiração no login
+- Componente reutilizável `QueryErrorState` com botão de retry
+- Assistente WhatsApp com stepper e timeout de provisionamento
+- Guia OTP vs Embedded Signup na configuração WhatsApp
+- Farmácia: janela horária no reagendamento, representante na chegada, seletor de período nos relatórios
+- Passos de farmácia no guia e tour do tenant
+- Superadmin: desabilitar organização (excluída de relatórios e seletores)
+
+### Changed
+
+- README atualizado com rotas atuais, redirect de `/cadastro` e 2FA no perfil
+
+### Removed
+
+- Rota pública `/cadastro` (redireciona para login)
+
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/KokoroSaude/Portal/compare/v1.1.4...v1.3.1
+
 ## [1.1.4] - 2026-06-04
 
 ### Added
@@ -19,7 +42,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Mensagens operacionais admin focadas em lembretes, follow-up e textos custom.*
 - Guia e tour atualizados para refletir a nova estrutura
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.1.4...HEAD
 [1.1.4]: https://github.com/KokoroSaude/Portal/compare/v1.1.3...v1.1.4
 
 ## [1.1.3] - 2026-06-04

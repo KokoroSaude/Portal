@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,16 @@ import type { WhatsappSender, WhatsAppActivationStatusDto } from "@/types/api";
 import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
 
 type WizardStep = "overview" | "phone" | "otp" | "profile" | "done";
+
+const WIZARD_STEPS: { id: WizardStep; label: string }[] = [
+  { id: "overview", label: "Visão geral" },
+  { id: "phone", label: "Telefone" },
+  { id: "otp", label: "Código OTP" },
+  { id: "profile", label: "Perfil" },
+  { id: "done", label: "Concluído" },
+];
+
+const PROVISIONING_POLL_LIMIT = 60;
 
 type WhatsAppActivationWizardProps = {
   /** When true, opens directly on the phone step (e.g. "Adicionar outro número"). */
@@ -62,6 +73,48 @@ function isConnectedStatus(status: WhatsAppActivationStatusDto["status"]): boole
   );
 }
 
+function stepIndex(step: WizardStep): number {
+  return WIZARD_STEPS.findIndex((s) => s.id === step);
+}
+
+function WizardStepper({ currentStep }: { currentStep: WizardStep }) {
+  const currentIndex = stepIndex(currentStep);
+
+  return (
+    <ol className="flex flex-wrap gap-2 border-b pb-4">
+      {WIZARD_STEPS.map((item, index) => {
+        const done = index < currentIndex;
+        const active = item.id === currentStep;
+        return (
+          <li
+            key={item.id}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+              active
+                ? "bg-primary text-primary-foreground"
+                : done
+                  ? "bg-muted text-foreground"
+                  : "bg-muted/40 text-muted-foreground"
+            }`}
+          >
+            <span
+              className={`flex size-5 items-center justify-center rounded-full text-[10px] ${
+                active
+                  ? "bg-primary-foreground/20"
+                  : done
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                    : "bg-background"
+              }`}
+            >
+              {done ? "✓" : index + 1}
+            </span>
+            {item.label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function WhatsAppActivationWizard({
   startOnPhone = false,
   onStartOnPhoneConsumed,
@@ -77,6 +130,8 @@ export function WhatsAppActivationWizard({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [verifiedSenderId, setVerifiedSenderId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [provisioningTimedOut, setProvisioningTimedOut] = useState(false);
+  const provisioningPolls = useRef(0);
 
   const statusQuery = useQuery({
     queryKey: ["whatsapp-activation-status"],
@@ -106,12 +161,28 @@ export function WhatsAppActivationWizard({
     if (!status || step !== "overview") return;
     if (status.status === WHATSAPP_ACTIVATION_STATUS.AwaitingOtp && status.activeSessionId) {
       setSessionId(status.activeSessionId);
+      if (status.activeSessionPhone) {
+        setPhone(status.activeSessionPhone);
+      }
       setStep("otp");
     }
     if (isProvisioningStatus(status.status)) {
       setStep("done");
     }
   }, [status, step]);
+
+  useEffect(() => {
+    if (!status || !isProvisioningStatus(status.status)) {
+      provisioningPolls.current = 0;
+      setProvisioningTimedOut(false);
+      return;
+    }
+
+    provisioningPolls.current += 1;
+    if (provisioningPolls.current >= PROVISIONING_POLL_LIMIT) {
+      setProvisioningTimedOut(true);
+    }
+  }, [status?.status, statusQuery.dataUpdatedAt]);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["whatsapp-activation-status"] });
@@ -181,7 +252,24 @@ export function WhatsAppActivationWizard({
     return sendersQuery.data?.find((s) => s.id === verifiedSenderId) ?? null;
   }, [verifiedSenderId, sendersQuery.data]);
 
+  const otpDisplayPhone = useMemo(() => {
+    const normalized = phone ? normalizeBrazilPhone(phone) : "";
+    if (normalized) return maskPhone(normalized);
+    if (status?.activeSessionPhone) return maskPhone(status.activeSessionPhone);
+    return "seu número";
+  }, [phone, status?.activeSessionPhone]);
+
   if (!canManage) return null;
+
+  if (statusQuery.isError) {
+    return (
+      <QueryErrorState
+        message="Não foi possível carregar o status de ativação do WhatsApp."
+        error={statusQuery.error}
+        onRetry={() => void statusQuery.refetch()}
+      />
+    );
+  }
 
   const statusLabel = status
     ? WHATSAPP_ACTIVATION_STATUS_LABELS[status.status] ?? "Desconhecido"
@@ -191,6 +279,8 @@ export function WhatsAppActivationWizard({
 
   return (
     <div className="space-y-4">
+      <WizardStepper currentStep={step} />
+
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={isConnectedStatus(status?.status ?? 0) ? "default" : "secondary"}>
           {statusLabel}
@@ -318,10 +408,7 @@ export function WhatsAppActivationWizard({
         <div className="space-y-4 max-w-md">
           <p className="text-sm text-muted-foreground">
             Digite o código de 6 dígitos enviado para{" "}
-            <strong className="text-foreground">
-              {phone ? maskPhone(normalizeBrazilPhone(phone)) : "seu número"}
-            </strong>
-            .
+            <strong className="text-foreground">{otpDisplayPhone}</strong>.
           </p>
 
           <div className="space-y-2">
@@ -366,7 +453,17 @@ export function WhatsAppActivationWizard({
 
       {step === "done" && (
         <div className="space-y-3">
-          {status && isProvisioningStatus(status.status) ? (
+          {provisioningTimedOut ? (
+            <QueryErrorState
+              message="A configuração do número está demorando mais que o esperado."
+              error="Webhook e templates ainda não foram concluídos. Tente atualizar ou contate o suporte."
+              onRetry={() => {
+                provisioningPolls.current = 0;
+                setProvisioningTimedOut(false);
+                void statusQuery.refetch();
+              }}
+            />
+          ) : status && isProvisioningStatus(status.status) ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
               Configurando webhook e templates…
