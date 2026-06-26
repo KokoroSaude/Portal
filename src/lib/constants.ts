@@ -16,6 +16,7 @@ export const FEATURE_KEYS = {
   whatsappSendersManage: "whatsapp.senders.manage",
   scalesMorisky: "scales.morisky",
   scalesTpb: "scales.tpb",
+  behavioralProfile: "behavioral.profile",
   aiCopilot: "ai.copilot",
   satisfactionCsat: "satisfaction.csat",
   whatsappConversations: "whatsapp.conversations",
@@ -197,4 +198,23 @@ export const TPB_RISK_LABELS: Record<string, string> = {
   high: "Alto",
   medium: "Médio",
   low: "Baixo",
+};
+
+export const BEHAVIORAL_DIMENSION_LABELS: Record<string, string> = {
+  lifestyle: "Estilo de vida",
+  habits: "Hábitos",
+  emotions: "Emoções",
+  cognitive_bias: "Vieses cognitivos",
+  comorbidity: "Comorbidades",
+  Lifestyle: "Estilo de vida",
+  Habits: "Hábitos",
+  Emotions: "Emoções",
+  CognitiveBias: "Vieses cognitivos",
+  Comorbidity: "Comorbidades",
+};
+
+export const BEHAVIORAL_SOURCE_LABELS: Record<string, string> = {
+  strategic_assessment: "Avaliação estratégica",
+  tpb: "TCP (WhatsApp)",
+  morisky: "MMAS-8",
 };

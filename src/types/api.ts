@@ -1170,6 +1170,54 @@ export interface PreviewTpbInterventionResult {
   constructScores: Record<string, number> | null;
 }
 
+export interface StrategicAssessmentQuestion {
+  id: string;
+  text: string;
+  order: number;
+  enabled: boolean;
+  dimension: string;
+}
+
+export interface StrategicAssessmentScaleDefinition {
+  introText: string;
+  thankYouText: string;
+  invalidText: string;
+  minScore: number;
+  maxScore: number;
+  questions: StrategicAssessmentQuestion[];
+}
+
+export interface StrategicAssessmentScaleViewResponse {
+  scale: StrategicAssessmentScaleDefinition;
+}
+
+export interface StrategicAssessmentAnswer {
+  questionId: string;
+  score: number;
+}
+
+export interface StrategicAssessmentDetail {
+  id: string;
+  completedAt: string;
+  dimensionScores: Record<string, number>;
+  primaryBarrier: string | null;
+  answers: StrategicAssessmentAnswer[];
+}
+
+export interface SubmitStrategicAssessmentResult {
+  assessmentId: string;
+  dimensionScores: Record<string, number>;
+  primaryBarrier: string | null;
+}
+
+export interface PatientBehavioralProfile {
+  patientId: string;
+  dimensionScores: Record<string, number>;
+  primaryBarrier: string | null;
+  sources: string[];
+  computedAt: string;
+}
+
 export interface TpbConstructAvg {
   construct: string;
   avgScore: number;

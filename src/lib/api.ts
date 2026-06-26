@@ -44,6 +44,11 @@ import type {
   PatientTpbHistory,
   PatientTpbRisk,
   PreviewTpbInterventionResult,
+  StrategicAssessmentAnswer,
+  StrategicAssessmentDetail,
+  StrategicAssessmentScaleViewResponse,
+  SubmitStrategicAssessmentResult,
+  PatientBehavioralProfile,
   TpbBulkTriggerResult,
   TpbManualTriggerResult,
   TpbReport,
@@ -768,6 +773,35 @@ export const api = {
 
   getPatientTpbRisk: (token: string, patientId: string) =>
     request<PatientTpbRisk>(`/api/patients/${patientId}/tpb-risk`, { token }),
+
+  getStrategicAssessmentScale: (token: string) =>
+    request<StrategicAssessmentScaleViewResponse>("/api/patients/behavioral/scale", { token }),
+
+  getPatientStrategicAssessment: async (token: string, patientId: string) => {
+    try {
+      return await request<StrategicAssessmentDetail>(
+        `/api/patients/${patientId}/strategic-assessment`,
+        { token },
+      );
+    } catch (err) {
+      if (err instanceof ApiClientError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  submitStrategicAssessment: (
+    token: string,
+    patientId: string,
+    answers: StrategicAssessmentAnswer[],
+  ) =>
+    request<SubmitStrategicAssessmentResult>(`/api/patients/${patientId}/strategic-assessment`, {
+      method: "POST",
+      token,
+      body: { answers },
+    }),
+
+  getPatientBehavioralProfile: (token: string, patientId: string) =>
+    request<PatientBehavioralProfile>(`/api/patients/${patientId}/behavioral-profile`, { token }),
 
   getTpbReport: (token: string, from?: string, to?: string) =>
     request<TpbReport>(`/api/reports/tpb${qs({ from, to })}`, { token }),

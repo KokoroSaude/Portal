@@ -17,6 +17,7 @@ import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
 import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
+import { PatientBehavioralTab } from "@/components/patients/PatientBehavioralTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -111,6 +112,14 @@ export function PatientDetailPage() {
     queryKey: ["patient-tpb-risk", id],
     queryFn: () => api.getPatientTpbRisk(token!, id!),
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
+  });
+
+  const behavioralEnabled = hasFeature(FEATURE_KEYS.behavioralProfile);
+
+  const { data: behavioralProfile, isLoading: behavioralProfileLoading } = useQuery({
+    queryKey: ["patient-behavioral-profile", id],
+    queryFn: () => api.getPatientBehavioralProfile(token!, id!),
+    enabled: !!token && !!id && behavioralEnabled,
   });
 
   const {
@@ -651,6 +660,9 @@ export function PatientDetailPage() {
               )}
             </TabsTrigger>
           )}
+          {behavioralEnabled && (
+            <TabsTrigger value="behavioral">Perfil comportamental</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="timeline">
@@ -735,6 +747,20 @@ export function PatientDetailPage() {
             isPreviewing={previewTpbMutation.isPending}
           />
         </TabsContent>
+
+        {behavioralEnabled && token && id && (
+          <TabsContent value="behavioral">
+            <PatientBehavioralTab
+              token={token}
+              patientId={id}
+              canWrite={canWrite}
+              profile={behavioralProfile}
+              profileLoading={behavioralProfileLoading}
+              tpbRisk={tpbRisk}
+              tpbRiskLoading={tpbRiskLoading}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
