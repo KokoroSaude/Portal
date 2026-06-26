@@ -12,6 +12,13 @@ type RawAiFeatures = AiPlatformFeatures & {
 type RawTenantSettings = TenantSettings & {
   AiFeatures?: RawAiFeatures;
   AiEnabled?: boolean;
+  AiApprovedByController?: boolean;
+  AiApprovedAt?: string | null;
+  AiApprovalReference?: string | null;
+  AdminTwoFactorRequired?: boolean;
+  DataRetentionDays?: number | null;
+  TpbCooldownDays?: number;
+  CsatPeriodicDays?: number | null;
   OutboundContentMode?: TenantSettings["outboundContentMode"];
   OutboundAlternateStrategy?: TenantSettings["outboundAlternateStrategy"];
   TenantOperationMode?: TenantSettings["tenantOperationMode"];
@@ -70,6 +77,11 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
   return {
     ...raw,
     aiEnabled: raw.aiEnabled ?? raw.AiEnabled ?? false,
+    aiApprovedByController: raw.aiApprovedByController ?? raw.AiApprovedByController ?? false,
+    aiApprovedAt: raw.aiApprovedAt ?? raw.AiApprovedAt ?? null,
+    aiApprovalReference: raw.aiApprovalReference ?? raw.AiApprovalReference ?? null,
+    adminTwoFactorRequired: raw.adminTwoFactorRequired ?? raw.AdminTwoFactorRequired ?? false,
+    dataRetentionDays: raw.dataRetentionDays ?? raw.DataRetentionDays ?? null,
     outboundContentMode: raw.outboundContentMode ?? raw.OutboundContentMode ?? "TemplateOnly",
     outboundAlternateStrategy:
       raw.outboundAlternateStrategy ?? raw.OutboundAlternateStrategy ?? "PerPatient",
@@ -112,6 +124,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.pickupCriticalWaitlistThreshold ?? raw.PickupCriticalWaitlistThreshold ?? 20,
     pickupBoostPriorityOnLowAdherence:
       raw.pickupBoostPriorityOnLowAdherence ?? raw.PickupBoostPriorityOnLowAdherence ?? true,
+    tpbCooldownDays: raw.tpbCooldownDays ?? raw.TpbCooldownDays ?? 30,
+    csatPeriodicDays: raw.csatPeriodicDays ?? raw.CsatPeriodicDays ?? null,
     pickupCsatEnabled: raw.pickupCsatEnabled ?? raw.PickupCsatEnabled ?? true,
     pickupDefaultWindowHours:
       raw.pickupDefaultWindowHours ?? raw.PickupDefaultWindowHours ?? 2,

@@ -22,6 +22,9 @@ import type {
   AdminSatisfactionMetrics,
   AdminOperationalLatencyMetrics,
   AdminAuditLogResult,
+  ComplianceDocument,
+  ComplianceDocumentListItem,
+  PatientDataExport,
   AdminInteractionEventsResult,
   AdminSenderPerformance,
   AdminMoriskyReport,
@@ -355,6 +358,29 @@ export const api = {
 
   regenerateRecoveryCodes: (token: string, password: string, code: string) =>
     request<{ recoveryCodes: string[] }>("/api/auth/2fa/recovery/regenerate", {
+      method: "POST",
+      token,
+      body: { password, code },
+    }),
+
+  getTenantTwoFactorStatus: (token: string) =>
+    request<TwoFactorStatus>("/api/auth/tenant-2fa/status", { token }),
+
+  beginTenantTwoFactorSetup: (token: string) =>
+    request<BeginTwoFactorSetupResponse>("/api/auth/tenant-2fa/setup/begin", {
+      method: "POST",
+      token,
+    }),
+
+  confirmTenantTwoFactorSetup: (token: string, code: string) =>
+    request<ConfirmTwoFactorSetupResponse>("/api/auth/tenant-2fa/setup/confirm", {
+      method: "POST",
+      token,
+      body: { code },
+    }),
+
+  disableTenantTwoFactor: (token: string, password: string, code: string) =>
+    request<void>("/api/auth/tenant-2fa/disable", {
       method: "POST",
       token,
       body: { password, code },
@@ -1870,6 +1896,39 @@ export const api = {
     }
     return res.blob();
   },
+
+  getComplianceDocuments: (token: string) =>
+    request<ComplianceDocumentListItem[]>("/api/compliance/documents", { token }),
+
+  getComplianceDocument: (token: string, slug: string) =>
+    request<ComplianceDocument>(`/api/compliance/documents/${encodeURIComponent(slug)}`, { token }),
+
+  getComplianceAuditLog: (
+    token: string,
+    params: {
+      from?: string;
+      to?: string;
+      patientId?: string;
+      userId?: string;
+      action?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) => {
+    const url = new URLSearchParams();
+    if (params.from) url.set("from", params.from);
+    if (params.to) url.set("to", params.to);
+    if (params.patientId) url.set("patientId", params.patientId);
+    if (params.userId) url.set("userId", params.userId);
+    if (params.action) url.set("action", params.action);
+    if (params.limit) url.set("limit", String(params.limit));
+    if (params.offset) url.set("offset", String(params.offset));
+    const qs = url.toString();
+    return request<AdminAuditLogResult>(`/api/compliance/audit-log${qs ? `?${qs}` : ""}`, { token });
+  },
+
+  exportPatientData: (token: string, patientId: string) =>
+    request<PatientDataExport>(`/api/compliance/patients/${patientId}/export`, { token }),
 };
 
 export function getSimulatorToken(): string | null {

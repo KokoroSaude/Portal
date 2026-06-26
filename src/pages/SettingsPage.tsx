@@ -9,6 +9,7 @@ import { SettingsAiTab } from "@/components/settings/SettingsAiTab";
 import { SettingsEngagementTab } from "@/components/settings/SettingsEngagementTab";
 import { SettingsOnboardingTab } from "@/components/settings/SettingsOnboardingTab";
 import { SettingsSurveysTab } from "@/components/settings/SettingsSurveysTab";
+import { SettingsComplianceTab } from "@/components/settings/SettingsComplianceTab";
 import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,7 @@ const SETTINGS_TABS = [
   "engajamento",
   "onboarding",
   "pesquisas",
+  "privacidade",
   "usuarios",
 ] as const;
 
@@ -213,6 +215,7 @@ export function SettingsPage() {
           <TabsTrigger value="engajamento">Engajamento</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
+          <TabsTrigger value="privacidade">Privacidade</TabsTrigger>
           {hasFeature("users.manage") && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
 
@@ -349,12 +352,15 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle>Pesquisa de satisfação (CSAT)</CardTitle>
               <CardDescription>
-                Dispare manualmente a pergunta de 1 a 5 no WhatsApp — por paciente, seleção na lista
-                ou todos os ativos.
+                Configure o envio periódico ou dispare manualmente a pergunta de 1 a 5 no WhatsApp.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <SettingsSurveysTab
+                form={form}
+                update={update}
+                save={save}
+                savePending={savePending}
                 bulkCsatOpen={bulkCsatOpen}
                 setBulkCsatOpen={setBulkCsatOpen}
                 bulkCsatPending={bulkCsatMutation.isPending}
@@ -362,6 +368,10 @@ export function SettingsPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="privacidade" className="space-y-4">
+          <SettingsComplianceTab token={token!} settings={settings!} />
         </TabsContent>
 
         {hasFeature("users.manage") && (

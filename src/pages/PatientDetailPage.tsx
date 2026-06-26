@@ -15,6 +15,7 @@ import {
 import { PatientInsightPromptDialog } from "@/components/patients/PatientInsightPromptDialog";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
 import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
+import { PatientDsarExportButton } from "@/components/patients/PatientDsarExportButton";
 import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
 import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
 import { PatientBehavioralTab } from "@/components/patients/PatientBehavioralTab";
@@ -505,6 +506,13 @@ export function PatientDetailPage() {
               <Play className="size-4" />
               Retomar
             </Button>
+          )}
+          {isAdmin && (
+            <PatientDsarExportButton
+              token={token!}
+              patientId={id!}
+              patientName={patient.name}
+            />
           )}
           {canWrite && (
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

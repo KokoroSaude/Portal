@@ -16,6 +16,8 @@ export function getAiAvailability(
 
   if (!settings.aiEnabled) return "disabled";
 
+  if (!settings.aiApprovedByController) return "disabled";
+
   return "ready";
 }
 

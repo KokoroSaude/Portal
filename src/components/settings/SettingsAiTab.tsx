@@ -35,6 +35,20 @@ export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
               Enquanto isso, o assistente usa apenas regras — mesmo com o toggle ligado.
             </p>
           )}
+          {form.aiEnabled && !settings.aiApprovedByController && (
+            <p className="text-sm text-amber-900">
+              A IA está ligada neste tenant, mas aguarda <strong>aprovação formal do controlador</strong>{" "}
+              (ex.: Unimed). Enquanto isso, recursos de IA permanecem bloqueados no backend.
+            </p>
+          )}
+          {settings.aiApprovedByController && settings.aiApprovalReference && (
+            <p className="text-sm text-muted-foreground">
+              IA aprovada — referência: <code>{settings.aiApprovalReference}</code>
+              {settings.aiApprovedAt
+                ? ` (${new Date(settings.aiApprovedAt).toLocaleDateString("pt-BR")})`
+                : ""}
+            </p>
+          )}
           {getAiAvailability(settings) === "disabled" &&
             settings.aiFeatures?.platformConfigured !== false && (
               <p className="text-sm text-muted-foreground">

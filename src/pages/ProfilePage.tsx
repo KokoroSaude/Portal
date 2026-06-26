@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PageHeader } from "@/components/PageHeader";
 import { PlatformTwoFactorCard } from "@/components/profile/PlatformTwoFactorCard";
+import { TenantTwoFactorCard } from "@/components/profile/TenantTwoFactorCard";
 import { SettingsPasswordTab } from "@/components/settings/SettingsPasswordTab";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,7 +112,7 @@ export function ProfilePage() {
         </CardContent>
       </Card>
 
-      {isPlatform && <PlatformTwoFactorCard />}
+      {isPlatform ? <PlatformTwoFactorCard /> : <TenantTwoFactorCard />}
 
       <Card>
         <CardHeader>

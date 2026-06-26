@@ -1,0 +1,337 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Copy, Shield, ShieldAlert, ShieldCheck, ShieldOff } from "lucide-react";
+import QRCode from "react-qr-code";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
+import { api, ApiClientError } from "@/lib/api";
+
+type SetupStep = "idle" | "scan" | "confirm" | "recovery";
+
+export function TenantTwoFactorCard() {
+  const { token, isAdmin } = useAuth();
+  const { settings } = useTenantSettings();
+  const queryClient = useQueryClient();
+
+  const [setupStep, setSetupStep] = useState<SetupStep>("idle");
+  const [setupSecret, setSetupSecret] = useState<string | null>(null);
+  const [setupAuthenticatorUri, setSetupAuthenticatorUri] = useState<string | null>(null);
+  const [confirmCode, setConfirmCode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  const [disableOpen, setDisableOpen] = useState(false);
+  const [actionPassword, setActionPassword] = useState("");
+  const [actionCode, setActionCode] = useState("");
+
+  const statusQuery = useQuery({
+    queryKey: ["tenant-two-factor-status"],
+    queryFn: () => api.getTenantTwoFactorStatus(token!),
+    enabled: !!token,
+  });
+
+  const beginMutation = useMutation({
+    mutationFn: () => api.beginTenantTwoFactorSetup(token!),
+    onSuccess: (res) => {
+      setSetupSecret(res.secret);
+      setSetupAuthenticatorUri(res.authenticatorUri);
+      setSetupStep("scan");
+      setConfirmCode("");
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao iniciar 2FA"),
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: () => api.confirmTenantTwoFactorSetup(token!, confirmCode),
+    onSuccess: (res) => {
+      setRecoveryCodes(res.recoveryCodes);
+      setSetupStep("recovery");
+      setSetupSecret(null);
+      setSetupAuthenticatorUri(null);
+      setConfirmCode("");
+      void queryClient.invalidateQueries({ queryKey: ["tenant-two-factor-status"] });
+      toast.success("Autenticação em duas etapas ativada");
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Código inválido"),
+  });
+
+  const disableMutation = useMutation({
+    mutationFn: () => api.disableTenantTwoFactor(token!, actionPassword, actionCode),
+    onSuccess: () => {
+      setDisableOpen(false);
+      resetActionForm();
+      void queryClient.invalidateQueries({ queryKey: ["tenant-two-factor-status"] });
+      toast.success("Autenticação em duas etapas desativada");
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Não foi possível desativar"),
+  });
+
+  function resetActionForm() {
+    setActionPassword("");
+    setActionCode("");
+  }
+
+  async function copyText(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copiado`);
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  }
+
+  const enabled = statusQuery.data?.enabled ?? false;
+  const recoveryRemaining = statusQuery.data?.recoveryCodesRemaining ?? 0;
+  const required = settings?.adminTwoFactorRequired === true;
+  const setupPending = required && !enabled && isAdmin;
+
+  return (
+    <>
+      {setupPending && (
+        <Card className="border-amber-200/80 bg-amber-50/50">
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-3">
+              <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-800" />
+              <div>
+                <p className="font-medium text-amber-950">2FA obrigatório para administradores</p>
+                <p className="text-sm text-amber-900/90">
+                  Sua organização exige autenticação em duas etapas. Configure abaixo para manter o
+                  acesso em conformidade.
+                </p>
+              </div>
+            </div>
+            {setupStep === "idle" && (
+              <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
+                Configurar agora
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-serif text-lg">
+              <Shield className="size-5" />
+              Autenticação em duas etapas
+            </CardTitle>
+            {enabled ? (
+              <Badge variant="success">
+                <ShieldCheck className="mr-1 size-3" />
+                Ativa
+              </Badge>
+            ) : required ? (
+              <Badge variant="warning">Obrigatória</Badge>
+            ) : (
+              <Badge variant="muted">Inativa</Badge>
+            )}
+          </div>
+          <CardDescription>
+            Proteja o acesso ao portal com um app autenticador (Google Authenticator, Authy, etc.).
+            {required && " Exigido pela política de segurança da sua organização."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {enabled && (
+            <p className="text-sm text-muted-foreground">
+              Códigos de recuperação restantes:{" "}
+              <span className="font-medium text-foreground">{recoveryRemaining}</span>
+            </p>
+          )}
+
+          {setupStep === "idle" && !enabled && (
+            <Button
+              type="button"
+              onClick={() => beginMutation.mutate()}
+              disabled={beginMutation.isPending || statusQuery.isLoading}
+            >
+              {beginMutation.isPending ? "Preparando…" : "Ativar 2FA"}
+            </Button>
+          )}
+
+          {setupStep === "scan" && setupSecret && (
+            <div className="max-w-md space-y-4 rounded-lg border bg-muted/30 p-4">
+              <p className="text-sm">
+                Escaneie o QR code no app autenticador ou informe a chave manualmente:
+              </p>
+              {setupAuthenticatorUri && (
+                <div className="mx-auto w-fit rounded-lg bg-white p-3">
+                  <QRCode value={setupAuthenticatorUri} size={160} />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <code className="flex-1 break-all rounded bg-background px-3 py-2 font-mono text-sm">
+                  {setupSecret}
+                </code>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => void copyText(setupSecret, "Chave")}
+                >
+                  <Copy className="size-4" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tenant-setup-code">Código de 6 dígitos</Label>
+                <Input
+                  id="tenant-setup-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  value={confirmCode}
+                  onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="000000"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={() => confirmMutation.mutate()}
+                  disabled={confirmMutation.isPending || confirmCode.length < 6}
+                >
+                  {confirmMutation.isPending ? "Confirmando…" : "Confirmar e ativar"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setSetupStep("idle");
+                    setSetupSecret(null);
+                    setSetupAuthenticatorUri(null);
+                    setConfirmCode("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {setupStep === "recovery" && recoveryCodes && (
+            <div className="max-w-md space-y-3 rounded-lg border border-amber-200/80 bg-amber-50/50 p-4">
+              <p className="text-sm font-medium text-amber-900">
+                Guarde estes códigos de recuperação em local seguro. Cada um só pode ser usado uma
+                vez.
+              </p>
+              <ul className="grid gap-1 font-mono text-sm sm:grid-cols-2">
+                {recoveryCodes.map((code) => (
+                  <li key={code} className="rounded bg-background px-2 py-1">
+                    {code}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void copyText(recoveryCodes.join("\n"), "Códigos")}
+              >
+                <Copy className="size-4" />
+                Copiar todos
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setRecoveryCodes(null);
+                  setSetupStep("idle");
+                }}
+              >
+                Entendi, fechar
+              </Button>
+            </div>
+          )}
+
+          {enabled && setupStep === "idle" && !required && (
+            <Button type="button" variant="ghost" onClick={() => setDisableOpen(true)}>
+              <ShieldOff className="size-4" />
+              Desativar 2FA
+            </Button>
+          )}
+
+          {required && (
+            <p className="text-sm text-muted-foreground">
+              Política da organização em{" "}
+              <Link to="/configuracoes?tab=privacidade" className="text-primary hover:underline">
+                Privacidade e segurança
+              </Link>
+              .
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={disableOpen}
+        onOpenChange={(open) => {
+          setDisableOpen(open);
+          if (!open) resetActionForm();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desativar autenticação em duas etapas</DialogTitle>
+            <DialogDescription>
+              Confirme sua senha e um código do app autenticador para desativar o 2FA.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tenant-2fa-password">Senha atual</Label>
+              <PasswordInput
+                id="tenant-2fa-password"
+                value={actionPassword}
+                onChange={(e) => setActionPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tenant-2fa-code">Código do autenticador</Label>
+              <Input
+                id="tenant-2fa-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                value={actionCode}
+                onChange={(e) => setActionCode(e.target.value.replace(/\D/g, ""))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              disabled={disableMutation.isPending || !actionPassword || actionCode.length < 6}
+              onClick={() => disableMutation.mutate()}
+            >
+              {disableMutation.isPending ? "Desativando…" : "Desativar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
