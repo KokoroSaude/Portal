@@ -1175,7 +1175,7 @@ export interface StrategicAssessmentQuestion {
   text: string;
   order: number;
   enabled: boolean;
-  dimension: string;
+  dimension: string | number;
 }
 
 export interface StrategicAssessmentScaleDefinition {

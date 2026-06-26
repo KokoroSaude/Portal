@@ -774,8 +774,24 @@ export const api = {
   getPatientTpbRisk: (token: string, patientId: string) =>
     request<PatientTpbRisk>(`/api/patients/${patientId}/tpb-risk`, { token }),
 
-  getStrategicAssessmentScale: (token: string) =>
-    request<StrategicAssessmentScaleViewResponse>("/api/patients/behavioral/scale", { token }),
+  getStrategicAssessmentScale: async (token: string) => {
+    const raw = await request<StrategicAssessmentScaleViewResponse>("/api/patients/behavioral/scale", {
+      token,
+    });
+    return {
+      scale: {
+        ...raw.scale,
+        questions: (raw.scale?.questions ?? []).map((q) => ({
+          ...q,
+          dimension:
+            typeof q.dimension === "number"
+              ? ["Lifestyle", "Habits", "Emotions", "CognitiveBias", "Comorbidity"][q.dimension] ??
+                String(q.dimension)
+              : q.dimension,
+        })),
+      },
+    };
+  },
 
   getPatientStrategicAssessment: async (token: string, patientId: string) => {
     try {

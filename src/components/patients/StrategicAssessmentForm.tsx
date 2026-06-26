@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiClientError } from "@/lib/api";
-import { BEHAVIORAL_DIMENSION_LABELS } from "@/lib/constants";
+import { behavioralDimensionLabel, normalizeBehavioralDimension } from "@/lib/behavioral-dimensions";
 import { cn, formatDateTime } from "@/lib/utils";
 import type { StrategicAssessmentQuestion } from "@/types/api";
 
@@ -19,20 +19,6 @@ const DIMENSION_ORDER = [
   "CognitiveBias",
   "Comorbidity",
 ];
-
-function dimensionLabel(dimension: string) {
-  const key = dimension.charAt(0).toLowerCase() + dimension.slice(1);
-  const snake = dimension
-    .replace(/([A-Z])/g, "_$1")
-    .toLowerCase()
-    .replace(/^_/, "");
-  return (
-    BEHAVIORAL_DIMENSION_LABELS[dimension] ??
-    BEHAVIORAL_DIMENSION_LABELS[snake] ??
-    BEHAVIORAL_DIMENSION_LABELS[key] ??
-    dimension
-  );
-}
 
 type StrategicAssessmentFormProps = {
   token: string;
@@ -68,9 +54,10 @@ export function StrategicAssessmentForm({
     const enabled = scale.questions.filter((q) => q.enabled).sort((a, b) => a.order - b.order);
     const byDim = new Map<string, StrategicAssessmentQuestion[]>();
     for (const q of enabled) {
-      const list = byDim.get(q.dimension) ?? [];
-      list.push(q);
-      byDim.set(q.dimension, list);
+      const dim = normalizeBehavioralDimension(q.dimension);
+      const list = byDim.get(dim) ?? [];
+      list.push({ ...q, dimension: dim });
+      byDim.set(dim, list);
     }
     const ordered: { dimension: string; questions: StrategicAssessmentQuestion[] }[] = [];
     for (const dim of DIMENSION_ORDER) {
@@ -168,14 +155,14 @@ export function StrategicAssessmentForm({
               className="cursor-pointer"
               onClick={() => canWrite && setStep(i)}
             >
-              {dimensionLabel(g.dimension)}
+              {behavioralDimensionLabel(g.dimension)}
             </Badge>
           ))}
         </div>
 
         {currentGroup && (
           <div className="space-y-5">
-            <h3 className="font-medium">{dimensionLabel(currentGroup.dimension)}</h3>
+            <h3 className="font-medium">{behavioralDimensionLabel(currentGroup.dimension)}</h3>
             {currentGroup.questions.map((q) => (
               <div key={q.id} className="space-y-2 rounded-lg border p-4">
                 <Label className="text-sm leading-snug">{q.text}</Label>

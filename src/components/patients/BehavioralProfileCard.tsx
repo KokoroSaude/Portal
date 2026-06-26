@@ -2,11 +2,8 @@ import { Brain, ClipboardList, MapPin, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  BEHAVIORAL_DIMENSION_LABELS,
-  BEHAVIORAL_SOURCE_LABELS,
-  TPB_RISK_LABELS,
-} from "@/lib/constants";
+import { behavioralDimensionLabel } from "@/lib/behavioral-dimensions";
+import { BEHAVIORAL_SOURCE_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
 import type { PatientBehavioralProfile, PatientTpbRisk } from "@/types/api";
 
@@ -19,7 +16,7 @@ function DimensionBars({ scores }: { scores: Record<string, number> }) {
       {entries.map(([key, value]) => (
         <div key={key} className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{BEHAVIORAL_DIMENSION_LABELS[key] ?? key}</span>
+            <span>{behavioralDimensionLabel(key)}</span>
             <span>{Math.round(value * 100)}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -130,7 +127,7 @@ export function BehavioralProfileCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-muted-foreground">Barreira principal:</span>
                   <Badge variant="secondary">
-                    {BEHAVIORAL_DIMENSION_LABELS[profile.primaryBarrier] ?? profile.primaryBarrier}
+                    {behavioralDimensionLabel(profile.primaryBarrier)}
                   </Badge>
                 </div>
               )}
