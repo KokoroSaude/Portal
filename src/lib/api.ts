@@ -104,6 +104,8 @@ import type {
   PlatformUserInfo,
   WhatsappConversation,
   WhatsappConversationThread,
+  ConversationAiSummary,
+  BehavioralBarriersReport,
   WhatsappDiagnostics,
   WhatsappSender,
   MetaEmbeddedSignupConfig,
@@ -606,6 +608,9 @@ export const api = {
   getAdherenceTrend: (token: string, from?: string, to?: string) =>
     request<AdherenceTrendPoint[]>(`/api/reports/adherence/trend${qs({ from, to })}`, { token }),
 
+  getBehavioralBarriersReport: (token: string) =>
+    request<BehavioralBarriersReport>("/api/reports/behavioral-barriers", { token }),
+
   getMoriskyReport: (token: string, from?: string, to?: string) =>
     request<MoriskyReport>(`/api/reports/morisky${qs({ from, to })}`, { token }),
 
@@ -1010,6 +1015,9 @@ export const api = {
       `/api/whatsapp/conversations/${patientId}/messages?limit=${limit}`,
       { token },
     ),
+
+  getConversationAiSummary: (token: string, patientId: string) =>
+    request<ConversationAiSummary>(`/api/whatsapp/conversations/${patientId}/ai-summary`, { token }),
 
   deleteWhatsAppConversationMessages: (token: string, patientId: string) =>
     request<{ deleted: number }>(`/api/whatsapp/conversations/${patientId}/messages`, {

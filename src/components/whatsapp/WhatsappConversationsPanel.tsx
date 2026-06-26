@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { WhatsappConversationAiSummaryCard } from "@/components/whatsapp/WhatsappConversationAiSummaryCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { CONVERSATION_STEP_LABELS, CONTENT_SOURCE_LABELS } from "@/lib/constants";
@@ -699,6 +700,10 @@ export function WhatsappConversationsPanel() {
                   </div>
                 )}
               </div>
+
+              {selectedPatientId && token && (
+                <WhatsappConversationAiSummaryCard token={token} patientId={selectedPatientId} />
+              )}
 
               <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[1fr_minmax(200px,240px)]">
                 <div className="flex min-h-0 flex-col">

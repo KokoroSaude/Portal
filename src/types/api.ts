@@ -1208,6 +1208,7 @@ export interface SubmitStrategicAssessmentResult {
   assessmentId: string;
   dimensionScores: Record<string, number>;
   primaryBarrier: string | null;
+  operatorSummary?: string | null;
 }
 
 export interface PatientBehavioralProfile {
@@ -1285,6 +1286,10 @@ export interface PatientAiBriefContext {
   moriskyScore: number | null;
   moriskyLevel: string | null;
   risk: PatientAiBriefRisk | null;
+  strategicDimensionScores?: Record<string, number> | null;
+  primaryBarrier?: string | null;
+  primaryBarrierLabel?: string | null;
+  recommendedNudgeTypes?: string[] | null;
 }
 
 export interface PatientAiBrief {
@@ -1828,6 +1833,28 @@ export interface WhatsappConversationThread {
   messagingWindow?: WhatsappMessagingWindow;
   outboundContent?: WhatsappOutboundContent;
   scheduling?: WhatsappConversationScheduling;
+}
+
+export interface ConversationAiSummary {
+  summary: string;
+  riskLevel: string;
+  suggestedNextAction: string;
+  source: string;
+  generatedAt: string;
+}
+
+export interface BehavioralBarrierRow {
+  barrier: string;
+  barrierLabel: string;
+  patientCount: number;
+  lowAdherenceCount: number;
+  lowAdherencePercent: number;
+}
+
+export interface BehavioralBarriersReport {
+  barriers: BehavioralBarrierRow[];
+  totalPatientsWithProfile: number;
+  generatedAt: string;
 }
 
 export interface PromoDefaults {

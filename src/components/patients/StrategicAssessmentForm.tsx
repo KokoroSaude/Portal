@@ -86,8 +86,12 @@ export function StrategicAssessmentForm({
       }));
       return api.submitStrategicAssessment(token, patientId, answers);
     },
-    onSuccess: () => {
-      toast.success("Avaliação estratégica salva. Perfil comportamental atualizado.");
+    onSuccess: (data) => {
+      if (data.operatorSummary) {
+        toast.success(data.operatorSummary, { duration: 8000 });
+      } else {
+        toast.success("Avaliação estratégica salva. Perfil comportamental atualizado.");
+      }
       queryClient.invalidateQueries({ queryKey: ["patient-strategic-assessment", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-behavioral-profile", patientId] });
     },

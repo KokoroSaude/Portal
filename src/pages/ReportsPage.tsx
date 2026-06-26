@@ -21,6 +21,7 @@ import {
   SimpleBarChart,
 } from "@/components/reports/ReportCharts";
 import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
+import { BehavioralBarriersReportCard } from "@/components/reports/BehavioralBarriersReportCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -298,6 +299,10 @@ export function ReportsPage() {
             <>
               {token && (
                 <ReportAiInsightCard token={token} from={range.from} to={range.to} />
+              )}
+
+              {token && hasFeature(FEATURE_KEYS.behavioralProfile) && (
+                <BehavioralBarriersReportCard token={token} />
               )}
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
