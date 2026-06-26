@@ -658,6 +658,43 @@ export interface TenantSettings {
   pickupDuplicateDispenseAlertDays?: number;
   pickupDelegateHighVolumeDailyLimit?: number;
   pickupProcurementWebhookUrl?: string | null;
+  pickupErpAllowedIps?: string | null;
+  pickupErpSandboxMode?: boolean;
+}
+
+export interface ErpCredential {
+  id: string;
+  keyPrefix: string;
+  isSandbox: boolean;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface GenerateErpCredentialResult {
+  id: string;
+  apiKey: string;
+  keyPrefix: string;
+  isSandbox: boolean;
+  createdAt: string;
+}
+
+export interface ErpConnectionTestResult {
+  success: boolean;
+  message?: string | null;
+  latencyMs?: number;
+}
+
+export interface IntegrationAuditEntry {
+  id: string;
+  httpMethod: string;
+  path: string;
+  statusCode: number;
+  credentialPrefix: string | null;
+  clientIp: string | null;
+  externalReference: string | null;
+  errorCode: string | null;
+  durationMs: number;
+  createdAt: string;
 }
 
 export type TenantOperationMode = "AdherenceProgram" | "GovPharmacy";

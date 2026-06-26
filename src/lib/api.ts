@@ -125,6 +125,10 @@ import type {
   UpsertPatientCareDelegatePayload,
   ImportPatientsResult,
   ClinicalPriorityTier,
+  ErpCredential,
+  GenerateErpCredentialResult,
+  ErpConnectionTestResult,
+  IntegrationAuditEntry,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -206,6 +210,88 @@ function qs(params: Record<string, string | number | undefined>) {
   }
   const s = q.toString();
   return s ? `?${s}` : "";
+}
+
+type RawErpCredential = ErpCredential & {
+  Id?: string;
+  KeyPrefix?: string;
+  IsSandbox?: boolean;
+  LastUsedAt?: string | null;
+  CreatedAt?: string;
+};
+
+type RawGenerateErpCredentialResult = GenerateErpCredentialResult & {
+  Id?: string;
+  ApiKey?: string;
+  KeyPrefix?: string;
+  IsSandbox?: boolean;
+  CreatedAt?: string;
+};
+
+type RawErpConnectionTestResult = ErpConnectionTestResult & {
+  Success?: boolean;
+  Message?: string | null;
+  LatencyMs?: number;
+};
+
+type RawIntegrationAuditEntry = IntegrationAuditEntry & {
+  Id?: string;
+  HttpMethod?: string;
+  Path?: string;
+  StatusCode?: number;
+  CredentialPrefix?: string | null;
+  ClientIp?: string | null;
+  ExternalReference?: string | null;
+  ErrorCode?: string | null;
+  DurationMs?: number;
+  CreatedAt?: string;
+};
+
+function normalizeErpCredential(raw: unknown): ErpCredential {
+  const r = raw as RawErpCredential;
+  return {
+    id: r.id ?? r.Id ?? "",
+    keyPrefix: r.keyPrefix ?? r.KeyPrefix ?? "",
+    isSandbox: r.isSandbox ?? r.IsSandbox ?? false,
+    lastUsedAt: r.lastUsedAt ?? r.LastUsedAt ?? null,
+    createdAt: r.createdAt ?? r.CreatedAt ?? "",
+  };
+}
+
+function normalizeGenerateErpCredentialResult(raw: unknown): GenerateErpCredentialResult {
+  const r = raw as RawGenerateErpCredentialResult;
+  return {
+    id: r.id ?? r.Id ?? "",
+    apiKey: r.apiKey ?? r.ApiKey ?? "",
+    keyPrefix: r.keyPrefix ?? r.KeyPrefix ?? "",
+    isSandbox: r.isSandbox ?? r.IsSandbox ?? false,
+    createdAt: r.createdAt ?? r.CreatedAt ?? "",
+  };
+}
+
+function normalizeErpConnectionTestResult(raw: unknown): ErpConnectionTestResult {
+  const r = raw as RawErpConnectionTestResult;
+  return {
+    success: r.success ?? r.Success ?? false,
+    message: r.message ?? r.Message ?? null,
+    latencyMs: r.latencyMs ?? r.LatencyMs,
+  };
+}
+
+function normalizeIntegrationAuditEntry(raw: unknown): IntegrationAuditEntry {
+  const r = raw as RawIntegrationAuditEntry;
+  return {
+    id: r.id ?? r.Id ?? "",
+    httpMethod: r.httpMethod ?? r.HttpMethod ?? "",
+    path: r.path ?? r.Path ?? "",
+    statusCode: r.statusCode ?? r.StatusCode ?? 0,
+    credentialPrefix: r.credentialPrefix ?? r.CredentialPrefix ?? null,
+    clientIp: r.clientIp ?? r.ClientIp ?? null,
+    externalReference: r.externalReference ?? r.ExternalReference ?? null,
+    errorCode: r.errorCode ?? r.ErrorCode ?? null,
+    durationMs: r.durationMs ?? r.DurationMs ?? 0,
+    createdAt: r.createdAt ?? r.CreatedAt ?? "",
+  };
 }
 
 function adminReportQs(
@@ -958,6 +1044,39 @@ export const api = {
 
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>
     request<void>("/api/settings", { method: "PUT", token, body: payload }),
+
+  listErpCredentials: async (token: string) => {
+    const raw = await request<unknown[]>("/api/settings/pickup/erp-credentials", { token });
+    return (raw ?? []).map(normalizeErpCredential);
+  },
+
+  generateErpCredential: async (token: string, sandbox = false) =>
+    normalizeGenerateErpCredentialResult(
+      await request<unknown>("/api/settings/pickup/erp-credentials", {
+        method: "POST",
+        token,
+        body: { sandbox },
+      }),
+    ),
+
+  revokeErpCredential: (token: string, id: string) =>
+    request<void>(`/api/settings/pickup/erp-credentials/${id}`, { method: "DELETE", token }),
+
+  testErpConnection: async (token: string) =>
+    normalizeErpConnectionTestResult(
+      await request<unknown>("/api/settings/pickup/erp-credentials/test", {
+        method: "POST",
+        token,
+      }),
+    ),
+
+  listIntegrationAudit: async (token: string, limit = 50) => {
+    const raw = await request<unknown[]>(
+      `/api/settings/pickup/integration-audit${qs({ limit })}`,
+      { token },
+    );
+    return (raw ?? []).map(normalizeIntegrationAuditEntry);
+  },
 
   getPickupDashboard: (token: string) =>
     request<PickupDashboard>("/api/pickup/dashboard", { token }),

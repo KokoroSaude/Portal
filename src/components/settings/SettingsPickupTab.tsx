@@ -1,5 +1,15 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SettingsField, SettingsSwitchField } from "@/components/settings/SettingsField";
+import { ErpCredentialsCard } from "@/components/settings/ErpCredentialsCard";
+import { ErpHomologationChecklist } from "@/components/settings/ErpHomologationChecklist";
+import { ErpIntegrationLogCard } from "@/components/settings/ErpIntegrationLogCard";
+import { ErpSimulatorCard } from "@/components/settings/ErpSimulatorCard";
 import { PasswordInput } from "@/components/ui/password-input";
+import { PICKUP_NOTIFICATION_ROUTING_LABELS } from "@/lib/constants";
+import type { ErpConnectionTestResult, TenantSettings } from "@/types/api";
+
 import {
   Select,
   SelectContent,
@@ -7,10 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SettingsField, SettingsSwitchField } from "@/components/settings/SettingsField";
-import { PICKUP_NOTIFICATION_ROUTING_LABELS } from "@/lib/constants";
-import type { TenantSettings } from "@/types/api";
 
 type SettingsPickupTabProps = {
   form: TenantSettings;
@@ -18,6 +24,9 @@ type SettingsPickupTabProps = {
 };
 
 export function SettingsPickupTab({ form, update }: SettingsPickupTabProps) {
+  const [testResult, setTestResult] = useState<ErpConnectionTestResult | null>(null);
+  const [simulatorApiKey, setSimulatorApiKey] = useState<string | null>(null);
+
   return (
     <Tabs defaultValue="fila" className="space-y-4">
       <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
@@ -371,30 +380,29 @@ export function SettingsPickupTab({ form, update }: SettingsPickupTabProps) {
       </TabsContent>
 
       <TabsContent value="integracoes" className="mt-0 space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <SettingsField
-            label="Chave API integração ERP"
-            hint="Token usado pelo sistema de estoque (ERP) para enviar lotes, confirmar dispensação e consultar ordens via API externa."
-          >
-            <PasswordInput
-              value={form.pickupIntegrationApiKey ?? ""}
-              onChange={(e) => update("pickupIntegrationApiKey", e.target.value)}
-              placeholder="Opcional"
-            />
-          </SettingsField>
+        <ErpHomologationChecklist form={form} testResult={testResult} />
 
-          <SettingsField
-            label="Webhook pós-export compras"
-            hint="URL chamada após exportar planilha de compras CATMAT, para integrar com sistema de procurement ou BI externo."
-            className="sm:col-span-2"
-          >
-            <Input
-              value={form.pickupProcurementWebhookUrl ?? ""}
-              onChange={(e) => update("pickupProcurementWebhookUrl", e.target.value)}
-              placeholder="https://..."
-            />
-          </SettingsField>
-        </div>
+        <ErpCredentialsCard
+          form={form}
+          update={update}
+          onTestResult={setTestResult}
+          onApiKeyGenerated={setSimulatorApiKey}
+        />
+
+        <SettingsField
+          label="Webhook pós-export compras"
+          hint="URL chamada após exportar planilha de compras CATMAT, para integrar com sistema de procurement ou BI externo."
+        >
+          <Input
+            value={form.pickupProcurementWebhookUrl ?? ""}
+            onChange={(e) => update("pickupProcurementWebhookUrl", e.target.value)}
+            placeholder="https://..."
+          />
+        </SettingsField>
+
+        <ErpIntegrationLogCard />
+
+        <ErpSimulatorCard apiKey={simulatorApiKey} />
       </TabsContent>
     </Tabs>
   );

@@ -45,6 +45,8 @@ type RawTenantSettings = TenantSettings & {
   PickupDuplicateDispenseAlertDays?: number;
   PickupDelegateHighVolumeDailyLimit?: number;
   PickupProcurementWebhookUrl?: string | null;
+  PickupErpAllowedIps?: string | null;
+  PickupErpSandboxMode?: boolean;
 };
 
 function normalizeAiFeatures(raw?: RawAiFeatures | null): AiPlatformFeatures | undefined {
@@ -123,6 +125,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.pickupDelegateHighVolumeDailyLimit ?? raw.PickupDelegateHighVolumeDailyLimit ?? 5,
     pickupProcurementWebhookUrl:
       raw.pickupProcurementWebhookUrl ?? raw.PickupProcurementWebhookUrl ?? null,
+    pickupErpAllowedIps: raw.pickupErpAllowedIps ?? raw.PickupErpAllowedIps ?? null,
+    pickupErpSandboxMode: raw.pickupErpSandboxMode ?? raw.PickupErpSandboxMode ?? false,
     aiFeatures,
   };
 }

@@ -107,6 +107,8 @@ export function SettingsPage() {
         pickupDuplicateDispenseAlertDays: settings.pickupDuplicateDispenseAlertDays ?? 7,
         pickupDelegateHighVolumeDailyLimit: settings.pickupDelegateHighVolumeDailyLimit ?? 5,
         pickupProcurementWebhookUrl: settings.pickupProcurementWebhookUrl ?? "",
+        pickupErpAllowedIps: settings.pickupErpAllowedIps ?? "",
+        pickupErpSandboxMode: settings.pickupErpSandboxMode ?? false,
       });
     }
   }, [settings]);
