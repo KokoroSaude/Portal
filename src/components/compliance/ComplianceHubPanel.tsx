@@ -14,9 +14,15 @@ import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvail
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, ApiClientError } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ApiClientError } from "@/lib/api";
 import { downloadJsonFile } from "@/lib/compliance";
-import type { TenantSettings } from "@/types/api";
+import type {
+  AdminAuditLogResult,
+  ComplianceDocument,
+  ComplianceDocumentListItem,
+  TenantSettings,
+} from "@/types/api";
 
 const CONTACTS = [
   { label: "DPO Kokoro", value: "dpo@kokoro.health" },
@@ -26,43 +32,57 @@ const CONTACTS = [
 
 type Props = {
   token: string;
-  settings: TenantSettings;
+  settings: TenantSettings | null;
+  settingsLoading?: boolean;
+  tenantLabel?: string | null;
+  documentsQueryKey: readonly unknown[];
+  fetchDocuments: () => Promise<ComplianceDocumentListItem[]>;
+  fetchDocument: (slug: string) => Promise<ComplianceDocument>;
+  exportAudit: () => Promise<AdminAuditLogResult>;
+  showDsarHint?: boolean;
 };
 
-export function SettingsComplianceTab({ token, settings }: Props) {
+export function ComplianceHubPanel({
+  token,
+  settings,
+  settingsLoading,
+  tenantLabel,
+  documentsQueryKey,
+  fetchDocuments,
+  fetchDocument,
+  exportAudit,
+  showDsarHint = false,
+}: Props) {
   const [openSlug, setOpenSlug] = useState<string | null>(null);
 
   const { data: documents, isLoading: docsLoading } = useQuery({
-    queryKey: ["compliance-documents"],
-    queryFn: () => api.getComplianceDocuments(token),
+    queryKey: documentsQueryKey,
+    queryFn: fetchDocuments,
   });
 
   const auditExport = useMutation({
-    mutationFn: async () => {
-      const to = new Date();
-      const from = new Date();
-      from.setDate(from.getDate() - 90);
-      return api.getComplianceAuditLog(token, {
-        from: from.toISOString(),
-        to: to.toISOString(),
-        limit: 10_000,
-      });
-    },
+    mutationFn: exportAudit,
     onSuccess: (result) => {
       const stamp = new Date().toISOString().slice(0, 10);
-      downloadJsonFile(result, `auditoria-${stamp}.json`);
+      const prefix = tenantLabel
+        ? tenantLabel
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+        : "auditoria";
+      downloadJsonFile(result, `${prefix}-${stamp}.json`);
       toast.success(`Exportados ${result.items.length} registro(s) de auditoria.`);
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao exportar auditoria"),
   });
 
-  const twoFactorLabel = settings.adminTwoFactorRequired
+  const twoFactorLabel = settings?.adminTwoFactorRequired
     ? "Obrigatório para administradores"
     : "Opcional";
 
   const retentionLabel =
-    settings.dataRetentionDays && settings.dataRetentionDays > 0
+    settings?.dataRetentionDays && settings.dataRetentionDays > 0
       ? `${settings.dataRetentionDays} dias`
       : "Padrão da plataforma";
 
@@ -75,42 +95,54 @@ export function SettingsComplianceTab({ token, settings }: Props) {
             Status de conformidade
           </CardTitle>
           <CardDescription>
-            Indicadores operacionais do piloto — privacidade, segurança e IA.
+            {tenantLabel
+              ? `Indicadores operacionais — ${tenantLabel}`
+              : "Selecione uma organização para ver o status de privacidade, segurança e IA."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <Sparkles className="size-4 text-primary" />
-              Inteligência artificial
-            </div>
-            <PatientAiAvailabilityBadge settings={settings} canConfigureTenant />
-            {settings.aiEnabled && !settings.aiApprovedByController && (
-              <p className="mt-2 text-sm text-amber-900">
-                Aguardando aprovação formal do controlador (ex.: Unimed).
-              </p>
-            )}
-            {settings.aiApprovedByController && settings.aiApprovalReference && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Referência: <code>{settings.aiApprovalReference}</code>
-              </p>
-            )}
-          </div>
+        <CardContent>
+          {settingsLoading && <Skeleton className="h-24 w-full" />}
+          {!settingsLoading && !settings && (
+            <p className="text-sm text-muted-foreground">
+              Escolha uma organização acima para carregar o status de conformidade.
+            </p>
+          )}
+          {!settingsLoading && settings && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="size-4 text-primary" />
+                  Inteligência artificial
+                </div>
+                <PatientAiAvailabilityBadge settings={settings} />
+                {settings.aiEnabled && !settings.aiApprovedByController && (
+                  <p className="mt-2 text-sm text-amber-900">
+                    Aguardando aprovação formal do controlador (ex.: Unimed).
+                  </p>
+                )}
+                {settings.aiApprovedByController && settings.aiApprovalReference && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Referência: <code>{settings.aiApprovalReference}</code>
+                  </p>
+                )}
+              </div>
 
-          <div className="rounded-lg border p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="size-4 text-primary" />
-              Autenticação de administradores
-            </div>
-            <Badge variant={settings.adminTwoFactorRequired ? "success" : "outline"}>
-              2FA {twoFactorLabel.toLowerCase()}
-            </Badge>
-          </div>
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <ShieldCheck className="size-4 text-primary" />
+                  Autenticação de administradores
+                </div>
+                <Badge variant={settings.adminTwoFactorRequired ? "success" : "outline"}>
+                  2FA {twoFactorLabel.toLowerCase()}
+                </Badge>
+              </div>
 
-          <div className="rounded-lg border p-4 sm:col-span-2">
-            <p className="text-sm font-medium">Retenção de dados</p>
-            <p className="mt-1 text-sm text-muted-foreground">{retentionLabel}</p>
-          </div>
+              <div className="rounded-lg border p-4 sm:col-span-2">
+                <p className="text-sm font-medium">Retenção de dados</p>
+                <p className="mt-1 text-sm text-muted-foreground">{retentionLabel}</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -161,7 +193,10 @@ export function SettingsComplianceTab({ token, settings }: Props) {
         </CardHeader>
         <CardContent className="space-y-3">
           {CONTACTS.map((contact) => (
-            <div key={contact.value} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              key={contact.value}
+              className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+            >
               <span className="text-sm text-muted-foreground">{contact.label}</span>
               <a
                 href={`mailto:${contact.value}`}
@@ -195,20 +230,27 @@ export function SettingsComplianceTab({ token, settings }: Props) {
             <Button
               type="button"
               variant="outline"
-              disabled={auditExport.isPending}
+              disabled={auditExport.isPending || !settings}
               onClick={() => auditExport.mutate()}
             >
               {auditExport.isPending ? "Exportando…" : "Exportar JSON"}
             </Button>
           </div>
-          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            Para exportar dados de um titular (DSAR), abra o perfil do paciente e use o botão{" "}
-            <strong>Exportar dados (DSAR)</strong> — disponível para administradores.
-          </div>
+          {showDsarHint && (
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Para exportar dados de um titular (DSAR), entre como a organização e use o botão{" "}
+              <strong>Exportar dados (DSAR)</strong> no perfil do paciente.
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <ComplianceDocumentDialog token={token} slug={openSlug} onClose={() => setOpenSlug(null)} />
+      <ComplianceDocumentDialog
+        token={token}
+        slug={openSlug}
+        onClose={() => setOpenSlug(null)}
+        fetchDocument={fetchDocument}
+      />
     </div>
   );
 }

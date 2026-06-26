@@ -182,7 +182,6 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           { to: "/configuracoes?tab=engajamento", label: "Engajamento", icon: Megaphone },
           { to: "/configuracoes?tab=onboarding", label: "Onboarding", icon: GitBranch },
           { to: "/configuracoes?tab=pesquisas", label: "Pesquisas", icon: Star },
-          { to: "/configuracoes?tab=privacidade", label: "Privacidade", icon: Shield },
           {
             to: "/configuracoes?tab=usuarios",
             label: "Usuários",
@@ -245,6 +244,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
   {
     title: "Ferramentas",
     items: [
+      { to: "/admin/conformidade", label: "Privacidade e conformidade", icon: Shield },
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
     ],

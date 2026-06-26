@@ -28,6 +28,7 @@ import type {
   AdminInteractionEventsResult,
   AdminSenderPerformance,
   AdminMoriskyReport,
+  AdminTenantComplianceOverview,
   AdminTenant,
   AdminDeletedTenant,
   AdminVoiceCatalogEntry,
@@ -1875,6 +1876,20 @@ export const api = {
 
   exportPatientData: (token: string, patientId: string) =>
     request<PatientDataExport>(`/api/compliance/patients/${patientId}/export`, { token }),
+
+  adminGetComplianceDocuments: (token: string) =>
+    request<ComplianceDocumentListItem[]>("/api/admin/compliance/documents", { token }),
+
+  adminGetComplianceDocument: (token: string, slug: string) =>
+    request<ComplianceDocument>(`/api/admin/compliance/documents/${encodeURIComponent(slug)}`, {
+      token,
+    }),
+
+  adminGetTenantComplianceOverview: (token: string, tenantId: string) =>
+    request<AdminTenantComplianceOverview>(
+      `/api/admin/tenants/${tenantId}/compliance/overview`,
+      { token },
+    ),
 };
 
 export const IMPERSONATION_STORAGE_KEY = "kokoro.impersonation";

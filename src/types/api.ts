@@ -1419,6 +1419,18 @@ export interface CarePlanUpsert {
 /** @deprecated Use CarePlanUpsert */
 export interface CarePlanUpdate extends CarePlanUpsert {}
 
+export interface AdminTenantComplianceOverview {
+  tenantId: string;
+  tenantName: string;
+  tenantSlug: string;
+  aiEnabled: boolean;
+  aiApprovedByController: boolean;
+  aiApprovedAt: string | null;
+  aiApprovalReference: string | null;
+  adminTwoFactorRequired: boolean;
+  dataRetentionDays: number | null;
+}
+
 export interface AdminTenant {
   id: string;
   name: string;

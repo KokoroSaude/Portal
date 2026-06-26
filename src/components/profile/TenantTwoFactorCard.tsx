@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Shield, ShieldAlert, ShieldCheck, ShieldOff } from "lucide-react";
 import QRCode from "react-qr-code";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -276,11 +275,7 @@ export function TenantTwoFactorCard() {
 
           {required && (
             <p className="text-sm text-muted-foreground">
-              Política da organização em{" "}
-              <Link to="/configuracoes?tab=privacidade" className="text-primary hover:underline">
-                Privacidade e segurança
-              </Link>
-              .
+              A autenticação em duas etapas é exigida pela política de segurança da sua organização.
             </p>
           )}
         </CardContent>

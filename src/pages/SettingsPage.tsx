@@ -9,7 +9,6 @@ import { SettingsAiTab } from "@/components/settings/SettingsAiTab";
 import { SettingsEngagementTab } from "@/components/settings/SettingsEngagementTab";
 import { SettingsOnboardingTab } from "@/components/settings/SettingsOnboardingTab";
 import { SettingsSurveysTab } from "@/components/settings/SettingsSurveysTab";
-import { SettingsComplianceTab } from "@/components/settings/SettingsComplianceTab";
 import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,6 @@ const SETTINGS_TABS = [
   "engajamento",
   "onboarding",
   "pesquisas",
-  "privacidade",
   "usuarios",
 ] as const;
 
@@ -50,7 +48,11 @@ export function SettingsPage() {
   const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const tabParam = searchParams.get("tab");
   const activeTab: SettingsTab =
-    tabParam === "operacional" ? "operacao" : isSettingsTab(tabParam) ? tabParam : "operacao";
+    tabParam === "privacidade" || tabParam === "operacional"
+      ? "operacao"
+      : isSettingsTab(tabParam)
+        ? tabParam
+        : "operacao";
 
   function setActiveTab(tab: SettingsTab) {
     if (tab === "operacao") {
@@ -223,7 +225,6 @@ export function SettingsPage() {
           <TabsTrigger value="engajamento">Engajamento</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
-          <TabsTrigger value="privacidade">Privacidade</TabsTrigger>
           {hasFeature("users.manage") && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
 
@@ -376,10 +377,6 @@ export function SettingsPage() {
               />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="privacidade" className="space-y-4">
-          <SettingsComplianceTab token={token!} settings={settings!} />
         </TabsContent>
 
         {hasFeature("users.manage") && (

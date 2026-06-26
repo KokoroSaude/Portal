@@ -9,17 +9,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import type { ComplianceDocument } from "@/types/api";
 
 type Props = {
   token: string;
   slug: string | null;
   onClose: () => void;
+  fetchDocument?: (slug: string) => Promise<ComplianceDocument>;
+  queryKeyPrefix?: string;
 };
 
-export function ComplianceDocumentDialog({ token, slug, onClose }: Props) {
+export function ComplianceDocumentDialog({
+  token,
+  slug,
+  onClose,
+  fetchDocument,
+  queryKeyPrefix = "compliance",
+}: Props) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["compliance-document", slug],
-    queryFn: () => api.getComplianceDocument(token, slug!),
+    queryKey: [queryKeyPrefix, "document", slug],
+    queryFn: () =>
+      fetchDocument ? fetchDocument(slug!) : api.getComplianceDocument(token, slug!),
     enabled: !!slug,
   });
 
