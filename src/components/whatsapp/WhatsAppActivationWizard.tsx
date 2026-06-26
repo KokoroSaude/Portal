@@ -13,13 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import {
@@ -27,11 +20,14 @@ import {
   WHATSAPP_ACTIVATION_STATUS,
   WHATSAPP_ACTIVATION_STATUS_LABELS,
   WHATSAPP_MODE_LABELS,
-  WHATSAPP_SENDER_PURPOSE_LABELS,
 } from "@/lib/constants";
 import { formatDateTime, maskPhone } from "@/lib/utils";
-import type { WhatsappSender, WhatsAppActivationStatusDto } from "@/types/api";
+import type { WhatsappSender, WhatsAppActivationStatusDto, WhatsAppSenderPurpose } from "@/types/api";
 import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
+import {
+  WhatsAppSenderPurposeSelect,
+  WhatsAppSenderPurposeBadge,
+} from "@/components/whatsapp/WhatsAppSenderPurposeSelect";
 
 type WizardStep = "overview" | "phone" | "otp" | "profile" | "done";
 
@@ -125,7 +121,7 @@ export function WhatsAppActivationWizard({
 
   const [step, setStep] = useState<WizardStep>("overview");
   const [phone, setPhone] = useState("");
-  const [purpose, setPurpose] = useState<1 | 2 | 3>(1);
+  const [purpose, setPurpose] = useState<WhatsAppSenderPurpose>(1);
   const [otp, setOtp] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [verifiedSenderId, setVerifiedSenderId] = useState<string | null>(null);
@@ -299,29 +295,36 @@ export function WhatsAppActivationWizard({
 
       {step === "overview" && (
         <div className="space-y-4">
-          {status && status.senders.length > 0 && (
+          {sendersQuery.data && sendersQuery.data.length > 0 && (
             <ul className="space-y-2 text-sm">
-              {status.senders.map((sender) => (
+              {sendersQuery.data.map((sender) => (
                 <li
                   key={sender.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium">{sender.displayName}</p>
                     <p className="text-muted-foreground">{maskPhone(sender.phoneNumber)}</p>
                   </div>
-                  <Badge variant="outline">
-                    {WHATSAPP_SENDER_PURPOSE_LABELS[sender.purpose] ?? "Geral"}
-                  </Badge>
+                  <div className="text-right">
+                    <WhatsAppSenderPurposeBadge purpose={sender.purpose} showDescription />
+                  </div>
                 </li>
               ))}
             </ul>
           )}
 
+          {sendersQuery.data && sendersQuery.data.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Para alterar a finalidade de um número já cadastrado, use a tabela{" "}
+              <strong>Números cadastrados</strong> abaixo e clique em <strong>Editar</strong>.
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setStep("phone")}>
               <Phone className="mr-2 size-4" />
-              {status?.senders.length ? "Adicionar outro número" : "Cadastrar meu número"}
+              {sendersQuery.data?.length ? "Adicionar outro número" : "Cadastrar meu número"}
             </Button>
 
             {status?.status === WHATSAPP_ACTIVATION_STATUS.NoSender && (
@@ -371,22 +374,11 @@ export function WhatsAppActivationWizard({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="activation-purpose">Uso do número</Label>
-            <Select
-              value={String(purpose)}
-              onValueChange={(v) => setPurpose(Number(v) as 1 | 2 | 3)}
-            >
-              <SelectTrigger id="activation-purpose">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Adesão medicamentosa</SelectItem>
-                <SelectItem value="2">Promoções e campanhas</SelectItem>
-                <SelectItem value="3">Adesão e promoções (mesmo número)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <WhatsAppSenderPurposeSelect
+            id="activation-purpose"
+            value={purpose}
+            onChange={setPurpose}
+          />
 
           <div className="flex gap-2">
             <Button

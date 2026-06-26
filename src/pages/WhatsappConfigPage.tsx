@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { FEATURE_KEYS, WHATSAPP_ACTIVATION_STATUS } from "@/lib/constants";
+import { FEATURE_KEYS, WHATSAPP_ACTIVATION_STATUS, whatsAppSenderPurposeLabel } from "@/lib/constants";
 
 export function WhatsappConfigPage() {
   const { token, hasFeature } = useAuth();
@@ -77,6 +77,9 @@ export function WhatsappConfigPage() {
                     : isMetaEmbedded
                       ? "Conectado via Meta"
                       : "Cadastro manual"}
+                </Badge>
+                <Badge variant="outline">
+                  {whatsAppSenderPurposeLabel(activeSender.purpose)}
                 </Badge>
                 {activeSender.wabaId && (
                   <span className="text-muted-foreground font-mono text-xs">

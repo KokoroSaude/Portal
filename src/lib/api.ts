@@ -899,6 +899,7 @@ export const api = {
       wabaId?: string;
       phoneId?: string;
       isActive?: boolean;
+      purpose?: WhatsAppSenderPurpose;
     },
   ) => request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body: payload }),
 

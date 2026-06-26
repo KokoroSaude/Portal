@@ -1557,6 +1557,7 @@ export interface WhatsappSender {
   connectionSource: "Manual" | "EmbeddedSignup" | "PlatformOnboarding";
   connectedAt: string | null;
   hasEmbeddedToken: boolean;
+  purpose?: WhatsAppSenderPurpose;
 }
 
 /** Matches Kokoro.Domain.Enums.WhatsAppActivationStatus (JSON numeric). */

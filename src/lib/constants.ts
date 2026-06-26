@@ -93,11 +93,32 @@ export const WHATSAPP_ACTIVATION_STATUS_LABELS: Record<number, string> = {
 };
 
 export const WHATSAPP_SENDER_PURPOSE_LABELS: Record<number, string> = {
-  0: "Geral",
-  1: "Adesão",
-  2: "Promoções",
+  0: "Adesão medicamentosa",
+  1: "Adesão medicamentosa",
+  2: "Promoções e campanhas",
   3: "Adesão e promoções",
 };
+
+export const WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS: Record<number, string> = {
+  0: "Lembretes, check-ins e jornada do paciente",
+  1: "Lembretes, check-ins e jornada do paciente",
+  2: "Campanhas em massa com template Meta de marketing",
+  3: "Um único número para adesão e promoções",
+};
+
+export const WHATSAPP_SENDER_PURPOSE_OPTIONS = [
+  { value: 1, label: "Adesão medicamentosa", description: WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS[1] },
+  { value: 2, label: "Promoções e campanhas", description: WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS[2] },
+  { value: 3, label: "Adesão e promoções (mesmo número)", description: WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS[3] },
+] as const;
+
+export function whatsAppSenderPurposeLabel(purpose: number | undefined): string {
+  return WHATSAPP_SENDER_PURPOSE_LABELS[purpose ?? 1] ?? WHATSAPP_SENDER_PURPOSE_LABELS[1];
+}
+
+export function whatsAppSenderPurposeDescription(purpose: number | undefined): string {
+  return WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS[purpose ?? 1] ?? WHATSAPP_SENDER_PURPOSE_DESCRIPTIONS[1];
+}
 
 export const WHATSAPP_MODE_LABELS: Record<number, string> = {
   0: "Trial (número Kokoro)",

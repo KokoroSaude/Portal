@@ -35,6 +35,11 @@ import { matchesGridSearch } from "@/lib/gridSearch";
 import type { WhatsappSender } from "@/types/api";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
+import {
+  WhatsAppSenderPurposeBadge,
+  WhatsAppSenderPurposeSelect,
+} from "@/components/whatsapp/WhatsAppSenderPurposeSelect";
+import type { WhatsAppSenderPurpose } from "@/types/api";
 
 function senderConnectionLabel(sender: WhatsappSender): string {
   if (sender.connectionSource === "EmbeddedSignup") return "Meta";
@@ -68,6 +73,7 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
     displayName: "",
     wabaId: "",
     phoneId: "",
+    purpose: 1 as WhatsAppSenderPurpose,
   });
 
   function openEdit(sender: WhatsappSender) {
@@ -77,11 +83,12 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
       displayName: sender.displayName,
       wabaId: sender.wabaId,
       phoneId: sender.phoneId,
+      purpose: sender.purpose === 0 || sender.purpose === undefined ? 1 : sender.purpose,
     });
   }
 
   function resetForm() {
-    setForm({ phoneNumber: "", displayName: "", wabaId: "", phoneId: "" });
+    setForm({ phoneNumber: "", displayName: "", wabaId: "", phoneId: "", purpose: 1 });
   }
 
   const { data, isLoading } = useQuery({
@@ -108,12 +115,15 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
         displayName: form.displayName,
         wabaId: form.wabaId,
         phoneId: form.phoneId,
+        purpose: form.purpose,
       }),
     onSuccess: () => {
       toast.success("Remetente atualizado");
       setEditing(null);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["senders"] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-activation-status"] });
+      queryClient.invalidateQueries({ queryKey: ["promo-defaults"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
@@ -160,6 +170,7 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
         s.phoneId,
         s.isActive ? "ativo" : "inativo",
         senderConnectionLabel(s),
+        String(s.purpose ?? 1),
       ),
     );
   }, [data, query]);
@@ -256,6 +267,7 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>Finalidade</TableHead>
                 <TableHead>WABA / Phone ID</TableHead>
                 <TableHead>Conexão</TableHead>
                 <TableHead>Status</TableHead>
@@ -266,7 +278,7 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
             <TableBody>
               {filteredSenders.length === 0 && (
                 <GridEmptyRow
-                  colSpan={7}
+                  colSpan={8}
                   message={
                     query.trim()
                       ? "Nenhum remetente corresponde à busca."
@@ -278,6 +290,9 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.displayName}</TableCell>
                   <TableCell className="font-mono text-sm">{maskPhone(s.phoneNumber)}</TableCell>
+                  <TableCell>
+                    <WhatsAppSenderPurposeBadge purpose={s.purpose} showDescription />
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {s.wabaId} / {s.phoneId}
                   </TableCell>
@@ -366,6 +381,10 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
                 onChange={(e) => setForm((f) => ({ ...f, phoneId: e.target.value }))}
               />
             </div>
+            <WhatsAppSenderPurposeSelect
+              value={form.purpose}
+              onChange={(purpose) => setForm((f) => ({ ...f, purpose }))}
+            />
           </div>
           <DialogFooter>
             <Button onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
