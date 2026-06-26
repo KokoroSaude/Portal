@@ -6,6 +6,20 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-06-22
+
+### Added
+
+- **WhatsApp — finalidade do número:** coluna Finalidade na tabela de remetentes; edição com três opções (adesão, promoções, ou ambos no mesmo número)
+- **WhatsApp — promoções:** avisos de elegibilidade e remetente antes de criar campanha; mensagens de erro em português
+- **IA — inbox WhatsApp:** card de resumo IA na conversa
+- **Relatórios:** card de barreiras comportamentais (TCP)
+
+### Changed
+
+- Wizard de ativação WhatsApp exibe finalidade com descrição; opção combinada adesão + promoções ao cadastrar número
+- Perfil comportamental: correção de crash quando a API retorna enums numéricos
+
 ## [1.3.1] - 2026-06-25
 
 ### Added
@@ -26,9 +40,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 - Rota pública `/cadastro` (redireciona para login)
 
-[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.3.1...HEAD
-[1.3.1]: https://github.com/KokoroSaude/Portal/compare/v1.1.4...v1.3.1
-
 ## [1.1.4] - 2026-06-04
 
 ### Added
@@ -42,6 +53,9 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Mensagens operacionais admin focadas em lembretes, follow-up e textos custom.*
 - Guia e tour atualizados para refletir a nova estrutura
 
+[Unreleased]: https://github.com/KokoroSaude/Portal/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/KokoroSaude/Portal/compare/v1.3.1...v1.3.2
+[1.3.1]: https://github.com/KokoroSaude/Portal/compare/v1.1.4...v1.3.1
 [1.1.4]: https://github.com/KokoroSaude/Portal/compare/v1.1.3...v1.1.4
 
 ## [1.1.3] - 2026-06-04
