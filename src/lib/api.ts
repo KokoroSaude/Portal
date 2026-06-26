@@ -160,6 +160,11 @@ export class ApiClientError extends Error {
   }
 }
 
+function parseApiErrorMessage(data: unknown, status: number): string {
+  const err = data as { error?: string; detail?: string; title?: string } | undefined;
+  return err?.error ?? err?.detail ?? err?.title ?? `Erro ${status}`;
+}
+
 type RequestOptions = {
   method?: string;
   body?: unknown;
@@ -196,15 +201,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = text ? (JSON.parse(text) as unknown) : undefined;
 
   if (!res.ok) {
-    const err = data as { error?: string; title?: string; code?: string } | undefined;
+    const err = data as { code?: string } | undefined;
     if (res.status === 403 && err?.code === "tenant_inactive") {
       window.dispatchEvent(new CustomEvent("kokoro:tenant-inactive"));
     }
-    throw new ApiClientError(
-      err?.error ?? err?.title ?? `Erro ${res.status}`,
-      res.status,
-      data,
-    );
+    throw new ApiClientError(parseApiErrorMessage(data, res.status), res.status, data);
   }
 
   return data as T;
@@ -381,12 +382,7 @@ export const api = {
     const text = await res.text();
     const data = text ? (JSON.parse(text) as unknown) : undefined;
     if (!res.ok) {
-      const err = data as { error?: string; title?: string } | undefined;
-      throw new ApiClientError(
-        err?.error ?? err?.title ?? `Erro ${res.status}`,
-        res.status,
-        data,
-      );
+      throw new ApiClientError(parseApiErrorMessage(data, res.status), res.status, data);
     }
     return data as UserProfile;
   },
@@ -868,12 +864,7 @@ export const api = {
       } catch {
         data = undefined;
       }
-      const err = data as { error?: string; title?: string } | undefined;
-      throw new ApiClientError(
-        err?.error ?? err?.title ?? `Erro ${res.status}`,
-        res.status,
-        data,
-      );
+      throw new ApiClientError(parseApiErrorMessage(data, res.status), res.status, data);
     }
     return res.blob();
   },

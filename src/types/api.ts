@@ -1861,6 +1861,9 @@ export interface PromoDefaults {
   defaultMessage: string | null;
   promotionTemplateConfigured: boolean;
   templateBody: string | null;
+  promoSenderConfigured: boolean;
+  activePatientsCount: number;
+  allEligibleCount: number;
 }
 
 export interface PromoCampaignListItem {

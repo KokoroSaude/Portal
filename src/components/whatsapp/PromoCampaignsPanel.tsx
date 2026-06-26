@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Megaphone, Plus, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -140,16 +141,27 @@ export function PromoCampaignsPanel() {
   const isEditingDraft = selectedSummary?.status === "Draft";
   const isCreatingNew = !selectedId;
   const templateReady = defaults.data?.promotionTemplateConfigured ?? false;
+  const promoSenderConfigured = defaults.data?.promoSenderConfigured ?? false;
   const promoTemplateBody =
     defaults.data?.templateBody?.trim() || FALLBACK_PROMO_TEMPLATE_BODY;
   const promoPreviewVariables = {
     nome: "Maria",
     mensagem: message.trim() || defaults.data?.defaultMessage?.trim() || undefined,
   };
+  const eligibleCountForSegment =
+    segment === "ActivePatients"
+      ? defaults.data?.activePatientsCount
+      : segment === "AllEligible"
+        ? defaults.data?.allEligibleCount
+        : null;
+  const segmentHasNoEligiblePatients =
+    !isEditingDraft && eligibleCountForSegment !== null && eligibleCountForSegment === 0;
   const formValid =
     !!message.trim() &&
     templateReady &&
-    (segment !== "PatientsOnMedication" || !!segmentMedicationId);
+    promoSenderConfigured &&
+    (segment !== "PatientsOnMedication" || !!segmentMedicationId) &&
+    !segmentHasNoEligiblePatients;
 
   useEffect(() => {
     if (defaults.data?.defaultMessage && isCreatingNew && !message) {
@@ -435,6 +447,17 @@ export function PromoCampaignsPanel() {
                 </p>
               )}
 
+              {!promoSenderConfigured && (
+                <p className="rounded-md border border-amber-300/60 bg-amber-50/60 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                  Nenhum número WhatsApp de promoções configurado. Cadastre um remetente com finalidade{" "}
+                  <strong>Promoções e campanhas</strong> em{" "}
+                  <Link to="/whatsapp/configuracao" className="font-medium underline underline-offset-2">
+                    WhatsApp → Configuração
+                  </Link>
+                  .
+                </p>
+              )}
+
               {isEditingDraft && selectedSummary && (
                 <p className="text-sm text-muted-foreground">
                   Segmento: <strong>{segmentLabel(selectedSummary.segment)}</strong> ·{" "}
@@ -458,6 +481,20 @@ export function PromoCampaignsPanel() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {eligibleCountForSegment !== null && (
+                      <p className="text-sm text-muted-foreground">
+                        {eligibleCountForSegment === 0 ? (
+                          <span className="text-amber-900 dark:text-amber-200">
+                            Nenhum paciente elegível neste segmento.
+                          </span>
+                        ) : (
+                          <>
+                            <strong>{eligibleCountForSegment}</strong> paciente(s) elegível(is) neste
+                            segmento.
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
                   {segment === "PatientsOnMedication" && (
                     <div className="space-y-2">
