@@ -1327,6 +1327,15 @@ export interface AdminTenant {
   createdAt: string;
 }
 
+export interface AdminDeletedTenant {
+  id: string;
+  name: string;
+  slug: string;
+  deletedAt: string;
+  permanentDeleteScheduledAt: string;
+  daysRemaining: number;
+}
+
 export interface AdminProductMetrics {
   activeTenants: number;
   activePatients: number;

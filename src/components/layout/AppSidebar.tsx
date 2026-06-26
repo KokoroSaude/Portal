@@ -13,6 +13,7 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  Trash2,
   MessageSquare,
   Megaphone,
   Monitor,
@@ -207,6 +208,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     items: [
       { to: "/", label: "Visão geral", icon: Shield, end: true },
       { to: "/admin/tenants", label: "Organizações", icon: Building2 },
+      { to: "/admin/tenants/excluidas", label: "Organizações excluídas", icon: Trash2 },
       { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
       { to: "/admin/usuarios", label: "Superadmins", icon: Users },
     ],

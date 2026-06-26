@@ -65,6 +65,10 @@ const AdminPlatformUsersPage = lazyPage(
 const AdminOnboardingPage = lazyPage(() => import("@/pages/admin/AdminOnboardingPage"), "AdminOnboardingPage");
 const AdminTemplatesPage = lazyPage(() => import("@/pages/admin/AdminTemplatesPage"), "AdminTemplatesPage");
 const AdminTenantsPage = lazyPage(() => import("@/pages/admin/AdminTenantsPage"), "AdminTenantsPage");
+const AdminDeletedTenantsPage = lazyPage(
+  () => import("@/pages/admin/AdminDeletedTenantsPage"),
+  "AdminDeletedTenantsPage",
+);
 const AdminReportsPage = lazyPage(() => import("@/pages/admin/AdminReportsPage"), "AdminReportsPage");
 const AdminConfigurationPage = lazyPage(
   () => import("@/pages/admin/AdminConfigurationPage"),
@@ -168,6 +172,7 @@ export default function App() {
                   <Route element={<RequirePlatform />}>
                     <Route path="admin" element={<Navigate to="/" replace />} />
                     <Route path="admin/tenants" element={<AdminTenantsPage />} />
+                    <Route path="admin/tenants/excluidas" element={<AdminDeletedTenantsPage />} />
                     <Route path="admin/relatorios" element={<AdminReportsPage />} />
                     <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                     <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />

@@ -26,6 +26,7 @@ import type {
   AdminSenderPerformance,
   AdminMoriskyReport,
   AdminTenant,
+  AdminDeletedTenant,
   AdminVoiceCatalogEntry,
   AdminVoiceCatalogResponse,
   AdminVoiceWarmResult,
@@ -128,6 +129,7 @@ import type {
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
 import { normalizeAdminTenant } from "@/lib/normalize-admin-tenant";
+import { normalizeAdminDeletedTenant } from "@/lib/normalize-admin-deleted-tenant";
 
 export function isTwoFactorChallenge(
   res: LoginApiResponse,
@@ -1210,6 +1212,41 @@ export const api = {
       token,
       body: payload,
     }),
+
+  adminSoftDeleteTenant: (
+    token: string,
+    tenantId: string,
+    confirmSlug: string,
+    totpCode: string,
+  ) =>
+    request<void>(`/api/admin/tenants/${tenantId}/delete`, {
+      method: "POST",
+      token,
+      body: { confirmSlug, totpCode },
+    }),
+
+  adminRestoreTenant: (token: string, tenantId: string) =>
+    request<void>(`/api/admin/tenants/${tenantId}/restore`, { method: "POST", token }),
+
+  adminPurgeTenant: (
+    token: string,
+    tenantId: string,
+    confirmSlug: string,
+    totpCode: string,
+  ) =>
+    request<void>(`/api/admin/tenants/${tenantId}/purge`, {
+      method: "POST",
+      token,
+      body: { confirmSlug, totpCode },
+    }),
+
+  adminListDeletedTenants: async (token: string): Promise<AdminDeletedTenant[]> => {
+    const rows = await request<Parameters<typeof normalizeAdminDeletedTenant>[0][]>(
+      "/api/admin/tenants/deleted",
+      { token },
+    );
+    return rows.map(normalizeAdminDeletedTenant);
+  },
 
   adminGetAdherenceReport: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
     request<AdminAdherenceReport>(

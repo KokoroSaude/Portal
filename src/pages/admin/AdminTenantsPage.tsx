@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Plus, Users } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -9,6 +9,7 @@ import {
   type AdminTenantEditForm,
 } from "@/components/admin/AdminTenantFormDialog";
 import { AdminTenantUsersDialog } from "@/components/admin/AdminTenantUsersDialog";
+import { AdminTenantDeletionDialog } from "@/components/admin/AdminTenantDeletionDialog";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
 import { PageHeader } from "@/components/PageHeader";
@@ -45,6 +46,7 @@ export function AdminTenantsPage() {
   const [usersTenant, setUsersTenant] = useState<AdminTenant | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTenant, setEditTenant] = useState<AdminTenant | null>(null);
+  const [deleteTenant, setDeleteTenant] = useState<AdminTenant | null>(null);
 
   const tenants = useAdminTenantsList();
 
@@ -102,6 +104,23 @@ export function AdminTenantsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (payload: { tenantId: string; confirmSlug: string; totpCode: string }) =>
+      api.adminSoftDeleteTenant(
+        token!,
+        payload.tenantId,
+        payload.confirmSlug,
+        payload.totpCode,
+      ),
+    onSuccess: () => {
+      toast.success("Organização excluída — disponível para restauração por 30 dias");
+      setDeleteTenant(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-deleted-tenants"] });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
   });
 
   function handleToggleStatus(tenant: AdminTenant) {
@@ -178,12 +197,13 @@ export function AdminTenantsPage() {
                   <TableHead />
                   <TableHead />
                   <TableHead />
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTenants.length === 0 && (
                   <GridEmptyRow
-                    colSpan={9}
+                    colSpan={10}
                     message={
                       query.trim()
                         ? "Nenhuma organização corresponde à busca."
@@ -246,6 +266,17 @@ export function AdminTenantsPage() {
                         Entrar
                       </Button>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTenant(t)}
+                      >
+                        <Trash2 className="size-4" />
+                        Excluir
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -278,6 +309,18 @@ export function AdminTenantsPage() {
         tenant={usersTenant}
         open={usersTenant !== null}
         onOpenChange={(open) => !open && setUsersTenant(null)}
+      />
+
+      <AdminTenantDeletionDialog
+        tenant={deleteTenant}
+        open={deleteTenant !== null}
+        onOpenChange={(open) => !open && setDeleteTenant(null)}
+        mode="soft-delete"
+        loading={deleteMutation.isPending}
+        onConfirm={(confirmSlug, totpCode) => {
+          if (!deleteTenant) return;
+          deleteMutation.mutate({ tenantId: deleteTenant.id, confirmSlug, totpCode });
+        }}
       />
     </div>
   );
