@@ -125,7 +125,7 @@ export function WhatsAppActivationWizard({
 
   const [step, setStep] = useState<WizardStep>("overview");
   const [phone, setPhone] = useState("");
-  const [purpose, setPurpose] = useState<1 | 2>(1);
+  const [purpose, setPurpose] = useState<1 | 2 | 3>(1);
   const [otp, setOtp] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [verifiedSenderId, setVerifiedSenderId] = useState<string | null>(null);
@@ -375,7 +375,7 @@ export function WhatsAppActivationWizard({
             <Label htmlFor="activation-purpose">Uso do número</Label>
             <Select
               value={String(purpose)}
-              onValueChange={(v) => setPurpose(Number(v) as 1 | 2)}
+              onValueChange={(v) => setPurpose(Number(v) as 1 | 2 | 3)}
             >
               <SelectTrigger id="activation-purpose">
                 <SelectValue />
@@ -383,6 +383,7 @@ export function WhatsAppActivationWizard({
               <SelectContent>
                 <SelectItem value="1">Adesão medicamentosa</SelectItem>
                 <SelectItem value="2">Promoções e campanhas</SelectItem>
+                <SelectItem value="3">Adesão e promoções (mesmo número)</SelectItem>
               </SelectContent>
             </Select>
           </div>

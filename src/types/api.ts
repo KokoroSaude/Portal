@@ -1573,7 +1573,7 @@ export type WhatsAppActivationStatus =
 export type TenantWhatsAppMode = 0 | 1; // Trial | Production
 
 /** Matches Kokoro.Domain.Enums.WhatsAppSenderPurpose (JSON numeric). */
-export type WhatsAppSenderPurpose = 0 | 1 | 2; // General | Adherence | Promo
+export type WhatsAppSenderPurpose = 0 | 1 | 2 | 3; // General | Adherence | Promo | AdherenceAndPromo
 
 export interface WhatsAppActivationStartResult {
   sessionId: string;

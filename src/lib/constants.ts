@@ -96,6 +96,7 @@ export const WHATSAPP_SENDER_PURPOSE_LABELS: Record<number, string> = {
   0: "Geral",
   1: "Adesão",
   2: "Promoções",
+  3: "Adesão e promoções",
 };
 
 export const WHATSAPP_MODE_LABELS: Record<number, string> = {

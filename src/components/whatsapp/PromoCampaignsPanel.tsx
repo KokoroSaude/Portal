@@ -450,7 +450,8 @@ export function PromoCampaignsPanel() {
               {!promoSenderConfigured && (
                 <p className="rounded-md border border-amber-300/60 bg-amber-50/60 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
                   Nenhum número WhatsApp de promoções configurado. Cadastre um remetente com finalidade{" "}
-                  <strong>Promoções e campanhas</strong> em{" "}
+                  <strong>Promoções e campanhas</strong> ou{" "}
+                  <strong>Adesão e promoções (mesmo número)</strong> em{" "}
                   <Link to="/whatsapp/configuracao" className="font-medium underline underline-offset-2">
                     WhatsApp → Configuração
                   </Link>
