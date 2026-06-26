@@ -117,16 +117,6 @@ export const PLATFORM_TOUR: ProductTourDefinition = {
       route: "/admin/mensagens",
       openMobileNav: true,
     },
-    {
-      id: "simulator",
-      target: '[data-tour="nav-admin-simulador"]',
-      title: "Simulador WhatsApp",
-      subtitle: "Teste sem Meta nem Worker.",
-      description:
-        "Inicie uma conversa e responda como paciente para validar o onboarding, ou teste lembretes com paciente já ativo.",
-      route: "/admin/simulador",
-      openMobileNav: true,
-    },
   ],
 };
 

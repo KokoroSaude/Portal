@@ -57,7 +57,6 @@ const AdminEmailSignaturePage = lazy(() =>
     default: m.AdminEmailSignaturePage,
   })),
 );
-const AdminSimulatorPage = lazyPage(() => import("@/pages/admin/AdminSimulatorPage"), "AdminSimulatorPage");
 const AdminPlatformUsersPage = lazyPage(
   () => import("@/pages/admin/AdminPlatformUsersPage"),
   "AdminPlatformUsersPage",
@@ -176,7 +175,6 @@ export default function App() {
                     <Route path="admin/relatorios" element={<AdminReportsPage />} />
                     <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                     <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />
-                    <Route path="admin/simulador" element={<AdminSimulatorPage />} />
                     <Route path="admin/onboarding" element={<AdminOnboardingPage />} />
                     <Route path="admin/mensagens" element={<AdminTemplatesPage />} />
                     <Route path="admin/templates-meta" element={<AdminMetaTemplatesPage />} />

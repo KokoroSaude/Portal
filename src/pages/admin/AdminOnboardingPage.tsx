@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, MessageSquareText, Play } from "lucide-react";
+import { ArrowRight, MessageSquareText } from "lucide-react";
 import { AdminTemplateEditorPanel } from "@/components/admin/AdminTemplateEditorPanel";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -113,20 +113,12 @@ export function AdminOnboardingPage() {
         title="Onboarding WhatsApp"
         description="Fluxo que o paciente novo percorre no WhatsApp: boas-vindas, coleta de dados e ativação."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link to={`/admin/simulador?mode=onboarding&tone=${encodeURIComponent(tone)}`}>
-                <Play className="size-4" />
-                Testar no simulador
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/admin/mensagens">
-                <MessageSquareText className="size-4" />
-                Lembretes e demais mensagens
-              </Link>
-            </Button>
-          </div>
+          <Button variant="outline" asChild>
+            <Link to="/admin/mensagens">
+              <MessageSquareText className="size-4" />
+              Lembretes e demais mensagens
+            </Link>
+          </Button>
         }
       />
 
@@ -134,11 +126,8 @@ export function AdminOnboardingPage() {
         <CardContent className="pt-6 text-sm text-muted-foreground">
           <p>
             Edite cada passo na ordem em que o paciente recebe. Use as abas de <strong>tom de voz</strong>{" "}
-            para personalizar acolhedor, motivacional ou direto. Valide no{" "}
-            <Link to="/admin/simulador" className="font-medium text-primary underline-offset-2 hover:underline">
-              simulador WhatsApp
-            </Link>{" "}
-            respondendo como paciente — sem formulário de dados fictícios.
+            para personalizar acolhedor, motivacional ou direto. Valide com um paciente de teste no
+            WhatsApp da organização.
           </p>
         </CardContent>
       </Card>

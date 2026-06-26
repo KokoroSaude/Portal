@@ -91,39 +91,6 @@ export interface CreatePatientResponse {
   welcomeFailureReason?: string | null;
 }
 
-export interface SimulatorMessage {
-  id: string;
-  direction: "inbound" | "outbound";
-  content: string;
-  messageType: string | null;
-  createdAt: string;
-}
-
-export interface SimulatorStatus {
-  enabled: boolean;
-  stubOutbound: boolean;
-}
-
-export interface SimulatorSession {
-  patientId: string;
-  tenantId: string;
-  phone: string;
-  name: string;
-  voiceTone: string;
-  medication: string;
-  scheduledTimes: string;
-  patientStatus: string;
-  welcomeSent?: boolean;
-}
-
-export interface SimulatorPatient {
-  id: string;
-  name: string | null;
-  phone: string;
-  medication: string | null;
-  status: string;
-}
-
 export interface PagedResult<T> {
   items: T[];
   total: number;
@@ -1574,14 +1541,6 @@ export interface AdminPlatformUser {
   isActive: boolean;
   createdAt: string;
   lastLoginAt: string | null;
-}
-
-export interface SimulatorSessionListItem {
-  patientId: string;
-  phone: string;
-  name: string | null;
-  patientStatus: string;
-  createdAt: string;
 }
 
 export interface TenantUser {

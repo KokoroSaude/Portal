@@ -89,11 +89,6 @@ import type {
   PatientMoriskyHistory,
   PatientAchievements,
   PagedResult,
-  SimulatorMessage,
-  SimulatorPatient,
-  SimulatorSession,
-  SimulatorSessionListItem,
-  SimulatorStatus,
   TenantFeature,
   TenantSettings,
   TenantOperationMode,
@@ -1794,55 +1789,6 @@ export const api = {
     );
   },
 
-  simulatorStatus: (token: string) =>
-    request<SimulatorStatus>("/api/admin/simulator/status", { token }),
-
-  simulatorListSessions: (token: string, limit = 50) =>
-    request<SimulatorSessionListItem[]>(`/api/admin/simulator/sessions${qs({ limit })}`, { token }),
-
-  simulatorCreateSession: (
-    token: string,
-    body: {
-      name?: string;
-      voiceTone: string;
-      medication?: string;
-      dosage?: string;
-      scheduledTimes?: string;
-      startOnboarding?: boolean;
-    },
-  ) =>
-    request<SimulatorSession>("/api/admin/simulator/sessions", {
-      method: "POST",
-      token,
-      body,
-    }),
-
-  simulatorPatient: (token: string, patientId: string) =>
-    request<SimulatorPatient>(`/api/admin/simulator/patients/${patientId}`, { token }),
-
-  simulatorMessages: (token: string, patientId: string) =>
-    request<SimulatorMessage[]>(`/api/admin/simulator/patients/${patientId}/messages`, {
-      token,
-    }),
-
-  simulatorReply: (token: string, patientId: string, text: string) =>
-    request<{ processed: boolean; responseSent: string | null; eventType: string | null }>(
-      `/api/admin/simulator/patients/${patientId}/reply`,
-      { method: "POST", token, body: { text } },
-    ),
-
-  simulatorTriggerReminder: (token: string, patientId: string) =>
-    request<{ reminderId?: string; action: string }>(
-      `/api/admin/simulator/patients/${patientId}/trigger-reminder`,
-      { method: "POST", token },
-    ),
-
-  simulatorTriggerMilestone: (token: string, patientId: string, days = 7) =>
-    request<{ text: string; personalizationSource: string; wamId?: string }>(
-      `/api/admin/simulator/patients/${patientId}/trigger-milestone`,
-      { method: "POST", token, body: { days } },
-    ),
-
   adminGetVoiceCatalog: (token: string) =>
     request<AdminVoiceCatalogResponse>("/api/admin/voice/cache/catalog", { token }),
 
@@ -1930,23 +1876,6 @@ export const api = {
   exportPatientData: (token: string, patientId: string) =>
     request<PatientDataExport>(`/api/compliance/patients/${patientId}/export`, { token }),
 };
-
-export function getSimulatorToken(): string | null {
-  const auth = loadAuth();
-  if (auth?.scope === "platform" && auth.token) return auth.token;
-  try {
-    const raw = localStorage.getItem(IMPERSONATION_STORAGE_KEY);
-    if (!raw) return null;
-    return (JSON.parse(raw) as StoredAuth).token;
-  } catch {
-    return null;
-  }
-}
-
-/** @deprecated Use getSimulatorToken or auth.token from useAuth */
-export function getPlatformTokenForSimulator(): string | null {
-  return getSimulatorToken();
-}
 
 export const IMPERSONATION_STORAGE_KEY = "kokoro.impersonation";
 

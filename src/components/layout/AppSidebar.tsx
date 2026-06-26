@@ -23,7 +23,6 @@ import {
   Settings,
   Shield,
   Users,
-  Wrench,
   ListOrdered,
   Volume2,
 } from "lucide-react";
@@ -225,7 +224,6 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
   {
     title: "Ferramentas",
     items: [
-      { to: "/admin/simulador", label: "Simulador", icon: Wrench },
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
     ],

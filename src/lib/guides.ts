@@ -66,8 +66,8 @@ export const PLATFORM_GUIDE: PortalGuide = {
     },
     {
       id: "messages",
-      title: "3. Mensagens e simulador",
-      description: "Onboarding de pacientes, textos do dia a dia e ambiente seguro para testar fluxos.",
+      title: "3. Mensagens",
+      description: "Onboarding de pacientes e textos do dia a dia.",
       steps: [
         {
           id: "onboarding-messages",
@@ -75,7 +75,7 @@ export const PLATFORM_GUIDE: PortalGuide = {
           description:
             "Edite o fluxo de cadastro do paciente novo: boas-vindas, perguntas e confirmação — passo a passo, por tom de voz.",
           to: "/admin/onboarding",
-          tips: ["Valide no simulador após salvar cada passo."],
+          tips: ["Valide com um paciente de teste no WhatsApp após salvar cada passo."],
         },
         {
           id: "default-messages",
@@ -87,14 +87,6 @@ export const PLATFORM_GUIDE: PortalGuide = {
             "Use Nova mensagem para chaves custom.* usadas na jornada da organização.",
             "Restaurar padrão remove overrides salvos no banco.",
           ],
-        },
-        {
-          id: "simulator",
-          title: "Simulador WhatsApp",
-          description:
-            "Inicie uma conversa vazia e percorra o onboarding respondendo como paciente, ou crie um paciente ativo para testar lembretes.",
-          to: "/admin/simulador",
-          tips: ["Modo onboarding: só escolha o tom de voz e responda no chat."],
         },
       ],
     },
