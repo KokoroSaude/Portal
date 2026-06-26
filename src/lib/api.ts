@@ -108,6 +108,7 @@ import type {
   BehavioralBarriersReport,
   WhatsappDiagnostics,
   WhatsappSender,
+  WhatsAppSenderPurpose,
   MetaEmbeddedSignupConfig,
   MetaEmbeddedSignupFlowResult,
   WhatsAppActivationStartResult,
