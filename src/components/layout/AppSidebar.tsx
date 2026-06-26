@@ -22,6 +22,8 @@ import {
   Pill,
   Settings,
   Shield,
+  Sparkles,
+  Star,
   Users,
   ListOrdered,
   Volume2,
@@ -38,6 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
+import { isNavToActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
 import { useSidebarNavHeight } from "@/hooks/useSidebarNavHeight";
@@ -169,7 +172,25 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
   {
     title: "Configuração",
     items: [
-      { to: "/configuracoes", label: "Geral", icon: Settings },
+      {
+        label: "Configurações",
+        icon: Settings,
+        adminOnly: true,
+        children: [
+          { to: "/configuracoes?tab=operacao", label: "Operação", icon: Settings },
+          { to: "/configuracoes?tab=ia", label: "IA", icon: Sparkles },
+          { to: "/configuracoes?tab=engajamento", label: "Engajamento", icon: Megaphone },
+          { to: "/configuracoes?tab=onboarding", label: "Onboarding", icon: GitBranch },
+          { to: "/configuracoes?tab=pesquisas", label: "Pesquisas", icon: Star },
+          { to: "/configuracoes?tab=privacidade", label: "Privacidade", icon: Shield },
+          {
+            to: "/configuracoes?tab=usuarios",
+            label: "Usuários",
+            icon: Users,
+            feature: FEATURE_KEYS.usersManage,
+          },
+        ],
+      },
       {
         to: "/medicamentos",
         label: "Catálogo de medicamentos",
@@ -272,6 +293,8 @@ function NavLinkItem({
   indent?: boolean;
   sectionTitle?: string;
 }) {
+  const { pathname, search } = useLocation();
+
   return (
     <SidebarCollapsedFlyout
       collapsed={collapsed}
@@ -282,13 +305,13 @@ function NavLinkItem({
         to={to}
         end={end}
         onClick={onNavigate}
-        data-tour={tourNavId(to)}
-        className={({ isActive }) =>
+        data-tour={tourNavId(to.split("?")[0] ?? to)}
+        className={() =>
           cn(
             "flex items-start rounded-lg py-2 text-sm font-medium transition-colors",
             collapsed ? "justify-center px-2" : "gap-3 px-3",
             !collapsed && indent && "ml-3 py-2 pl-3 text-[13px] font-normal",
-            isActive
+            isNavToActive(to, pathname, search)
               ? "bg-white/20 text-primary-foreground"
               : "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
           )
@@ -327,9 +350,12 @@ function NavGroup({
     isNavItemVisible(child, hasFeature, isAdmin, pickup),
   );
   const Icon = item.icon;
-  const isGroupActive = visibleChildren.some(
-    (child) => child.to && (pathname === child.to || pathname.startsWith(`${child.to}/`)),
-  );
+  const isGroupActive = visibleChildren.some((child) => {
+    if (!child.to) return false;
+    const path = child.to.split("?")[0] ?? child.to;
+    if (path === "/configuracoes") return pathname === "/configuracoes";
+    return pathname === child.to || pathname.startsWith(`${child.to}/`);
+  });
   const [open, setOpen] = useState(isGroupActive);
   const wasActiveRef = useRef(false);
 

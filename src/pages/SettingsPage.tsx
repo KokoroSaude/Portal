@@ -44,13 +44,21 @@ export function SettingsPage() {
   const { token, isAdmin, hasFeature, auth } = useAuth();
   const tenantId = auth?.user?.tenantId ?? null;
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState<TenantSettings | null>(null);
   const [bulkCsatOpen, setBulkCsatOpen] = useState(false);
   const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const tabParam = searchParams.get("tab");
-  const defaultTab: SettingsTab =
+  const activeTab: SettingsTab =
     tabParam === "operacional" ? "operacao" : isSettingsTab(tabParam) ? tabParam : "operacao";
+
+  function setActiveTab(tab: SettingsTab) {
+    if (tab === "operacao") {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
+  }
 
   const { data: settings, isLoading } = useQuery({
     queryKey: tenantSettingsQueryKey(tenantId),
@@ -208,7 +216,7 @@ export function SettingsPage() {
         <p className="text-muted-foreground">Preferências operacionais da organização</p>
       </div>
 
-      <Tabs defaultValue={defaultTab} key={defaultTab}>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SettingsTab)}>
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="operacao">Operação</TabsTrigger>
           <TabsTrigger value="ia">IA</TabsTrigger>

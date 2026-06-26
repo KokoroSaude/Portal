@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { isNavToActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 export type SidebarSubmenuFlyoutItem = {
@@ -21,6 +22,7 @@ export function SidebarSubmenuFlyout({
   onNavigate,
   trigger,
 }: SidebarSubmenuFlyoutProps) {
+  const { pathname, search } = useLocation();
   const triggerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -90,10 +92,10 @@ export function SidebarSubmenuFlyout({
                     to={item.to}
                     role="menuitem"
                     onClick={onNavigate}
-                    className={({ isActive }) =>
+                    className={() =>
                       cn(
                         "block px-3.5 py-2 text-sm transition-colors",
-                        isActive
+                        isNavToActive(item.to, pathname, search)
                           ? "bg-accent font-medium text-accent-foreground"
                           : "text-foreground hover:bg-muted",
                       )
