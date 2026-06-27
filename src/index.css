@@ -1,6 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&display=swap");
 @import "tailwindcss";
 
+/* Dark mode driven by a `.dark` class on <html> (manual toggle), instead of the
+   default prefers-color-scheme media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "DM Serif Display", Georgia, serif;
@@ -64,6 +68,35 @@
   --sidebar-accent-foreground: oklch(0.4 0.1 25);
   --sidebar-border: oklch(0.92 0.015 25);
   --sidebar-ring: oklch(0.68 0.19 25);
+}
+
+.dark {
+  --background: oklch(0.18 0.012 25);
+  --foreground: oklch(0.95 0.006 95);
+  --card: oklch(0.225 0.014 25);
+  --card-foreground: oklch(0.95 0.006 95);
+  --popover: oklch(0.225 0.014 25);
+  --popover-foreground: oklch(0.95 0.006 95);
+  --primary: oklch(0.7 0.19 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.3 0.02 25);
+  --secondary-foreground: oklch(0.92 0.012 25);
+  --muted: oklch(0.27 0.015 25);
+  --muted-foreground: oklch(0.72 0.02 25);
+  --accent: oklch(0.33 0.04 25);
+  --accent-foreground: oklch(0.95 0.012 25);
+  --destructive: oklch(0.62 0.22 27);
+  --border: oklch(0.34 0.018 25);
+  --input: oklch(0.36 0.018 25);
+  --ring: oklch(0.7 0.19 25);
+  --sidebar: oklch(0.2 0.013 25);
+  --sidebar-foreground: oklch(0.92 0.012 25);
+  --sidebar-primary: oklch(0.7 0.19 25);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.33 0.04 25);
+  --sidebar-accent-foreground: oklch(0.95 0.012 25);
+  --sidebar-border: oklch(0.32 0.016 25);
+  --sidebar-ring: oklch(0.7 0.19 25);
 }
 
 @layer base {

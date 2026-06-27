@@ -33,6 +33,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { SidebarSubmenuFlyout } from "@/components/layout/SidebarSubmenuFlyout";
@@ -713,6 +714,7 @@ export function AppSidebar({
                     />
                   </NavLink>
                 </SidebarCollapsedFlyout>
+                <ThemeToggle collapsed />
                 <SidebarCollapsedFlyout collapsed label="Sair">
                   <Button
                     type="button"
@@ -747,6 +749,7 @@ export function AppSidebar({
                     </Badge>
                   </div>
                 </NavLink>
+                <ThemeToggle />
                 <Button
                   variant="ghost"
                   size="sm"
