@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTour } from "@/contexts/TourContext";
-import { logSidebarScroll } from "@/lib/sidebar-scroll-debug";
 import { cn } from "@/lib/utils";
 
 const SPOTLIGHT_PAD = 10;
@@ -18,28 +17,23 @@ function useTargetRect(selector: string | undefined, stepIndex: number) {
 
     let frame = 0;
 
+    // Apenas mede a posição do alvo para posicionar o spotlight.
+    // NÃO chama scrollIntoView aqui: fazer isso a cada evento de scroll cria
+    // um loop que briga com o scroll do usuário (prendia a barra lateral).
     const measure = () => {
       const el = document.querySelector(selector);
-      if (!el) {
-        setRect(null);
-        return;
-      }
-      const inSidebar = !!el.closest("aside, [data-sidebar-nav]");
-      logSidebarScroll("product-tour:scrollIntoView", {
-        selector,
-        stepIndex,
-        inSidebar,
-        tag: el.tagName,
-        text: el.textContent?.trim().slice(0, 80),
-      });
-      el.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
-      setRect(el.getBoundingClientRect());
+      setRect(el ? el.getBoundingClientRect() : null);
     };
 
     const schedule = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(measure);
     };
+
+    // Traz o alvo para a área visível UMA vez ao entrar no passo.
+    document
+      .querySelector(selector)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
 
     schedule();
     const retry = window.setTimeout(schedule, 400);
@@ -64,7 +58,8 @@ export function ProductTour() {
   const [tooltipSize, setTooltipSize] = useState({ w: TOOLTIP_MAX, h: 280 });
 
   const step = steps[currentStep];
-  const rect = useTargetRect(step?.target, currentStep);
+  // Só rastreia o alvo (e mexe no scroll) quando o tour está realmente ativo.
+  const rect = useTargetRect(isActive ? step?.target : undefined, currentStep);
 
   useLayoutEffect(() => {
     if (!tooltipRef.current) return;

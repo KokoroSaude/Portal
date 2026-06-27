@@ -19,9 +19,13 @@ function measure(el: Element | null | undefined): Box | null {
 }
 
 export function isSidebarScrollDebugEnabled() {
-  // TEMPORÁRIO: diagnóstico de scroll da barra lateral ligado em produção.
-  // Reverter para o gate por flag (?debug-sidebar=1) após investigar.
-  return true;
+  try {
+    if (import.meta.env.DEV) return true;
+    if (localStorage.getItem("kokoro:debug-sidebar") === "1") return true;
+    return new URLSearchParams(window.location.search).get("debug-sidebar") === "1";
+  } catch {
+    return import.meta.env.DEV;
+  }
 }
 
 /**
