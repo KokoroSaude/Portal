@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { useLocation } from "react-router-dom";
 import {
+  dumpSidebarChain,
   isSidebarScrollDebugEnabled,
   logSidebarScroll,
   snapshotSidebarLayout,
@@ -93,9 +94,9 @@ export function useSidebarScrollDebug(
       const before = nav.scrollTop;
       requestAnimationFrame(() => {
         const after = nav.scrollTop;
-      logSidebarScroll("wheel", {
-        collapsed,
-        deltaY: event.deltaY,
+        logSidebarScroll("wheel", {
+          collapsed,
+          deltaY: event.deltaY,
           deltaMode: event.deltaMode,
           defaultPrevented: event.defaultPrevented,
           targetTag: (event.target as Element | null)?.tagName ?? null,
@@ -104,7 +105,15 @@ export function useSidebarScrollDebug(
           appliedToNav: after !== before,
           canScroll: nav.scrollHeight > nav.clientHeight + 1,
         });
+        if (after === before) {
+          // Scroll não aplicou: despeja a cadeia de alturas para achar o gargalo.
+          dumpSidebarChain("wheel-stuck", nav, { deltaY: event.deltaY });
+        }
       });
+    };
+    const onTouchMove = () => {
+      lastWheelAt.current = Date.now();
+      dumpSidebarChain("touchmove", nav);
     };
 
     const observer = new MutationObserver(() => {
@@ -113,8 +122,11 @@ export function useSidebarScrollDebug(
 
     observer.observe(nav, { childList: true, subtree: true, attributes: true });
 
+    dumpSidebarChain("mount", nav, { pathname });
+
     nav.addEventListener("scroll", onScroll, { passive: true });
     nav.addEventListener("wheel", onWheel, { passive: true });
+    nav.addEventListener("touchmove", onTouchMove, { passive: true });
 
     const resetProbe = window.setInterval(() => {
       const scrollTop = nav.scrollTop;
@@ -133,6 +145,7 @@ export function useSidebarScrollDebug(
       observer.disconnect();
       nav.removeEventListener("scroll", onScroll);
       nav.removeEventListener("wheel", onWheel);
+      nav.removeEventListener("touchmove", onTouchMove);
       window.clearInterval(resetProbe);
     };
   }, [collapsed, pathname]);

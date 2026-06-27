@@ -19,13 +19,55 @@ function measure(el: Element | null | undefined): Box | null {
 }
 
 export function isSidebarScrollDebugEnabled() {
-  try {
-    if (import.meta.env.DEV) return true;
-    if (localStorage.getItem("kokoro:debug-sidebar") === "1") return true;
-    return new URLSearchParams(window.location.search).get("debug-sidebar") === "1";
-  } catch {
-    return import.meta.env.DEV;
+  // TEMPORÁRIO: diagnóstico de scroll da barra lateral ligado em produção.
+  // Reverter para o gate por flag (?debug-sidebar=1) após investigar.
+  return true;
+}
+
+/**
+ * Loga a cadeia de elementos do nav até o <aside>, com alturas e overflow
+ * computados, para descobrir onde o scroll trava.
+ */
+export function dumpSidebarChain(
+  label: string,
+  nav: HTMLElement | null,
+  extra: Record<string, unknown> = {},
+) {
+  if (!nav) return;
+
+  const chain: Array<Record<string, unknown>> = [];
+  let el: HTMLElement | null = nav;
+  let hops = 0;
+  while (el && hops < 8) {
+    const style = getComputedStyle(el);
+    chain.push({
+      tag: el.tagName.toLowerCase(),
+      cls: el.className?.toString().slice(0, 80),
+      clientH: el.clientHeight,
+      scrollH: el.scrollHeight,
+      offsetH: el.offsetHeight,
+      rectH: Math.round(el.getBoundingClientRect().height),
+      cssHeight: style.height,
+      minHeight: style.minHeight,
+      maxHeight: style.maxHeight,
+      flex: style.flex,
+      overflowY: style.overflowY,
+      display: style.display,
+    });
+    if (el.tagName.toLowerCase() === "aside") break;
+    el = el.parentElement;
+    hops += 1;
   }
+
+  logSidebarScroll(`chain:${label}`, {
+    ...extra,
+    canScroll: nav.scrollHeight > nav.clientHeight + 1,
+    navScrollTop: nav.scrollTop,
+    navMaxScroll: nav.scrollHeight - nav.clientHeight,
+    viewport: { innerHeight: window.innerHeight, innerWidth: window.innerWidth },
+    isLg: window.matchMedia("(min-width: 1024px)").matches,
+    chain,
+  });
 }
 
 export function warnIfSidebarScrollBroken(
