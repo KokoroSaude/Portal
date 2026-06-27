@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Shield, ShieldAlert, ShieldCheck, ShieldOff } from "lucide-react";
+import { Copy, Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +24,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api, ApiClientError } from "@/lib/api";
 
 type SetupStep = "idle" | "scan" | "confirm" | "recovery";
 
 export function TenantTwoFactorCard() {
-  const { token, isAdmin } = useAuth();
-  const { settings } = useTenantSettings();
+  const { token } = useAuth();
   const queryClient = useQueryClient();
 
   const [setupStep, setSetupStep] = useState<SetupStep>("idle");
@@ -105,33 +103,9 @@ export function TenantTwoFactorCard() {
 
   const enabled = statusQuery.data?.enabled ?? false;
   const recoveryRemaining = statusQuery.data?.recoveryCodesRemaining ?? 0;
-  const required = settings?.adminTwoFactorRequired === true;
-  const setupPending = required && !enabled && isAdmin;
 
   return (
     <>
-      {setupPending && (
-        <Card className="border-amber-200/80 bg-amber-50/50">
-          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-3">
-              <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-800" />
-              <div>
-                <p className="font-medium text-amber-950">2FA obrigatório para administradores</p>
-                <p className="text-sm text-amber-900/90">
-                  Sua organização exige autenticação em duas etapas. Configure abaixo para manter o
-                  acesso em conformidade.
-                </p>
-              </div>
-            </div>
-            {setupStep === "idle" && (
-              <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
-                Configurar agora
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
@@ -144,15 +118,12 @@ export function TenantTwoFactorCard() {
                 <ShieldCheck className="mr-1 size-3" />
                 Ativa
               </Badge>
-            ) : required ? (
-              <Badge variant="warning">Obrigatória</Badge>
             ) : (
               <Badge variant="muted">Inativa</Badge>
             )}
           </div>
           <CardDescription>
             Proteja o acesso ao portal com um app autenticador (Google Authenticator, Authy, etc.).
-            {required && " Exigido pela política de segurança da sua organização."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -266,17 +237,11 @@ export function TenantTwoFactorCard() {
             </div>
           )}
 
-          {enabled && setupStep === "idle" && !required && (
+          {enabled && setupStep === "idle" && (
             <Button type="button" variant="ghost" onClick={() => setDisableOpen(true)}>
               <ShieldOff className="size-4" />
               Desativar 2FA
             </Button>
-          )}
-
-          {required && (
-            <p className="text-sm text-muted-foreground">
-              A autenticação em duas etapas é exigida pela política de segurança da sua organização.
-            </p>
           )}
         </CardContent>
       </Card>

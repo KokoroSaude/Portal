@@ -21,7 +21,6 @@ import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
-import { PatientDsarExportButton } from "@/components/patients/PatientDsarExportButton";
 import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +64,7 @@ const EVENT_LABELS: Record<string, string> = {
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
+  const { token, canWrite, hasFeature, isPlatform } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -478,13 +477,6 @@ export function PatientDetailPage() {
               <Play className="size-4" />
               Retomar
             </Button>
-          )}
-          {isAdmin && (
-            <PatientDsarExportButton
-              token={token!}
-              patientId={id!}
-              patientName={patient.name}
-            />
           )}
           {canWrite && (
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

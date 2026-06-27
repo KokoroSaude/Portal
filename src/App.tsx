@@ -154,10 +154,6 @@ const AdminConfigurationPage = lazyPage(
   () => import("@/pages/admin/AdminConfigurationPage"),
   "AdminConfigurationPage",
 );
-const AdminCompliancePage = lazyPage(
-  () => import("@/pages/admin/AdminCompliancePage"),
-  "AdminCompliancePage",
-);
 const AdminMetaTemplatesPage = lazyPage(
   () => import("@/pages/admin/AdminMetaTemplatesPage"),
   "AdminMetaTemplatesPage",
@@ -291,7 +287,6 @@ export default function App() {
                     <Route path="admin/templates-meta" element={<AdminMetaTemplatesPage />} />
                     <Route path="admin/vozes" element={<AdminVoiceCatalogPage />} />
                     <Route path="admin/configuracao" element={<AdminConfigurationPage />} />
-                    <Route path="admin/conformidade" element={<AdminCompliancePage />} />
                   </Route>
                 </Route>
               </Route>

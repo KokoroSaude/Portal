@@ -22,13 +22,9 @@ import type {
   AdminSatisfactionMetrics,
   AdminOperationalLatencyMetrics,
   AdminAuditLogResult,
-  ComplianceDocument,
-  ComplianceDocumentListItem,
-  PatientDataExport,
   AdminInteractionEventsResult,
   AdminSenderPerformance,
   AdminMoriskyReport,
-  AdminTenantComplianceOverview,
   AdminTenant,
   AdminDeletedTenant,
   AdminVoiceCatalogEntry,
@@ -1843,53 +1839,6 @@ export const api = {
     }
     return res.blob();
   },
-
-  getComplianceDocuments: (token: string) =>
-    request<ComplianceDocumentListItem[]>("/api/compliance/documents", { token }),
-
-  getComplianceDocument: (token: string, slug: string) =>
-    request<ComplianceDocument>(`/api/compliance/documents/${encodeURIComponent(slug)}`, { token }),
-
-  getComplianceAuditLog: (
-    token: string,
-    params: {
-      from?: string;
-      to?: string;
-      patientId?: string;
-      userId?: string;
-      action?: string;
-      limit?: number;
-      offset?: number;
-    } = {},
-  ) => {
-    const url = new URLSearchParams();
-    if (params.from) url.set("from", params.from);
-    if (params.to) url.set("to", params.to);
-    if (params.patientId) url.set("patientId", params.patientId);
-    if (params.userId) url.set("userId", params.userId);
-    if (params.action) url.set("action", params.action);
-    if (params.limit) url.set("limit", String(params.limit));
-    if (params.offset) url.set("offset", String(params.offset));
-    const qs = url.toString();
-    return request<AdminAuditLogResult>(`/api/compliance/audit-log${qs ? `?${qs}` : ""}`, { token });
-  },
-
-  exportPatientData: (token: string, patientId: string) =>
-    request<PatientDataExport>(`/api/compliance/patients/${patientId}/export`, { token }),
-
-  adminGetComplianceDocuments: (token: string) =>
-    request<ComplianceDocumentListItem[]>("/api/admin/compliance/documents", { token }),
-
-  adminGetComplianceDocument: (token: string, slug: string) =>
-    request<ComplianceDocument>(`/api/admin/compliance/documents/${encodeURIComponent(slug)}`, {
-      token,
-    }),
-
-  adminGetTenantComplianceOverview: (token: string, tenantId: string) =>
-    request<AdminTenantComplianceOverview>(
-      `/api/admin/tenants/${tenantId}/compliance/overview`,
-      { token },
-    ),
 };
 
 export const IMPERSONATION_STORAGE_KEY = "kokoro.impersonation";

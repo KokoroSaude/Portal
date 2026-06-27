@@ -12,10 +12,6 @@ type RawAiFeatures = AiPlatformFeatures & {
 type RawTenantSettings = TenantSettings & {
   AiFeatures?: RawAiFeatures;
   AiEnabled?: boolean;
-  AiApprovedByController?: boolean;
-  AiApprovedAt?: string | null;
-  AiApprovalReference?: string | null;
-  AdminTwoFactorRequired?: boolean;
   DataRetentionDays?: number | null;
   TpbCooldownDays?: number;
   CsatPeriodicDays?: number | null;
@@ -77,10 +73,6 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
   return {
     ...raw,
     aiEnabled: raw.aiEnabled ?? raw.AiEnabled ?? false,
-    aiApprovedByController: raw.aiApprovedByController ?? raw.AiApprovedByController ?? false,
-    aiApprovedAt: raw.aiApprovedAt ?? raw.AiApprovedAt ?? null,
-    aiApprovalReference: raw.aiApprovalReference ?? raw.AiApprovalReference ?? null,
-    adminTwoFactorRequired: raw.adminTwoFactorRequired ?? raw.AdminTwoFactorRequired ?? false,
     dataRetentionDays: raw.dataRetentionDays ?? raw.DataRetentionDays ?? null,
     outboundContentMode: raw.outboundContentMode ?? raw.OutboundContentMode ?? "TemplateOnly",
     outboundAlternateStrategy:

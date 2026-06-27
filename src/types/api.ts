@@ -527,48 +527,6 @@ export interface AdminAuditLogResult {
   offset: number;
 }
 
-export interface ComplianceDocumentListItem {
-  slug: string;
-  title: string;
-  category: string;
-  description: string | null;
-  lastModified: string | null;
-}
-
-export interface ComplianceDocument extends ComplianceDocumentListItem {
-  content: string;
-}
-
-export interface PatientDataExportConsent {
-  acceptedAt: string;
-  consentText: string;
-  ipAddress: string | null;
-}
-
-export interface PatientDataExportMessage {
-  at: string;
-  direction: string;
-  templateKey: string | null;
-  contentLength: number;
-}
-
-export interface PatientDataExportCheckin {
-  at: string;
-  responseType: string;
-}
-
-export interface PatientDataExport {
-  patientId: string;
-  name: string | null;
-  phone: string;
-  cpf: string | null;
-  status: string;
-  createdAt: string;
-  consents: PatientDataExportConsent[];
-  messages: PatientDataExportMessage[];
-  checkins: PatientDataExportCheckin[];
-}
-
 export interface InteractionEventEntry {
   id: string;
   eventType: string;
@@ -608,10 +566,6 @@ export interface TenantSettings {
   locale: string;
   aiEnabled: boolean;
   aiFeatures?: AiPlatformFeatures;
-  aiApprovedByController?: boolean;
-  aiApprovedAt?: string | null;
-  aiApprovalReference?: string | null;
-  adminTwoFactorRequired?: boolean;
   dataRetentionDays?: number | null;
   voiceMessagesEnabled: boolean;
   prescriptionScanEnabled?: boolean;
@@ -1418,18 +1372,6 @@ export interface CarePlanUpsert {
 
 /** @deprecated Use CarePlanUpsert */
 export interface CarePlanUpdate extends CarePlanUpsert {}
-
-export interface AdminTenantComplianceOverview {
-  tenantId: string;
-  tenantName: string;
-  tenantSlug: string;
-  aiEnabled: boolean;
-  aiApprovedByController: boolean;
-  aiApprovedAt: string | null;
-  aiApprovalReference: string | null;
-  adminTwoFactorRequired: boolean;
-  dataRetentionDays: number | null;
-}
 
 export interface AdminTenant {
   id: string;

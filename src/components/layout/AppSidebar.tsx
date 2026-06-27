@@ -287,7 +287,6 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
   {
     title: "Ferramentas",
     items: [
-      { to: "/admin/conformidade", label: "Privacidade e conformidade", icon: Shield },
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
     ],
