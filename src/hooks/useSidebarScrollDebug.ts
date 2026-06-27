@@ -29,7 +29,6 @@ function resolveRefs(refs: SidebarScrollDebugRefs) {
 export function useSidebarScrollDebug(
   refs: SidebarScrollDebugRefs,
   collapsed: boolean,
-  navMaxHeight: number | null = null,
 ) {
   const { pathname } = useLocation();
   const lastScrollTop = useRef(0);
@@ -47,14 +46,13 @@ export function useSidebarScrollDebug(
     const nav = refs.nav.current;
     if (!nav) return;
 
-    const checkLayout = () =>
-      warnIfSidebarScrollBroken(nav, { collapsed, pathname, navMaxHeight });
+    const checkLayout = () => warnIfSidebarScrollBroken(nav, { collapsed, pathname });
 
     requestAnimationFrame(checkLayout);
     window.addEventListener("resize", checkLayout);
 
     return () => window.removeEventListener("resize", checkLayout);
-  }, [collapsed, pathname, navMaxHeight]);
+  }, [collapsed, pathname]);
 
   useEffect(() => {
     if (!isSidebarScrollDebugEnabled()) return;
@@ -65,14 +63,12 @@ export function useSidebarScrollDebug(
     snapshotSidebarLayout("mount-or-deps", resolveRefs(refs), {
       collapsed,
       pathname,
-      navMaxHeight,
     });
 
     requestAnimationFrame(() => {
       warnIfSidebarScrollBroken(nav, {
         collapsed,
         pathname,
-        navMaxHeight,
         label: "mount-or-deps",
       });
     });
@@ -139,7 +135,7 @@ export function useSidebarScrollDebug(
       nav.removeEventListener("wheel", onWheel);
       window.clearInterval(resetProbe);
     };
-  }, [collapsed, pathname, navMaxHeight]);
+  }, [collapsed, pathname]);
 
   useEffect(() => {
     if (!isSidebarScrollDebugEnabled()) return;
@@ -148,5 +144,5 @@ export function useSidebarScrollDebug(
       snapshotSidebarLayout("window-resize", resolveRefs(refs), { collapsed, pathname });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [collapsed, pathname, navMaxHeight]);
+  }, [collapsed, pathname]);
 }

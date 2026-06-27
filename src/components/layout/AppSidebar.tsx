@@ -47,7 +47,6 @@ import { tourNavId } from "@/lib/tours";
 import { isNavToActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
-import { useSidebarNavHeight } from "@/hooks/useSidebarNavHeight";
 
 export type NavItem = {
   to?: string;
@@ -568,31 +567,10 @@ export function AppSidebar({
   const navRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
 
-  const navMaxHeight = useSidebarNavHeight(
-    { shell: shellRef, header: headerRef, footer: footerRef },
-    collapsed,
-  );
-
   useSidebarScrollDebug(
     { root: rootRef, grid: shellRef, header: headerRef, nav: navRef, footer: footerRef },
     collapsed,
-    navMaxHeight,
   );
-
-  function handleNavWheel(event: React.WheelEvent<HTMLElement>) {
-    const nav = event.currentTarget;
-    const maxScrollTop = nav.scrollHeight - nav.clientHeight;
-    if (maxScrollTop <= 0) return;
-
-    const goingUp = event.deltaY < 0;
-    const goingDown = event.deltaY > 0;
-    const atTop = nav.scrollTop <= 0;
-    const atBottom = nav.scrollTop >= maxScrollTop - 1;
-
-    if ((goingUp && !atTop) || (goingDown && !atBottom)) {
-      event.stopPropagation();
-    }
-  }
 
   const handleLogout = () => {
     onNavigate?.();
@@ -671,10 +649,8 @@ export function AppSidebar({
         <nav
           ref={navRef}
           data-sidebar-nav
-          onWheel={handleNavWheel}
-          style={navMaxHeight != null ? { maxHeight: navMaxHeight } : undefined}
           className={cn(
-            "sidebar-scroll min-h-0 shrink-0 overflow-y-auto overflow-x-hidden",
+            "sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
             collapsed ? "sidebar-scroll--collapsed p-2 py-3" : "sidebar-scroll--expanded px-4 py-3",
           )}
         >
