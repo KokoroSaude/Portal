@@ -1066,7 +1066,13 @@ export const api = {
 
   createPromoCampaign: (
     token: string,
-    body: { message: string; segment?: string; segmentMedicationId?: string },
+    body: {
+      message: string;
+      segment?: string;
+      segmentMedicationId?: string;
+      purchaseUrlSuffix?: string;
+      couponCode?: string;
+    },
   ) =>
     request<{ campaignId: string; totalRecipients: number }>("/api/promotions/campaigns", {
       method: "POST",
@@ -1074,11 +1080,15 @@ export const api = {
       body,
     }),
 
-  updatePromoCampaign: (token: string, campaignId: string, message: string) =>
+  updatePromoCampaign: (
+    token: string,
+    campaignId: string,
+    body: { message: string; purchaseUrlSuffix?: string; couponCode?: string },
+  ) =>
     request<void>(`/api/promotions/campaigns/${campaignId}`, {
       method: "PUT",
       token,
-      body: { message },
+      body,
     }),
 
   sendPromoCampaign: (token: string, campaignId: string) =>

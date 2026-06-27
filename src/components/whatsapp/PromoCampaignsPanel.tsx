@@ -92,6 +92,8 @@ export function PromoCampaignsPanel() {
   const editorRef = useRef<HTMLDivElement>(null);
 
   const [message, setMessage] = useState("");
+  const [purchaseUrlSuffix, setPurchaseUrlSuffix] = useState("");
+  const [couponCode, setCouponCode] = useState("");
   const [segment, setSegment] = useState<string>("ActivePatients");
   const [segmentMedicationId, setSegmentMedicationId] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -195,6 +197,8 @@ export function PromoCampaignsPanel() {
   const resetNewForm = () => {
     setSelectedId(null);
     setMessage(defaults.data?.defaultMessage ?? "");
+    setPurchaseUrlSuffix("");
+    setCouponCode("");
     setSegment("ActivePatients");
     setSegmentMedicationId("");
     setScheduleAtLocal(defaultScheduleLocal());
@@ -203,6 +207,8 @@ export function PromoCampaignsPanel() {
   const selectCampaign = (campaign: PromoCampaignListItem) => {
     setSelectedId(campaign.id);
     setMessage(campaign.message);
+    setPurchaseUrlSuffix(campaign.purchaseUrlSuffix ?? "");
+    setCouponCode(campaign.couponCode ?? "");
     setSegment(campaign.segment);
     if (campaign.status === "Draft") {
       setScheduleAtLocal(defaultScheduleLocal());
@@ -210,12 +216,25 @@ export function PromoCampaignsPanel() {
     scrollToEditor();
   };
 
+  const buttonFields = () => ({
+    purchaseUrlSuffix: purchaseUrlSuffix.trim() || undefined,
+    couponCode: couponCode.trim() || undefined,
+  });
+
   const createDraftPayload = () => ({
     message: message.trim(),
     segment,
     segmentMedicationId:
       segment === "PatientsOnMedication" ? segmentMedicationId || undefined : undefined,
+    ...buttonFields(),
   });
+
+  const updatePayload = () => ({ message: message.trim(), ...buttonFields() });
+
+  const draftChanged = () =>
+    message.trim() !== (selectedSummary?.message ?? "") ||
+    (purchaseUrlSuffix.trim() || "") !== (selectedSummary?.purchaseUrlSuffix ?? "") ||
+    (couponCode.trim() || "") !== (selectedSummary?.couponCode ?? "");
 
   const createCampaign = useMutation({
     mutationFn: () => api.createPromoCampaign(token!, createDraftPayload()),
@@ -230,7 +249,7 @@ export function PromoCampaignsPanel() {
   });
 
   const updateCampaign = useMutation({
-    mutationFn: () => api.updatePromoCampaign(token!, selectedId!, message.trim()),
+    mutationFn: () => api.updatePromoCampaign(token!, selectedId!, updatePayload()),
     onSuccess: () => {
       toast.success("Rascunho salvo");
       invalidateCampaign();
@@ -299,8 +318,8 @@ export function PromoCampaignsPanel() {
         const result = await api.createPromoCampaign(token!, createDraftPayload());
         campaignId = result.campaignId;
         setSelectedId(result.campaignId);
-      } else if (message.trim() !== selectedSummary?.message) {
-        await api.updatePromoCampaign(token!, campaignId!, message.trim());
+      } else if (draftChanged()) {
+        await api.updatePromoCampaign(token!, campaignId!, updatePayload());
       }
       await api.sendPromoCampaign(token!, campaignId!);
     },
@@ -319,8 +338,8 @@ export function PromoCampaignsPanel() {
         const result = await api.createPromoCampaign(token!, createDraftPayload());
         campaignId = result.campaignId;
         setSelectedId(result.campaignId);
-      } else if (message.trim() !== selectedSummary?.message) {
-        await api.updatePromoCampaign(token!, campaignId!, message.trim());
+      } else if (draftChanged()) {
+        await api.updatePromoCampaign(token!, campaignId!, updatePayload());
       }
       return api.schedulePromoCampaign(
         token!,
@@ -535,6 +554,37 @@ export function PromoCampaignsPanel() {
                 />
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="promo-link">Botão de compra (opcional)</Label>
+                  <Input
+                    id="promo-link"
+                    value={purchaseUrlSuffix}
+                    onChange={(e) => setPurchaseUrlSuffix(e.target.value)}
+                    placeholder="ex.: ofertas/vitaminas"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Parte final do link, anexada ao domínio fixo definido no botão do template Meta
+                    (ex.: <code>sualoja.com.br/<strong>ofertas/vitaminas</strong></code>). Vazio = sem
+                    botão de compra.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="promo-coupon">Cupom de desconto (opcional)</Label>
+                  <Input
+                    id="promo-coupon"
+                    value={couponCode}
+                    maxLength={15}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="ex.: VITA20"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Até 15 caracteres. Adiciona um botão <strong>Copiar cupom</strong>. Vazio = sem
+                    botão de cupom.
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="promo-schedule-at">Agendar para</Label>
                 <Input
@@ -634,6 +684,16 @@ export function PromoCampaignsPanel() {
               <p className="text-sm text-muted-foreground">
                 Segmento: {segmentLabel(selectedSummary.segment)}
               </p>
+              {(selectedSummary.purchaseUrlSuffix || selectedSummary.couponCode) && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedSummary.purchaseUrlSuffix && (
+                    <Badge variant="outline">Botão de compra · …/{selectedSummary.purchaseUrlSuffix}</Badge>
+                  )}
+                  {selectedSummary.couponCode && (
+                    <Badge variant="outline">Cupom · {selectedSummary.couponCode}</Badge>
+                  )}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 {selectedSummary.status === "Scheduled" && selectedId && (
                   <Button

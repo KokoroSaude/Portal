@@ -1831,6 +1831,8 @@ export interface PromoDefaults {
 export interface PromoCampaignListItem {
   id: string;
   message: string;
+  purchaseUrlSuffix: string | null;
+  couponCode: string | null;
   segment: string;
   status: string;
   totalRecipients: number;
