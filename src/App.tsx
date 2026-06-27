@@ -28,9 +28,46 @@ const PromoCampaignsPage = lazyPage(
 const WhatsappConfigPage = lazyPage(() => import("@/pages/WhatsappConfigPage"), "WhatsappConfigPage");
 const LoginPage = lazyPage(() => import("@/pages/LoginPage"), "LoginPage");
 const PatientDetailPage = lazyPage(() => import("@/pages/PatientDetailPage"), "PatientDetailPage");
+const PatientBehavioralProfilePage = lazyPage(
+  () => import("@/pages/PatientBehavioralProfilePage"),
+  "PatientBehavioralProfilePage",
+);
+const PatientAiAssistantPage = lazyPage(
+  () => import("@/pages/PatientAiAssistantPage"),
+  "PatientAiAssistantPage",
+);
+const PatientMoriskyPage = lazyPage(
+  () => import("@/pages/PatientMoriskyPage"),
+  "PatientMoriskyPage",
+);
+const PatientTpbPage = lazyPage(
+  () => import("@/pages/PatientTpbPage"),
+  "PatientTpbPage",
+);
+const PatientCareNetworkPage = lazyPage(
+  () => import("@/pages/PatientCareNetworkPage"),
+  "PatientCareNetworkPage",
+);
 const PatientsPage = lazyPage(() => import("@/pages/PatientsPage"), "PatientsPage");
 const ProfilePage = lazyPage(() => import("@/pages/ProfilePage"), "ProfilePage");
-const ReportsPage = lazyPage(() => import("@/pages/ReportsPage"), "ReportsPage");
+const ReportsLayout = lazyPage(() => import("@/pages/reports/ReportsLayout"), "ReportsLayout");
+const ReportsHubPage = lazyPage(() => import("@/pages/reports/ReportsHubPage"), "ReportsHubPage");
+const ReportsAdherencePage = lazyPage(
+  () => import("@/pages/reports/ReportsAdherencePage"),
+  "ReportsAdherencePage",
+);
+const ReportsEngagementPage = lazyPage(
+  () => import("@/pages/reports/ReportsEngagementPage"),
+  "ReportsEngagementPage",
+);
+const ReportsOperationsPage = lazyPage(
+  () => import("@/pages/reports/ReportsOperationsPage"),
+  "ReportsOperationsPage",
+);
+const ReportsScalesPage = lazyPage(
+  () => import("@/pages/reports/ReportsScalesPage"),
+  "ReportsScalesPage",
+);
 const MedicationProgramPage = lazyPage(
   () => import("@/pages/MedicationProgramPage"),
   "MedicationProgramPage",
@@ -41,6 +78,15 @@ const MedicationProgramsPage = lazyPage(
 );
 const MedicationsPage = lazyPage(() => import("@/pages/MedicationsPage"), "MedicationsPage");
 const SettingsPage = lazyPage(() => import("@/pages/SettingsPage"), "SettingsPage");
+const SettingsPickupPage = lazyPage(
+  () => import("@/pages/SettingsPickupPage"),
+  "SettingsPickupPage",
+);
+const SettingsAiPage = lazyPage(() => import("@/pages/SettingsAiPage"), "SettingsAiPage");
+const SettingsUsersPage = lazyPage(
+  () => import("@/pages/SettingsUsersPage"),
+  "SettingsUsersPage",
+);
 const MoriskySettingsPage = lazyPage(
   () => import("@/pages/MoriskySettingsPage"),
   "MoriskySettingsPage",
@@ -68,7 +114,42 @@ const AdminDeletedTenantsPage = lazyPage(
   () => import("@/pages/admin/AdminDeletedTenantsPage"),
   "AdminDeletedTenantsPage",
 );
-const AdminReportsPage = lazyPage(() => import("@/pages/admin/AdminReportsPage"), "AdminReportsPage");
+const AdminReportsLayout = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsLayout"),
+  "AdminReportsLayout",
+);
+const AdminReportsHubPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsHubPage"),
+  "AdminReportsHubPage",
+);
+const AdminReportsAdherencePage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsAdherencePage"),
+  "AdminReportsAdherencePage",
+);
+const AdminReportsEngagementPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsEngagementPage"),
+  "AdminReportsEngagementPage",
+);
+const AdminReportsOperationsPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsOperationsPage"),
+  "AdminReportsOperationsPage",
+);
+const AdminReportsScalesPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsScalesPage"),
+  "AdminReportsScalesPage",
+);
+const AdminReportsTraceabilityPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsTraceabilityPage"),
+  "AdminReportsTraceabilityPage",
+);
+const AdminReportsSendersPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsSendersPage"),
+  "AdminReportsSendersPage",
+);
+const AdminReportsComparisonPage = lazyPage(
+  () => import("@/pages/admin/reports/AdminReportsComparisonPage"),
+  "AdminReportsComparisonPage",
+);
 const AdminConfigurationPage = lazyPage(
   () => import("@/pages/admin/AdminConfigurationPage"),
   "AdminConfigurationPage",
@@ -147,8 +228,22 @@ export default function App() {
 
                   <Route element={<RequireTenant />}>
                     <Route path="pacientes" element={<PatientsPage />} />
+                    <Route
+                      path="pacientes/:id/avaliacao-estrategica"
+                      element={<PatientBehavioralProfilePage />}
+                    />
+                    <Route path="pacientes/:id/assistente-ia" element={<PatientAiAssistantPage />} />
+                    <Route path="pacientes/:id/mmas-8" element={<PatientMoriskyPage />} />
+                    <Route path="pacientes/:id/tcp" element={<PatientTpbPage />} />
+                    <Route path="pacientes/:id/rede-cuidado" element={<PatientCareNetworkPage />} />
                     <Route path="pacientes/:id" element={<PatientDetailPage />} />
-                    <Route path="relatorios" element={<ReportsPage />} />
+                    <Route path="relatorios" element={<ReportsLayout />}>
+                      <Route index element={<ReportsHubPage />} />
+                      <Route path="adesao" element={<ReportsAdherencePage />} />
+                      <Route path="engajamento" element={<ReportsEngagementPage />} />
+                      <Route path="operacao" element={<ReportsOperationsPage />} />
+                      <Route path="escalas" element={<ReportsScalesPage />} />
+                    </Route>
                     <Route path="relatorios/programa-medicamento" element={<MedicationProgramPage />} />
                     <Route path="programas" element={<MedicationProgramsPage />} />
                     <Route path="medicamentos" element={<MedicationsPage />} />
@@ -163,6 +258,9 @@ export default function App() {
                     <Route path="tcp" element={<TpbSettingsPage />} />
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
+                    <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
+                    <Route path="configuracoes/ia" element={<SettingsAiPage />} />
+                    <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
                     <Route element={<RequireGovPharmacy />}>
                       <Route path="farmacia" element={<FarmaciaDashboardPage />} />
@@ -176,7 +274,16 @@ export default function App() {
                     <Route path="admin" element={<Navigate to="/" replace />} />
                     <Route path="admin/tenants" element={<AdminTenantsPage />} />
                     <Route path="admin/tenants/excluidas" element={<AdminDeletedTenantsPage />} />
-                    <Route path="admin/relatorios" element={<AdminReportsPage />} />
+                    <Route path="admin/relatorios" element={<AdminReportsLayout />}>
+                      <Route index element={<AdminReportsHubPage />} />
+                      <Route path="adesao" element={<AdminReportsAdherencePage />} />
+                      <Route path="engajamento" element={<AdminReportsEngagementPage />} />
+                      <Route path="operacao" element={<AdminReportsOperationsPage />} />
+                      <Route path="escalas" element={<AdminReportsScalesPage />} />
+                      <Route path="rastreabilidade" element={<AdminReportsTraceabilityPage />} />
+                      <Route path="remetentes" element={<AdminReportsSendersPage />} />
+                      <Route path="comparativo" element={<AdminReportsComparisonPage />} />
+                    </Route>
                     <Route path="admin/usuarios" element={<AdminPlatformUsersPage />} />
                     <Route path="admin/assinatura" element={<AdminEmailSignaturePage />} />
                     <Route path="admin/onboarding" element={<AdminOnboardingPage />} />

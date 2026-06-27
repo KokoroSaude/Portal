@@ -1,24 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Pause, Pencil, Play, RefreshCw, Star, Trash2, Trophy } from "lucide-react";
+import {
+  ArrowLeft,
+  Brain,
+  ClipboardList,
+  MessageCircle,
+  Pause,
+  Pencil,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Star,
+  Trash2,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
-import { PatientAiInsightCard } from "@/components/patients/PatientAiInsightCard";
-import { PatientKokoroAssistantCard } from "@/components/patients/PatientKokoroAssistantCard";
-import {
-  PatientInsightPreviewModeToggle,
-  type InsightPreviewMode,
-} from "@/components/patients/PatientInsightPreviewModeToggle";
-import { PatientInsightPromptDialog } from "@/components/patients/PatientInsightPromptDialog";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
-import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
 import { PatientDsarExportButton } from "@/components/patients/PatientDsarExportButton";
-import { PatientMoriskyTab } from "@/components/patients/PatientMoriskyTab";
-import { PatientTpbTab } from "@/components/patients/PatientTpbTab";
-import { PatientBehavioralTab } from "@/components/patients/PatientBehavioralTab";
+import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -63,7 +67,6 @@ export function PatientDetailPage() {
   const navigate = useNavigate();
   const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [insightPreviewMode, setInsightPreviewMode] = useState<InsightPreviewMode>("auto");
   const [pauseReason, setPauseReason] = useState("");
   const [pauseOpen, setPauseOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -91,7 +94,7 @@ export function PatientDetailPage() {
     enabled: !!token && !!id,
   });
 
-  const { data: moriskyHistory, isLoading: moriskyLoading } = useQuery({
+  const { data: moriskyHistory } = useQuery({
     queryKey: ["patient-morisky", id],
     queryFn: () => api.getPatientMorisky(token!, id!),
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesMorisky),
@@ -103,25 +106,16 @@ export function PatientDetailPage() {
     enabled: !!token && !!id,
   });
 
-  const { data: tpbHistory, isLoading: tpbLoading } = useQuery({
+  const { data: tpbHistory } = useQuery({
     queryKey: ["patient-tpb", id],
     queryFn: () => api.getPatientTpb(token!, id!),
     enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
-  const { data: tpbRisk, isLoading: tpbRiskLoading } = useQuery({
-    queryKey: ["patient-tpb-risk", id],
-    queryFn: () => api.getPatientTpbRisk(token!, id!),
-    enabled: !!token && !!id && hasFeature(FEATURE_KEYS.scalesTpb),
-  });
-
   const behavioralEnabled = hasFeature(FEATURE_KEYS.behavioralProfile);
-
-  const { data: behavioralProfile, isLoading: behavioralProfileLoading } = useQuery({
-    queryKey: ["patient-behavioral-profile", id],
-    queryFn: () => api.getPatientBehavioralProfile(token!, id!),
-    enabled: !!token && !!id && behavioralEnabled,
-  });
+  const aiEnabled = hasFeature(FEATURE_KEYS.aiCopilot);
+  const moriskyFeatureEnabled = hasFeature(FEATURE_KEYS.scalesMorisky);
+  const tpbFeatureEnabled = hasFeature(FEATURE_KEYS.scalesTpb);
 
   const {
     settings: tenantSettings,
@@ -136,40 +130,10 @@ export function PatientDetailPage() {
   const { data: platformAi } = useQuery({
     queryKey: ["admin-platform-ai"],
     queryFn: () => api.adminGetPlatformAi(token!),
-    enabled: !!token && isPlatform && hasFeature(FEATURE_KEYS.aiCopilot),
+    enabled: !!token && isPlatform && aiEnabled,
   });
 
   const platformConfiguredOverride = platformAi?.isConfigured;
-
-  const triggerMoriskyMutation = useMutation({
-    mutationFn: () => api.triggerPatientMorisky(token!, id!),
-    onSuccess: (result) => {
-      if (result.sent) toast.success(result.message);
-      else toast.warning(result.message);
-    },
-    onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar MMAS-8"),
-  });
-
-  const triggerTpbMutation = useMutation({
-    mutationFn: () => api.triggerPatientTpb(token!, id!),
-    onSuccess: (result) => {
-      if (result.sent) toast.success(result.message);
-      else toast.warning(result.message);
-      queryClient.invalidateQueries({ queryKey: ["patient-tpb", id] });
-    },
-    onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar TCP"),
-  });
-
-  const previewTpbMutation = useMutation({
-    mutationFn: () => api.previewTpbIntervention(token!, id!),
-    onSuccess: (result) => {
-      toast.info(result.text, { duration: 8000 });
-    },
-    onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao simular intervenção"),
-  });
 
   const triggerCsatMutation = useMutation({
     mutationFn: () => api.triggerPatientCsat(token!, id!),
@@ -291,6 +255,14 @@ export function PatientDetailPage() {
   const canPause = patient.status === "Active" || patient.status === "Onboarding";
   const canResume = patient.status === "Paused";
 
+  const showMoreSection =
+    id &&
+    (aiEnabled ||
+      behavioralEnabled ||
+      moriskyFeatureEnabled ||
+      tpbFeatureEnabled ||
+      govMode);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -305,7 +277,7 @@ export function PatientDetailPage() {
             {patient.preferredMessageChannel === "Audio" && (
               <Badge variant="secondary">Canal: áudio</Badge>
             )}
-            {hasFeature(FEATURE_KEYS.aiCopilot) && (
+            {aiEnabled && (
               <PatientAiAvailabilityBadge
                 settings={tenantSettings}
                 isLoading={settingsLoading}
@@ -607,70 +579,78 @@ export function PatientDetailPage() {
         </Card>
       )}
 
-      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && isAdmin && (
-        <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
-          <span>Preview resumo (admin)</span>
-          <PatientInsightPreviewModeToggle
-            value={insightPreviewMode}
-            onChange={setInsightPreviewMode}
-          />
-          <PatientInsightPromptDialog token={token} patientId={id} />
+      {showMoreSection && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="font-serif text-xl">Mais sobre este paciente</h2>
+            <p className="text-sm text-muted-foreground">
+              Avaliações, IA e rede de cuidado em páginas dedicadas.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {aiEnabled && (
+              <PatientFeatureLinkCard
+                icon={Sparkles}
+                title="Assistente IA"
+                description="Resumo clínico, sugestões de acompanhamento e insights personalizados."
+                to={`/pacientes/${id}/assistente-ia`}
+                actionLabel="Abrir assistente IA"
+              />
+            )}
+            {behavioralEnabled && (
+              <PatientFeatureLinkCard
+                icon={Brain}
+                title="Perfil comportamental"
+                description="Avaliação estratégica, barreiras de adesão e questionário no portal."
+                to={`/pacientes/${id}/avaliacao-estrategica`}
+                actionLabel="Abrir avaliação estratégica"
+              />
+            )}
+            {moriskyFeatureEnabled && (
+              <PatientFeatureLinkCard
+                icon={ClipboardList}
+                title="MMAS-8"
+                description="Histórico de adesão medicamentosa e disparo manual da escala."
+                to={`/pacientes/${id}/mmas-8`}
+                actionLabel="Abrir MMAS-8"
+                badge={
+                  (moriskyHistory?.assessments.length ?? 0) > 0
+                    ? moriskyHistory!.assessments.length
+                    : undefined
+                }
+              />
+            )}
+            {tpbFeatureEnabled && (
+              <PatientFeatureLinkCard
+                icon={ClipboardList}
+                title="TCP"
+                description="Teoria do Comportamento Planejado, risco e intervenções."
+                to={`/pacientes/${id}/tcp`}
+                actionLabel="Abrir TCP"
+                badge={
+                  (tpbHistory?.assessments.length ?? 0) > 0
+                    ? tpbHistory!.assessments.length
+                    : undefined
+                }
+              />
+            )}
+            {govMode && (
+              <PatientFeatureLinkCard
+                icon={Users}
+                title="Rede de cuidado"
+                description="Delegados autorizados a retirar medicamentos e receber notificações."
+                to={`/pacientes/${id}/rede-cuidado`}
+                actionLabel="Abrir rede de cuidado"
+              />
+            )}
+          </div>
         </div>
-      )}
-
-      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
-        <PatientAiInsightCard
-          token={token}
-          patientId={id}
-          tenantSettings={tenantSettings}
-          platformConfiguredOverride={platformConfiguredOverride}
-          previewMode={insightPreviewMode}
-        />
-      )}
-
-      {token && id && hasFeature(FEATURE_KEYS.aiCopilot) && (
-        <PatientKokoroAssistantCard
-          token={token}
-          patientId={id}
-          canWrite={canWrite}
-          tenantSettings={tenantSettings}
-          platformConfiguredOverride={platformConfiguredOverride}
-          previewMode={insightPreviewMode}
-          onTriggerTpb={() => triggerTpbMutation.mutate()}
-        />
-      )}
-
-      {token && id && govMode && (
-        <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
       )}
 
       <Tabs defaultValue="timeline">
         <TabsList>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="careplan">Plano de cuidado</TabsTrigger>
-          {hasFeature(FEATURE_KEYS.scalesMorisky) && (
-            <TabsTrigger value="morisky">
-              MMAS-8
-              {(moriskyHistory?.assessments.length ?? 0) > 0 && (
-                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
-                  {moriskyHistory!.assessments.length}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
-          {hasFeature(FEATURE_KEYS.scalesTpb) && (
-            <TabsTrigger value="tpb">
-              TCP
-              {(tpbHistory?.assessments.length ?? 0) > 0 && (
-                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
-                  {tpbHistory!.assessments.length}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
-          {behavioralEnabled && (
-            <TabsTrigger value="behavioral">Perfil comportamental</TabsTrigger>
-          )}
         </TabsList>
 
         <TabsContent value="timeline">
@@ -729,46 +709,6 @@ export function PatientDetailPage() {
         <TabsContent value="careplan">
           {token && id && <PatientCarePlansTab patientId={id} token={token} canWrite={canWrite} />}
         </TabsContent>
-
-        <TabsContent value="morisky">
-          <PatientMoriskyTab
-            assessments={moriskyHistory?.assessments}
-            isLoading={moriskyLoading}
-            canTrigger={canWrite}
-            moriskyEnabled={tenantSettings?.moriskyEnabled}
-            onTrigger={() => triggerMoriskyMutation.mutate()}
-            isTriggering={triggerMoriskyMutation.isPending}
-          />
-        </TabsContent>
-
-        <TabsContent value="tpb">
-          <PatientTpbTab
-            assessments={tpbHistory?.assessments}
-            risk={tpbRisk}
-            isLoading={tpbLoading}
-            riskLoading={tpbRiskLoading}
-            canTrigger={canWrite}
-            tpbEnabled={tenantSettings?.tpbEnabled}
-            onTrigger={() => triggerTpbMutation.mutate()}
-            isTriggering={triggerTpbMutation.isPending}
-            onPreviewIntervention={canWrite ? () => previewTpbMutation.mutate() : undefined}
-            isPreviewing={previewTpbMutation.isPending}
-          />
-        </TabsContent>
-
-        {behavioralEnabled && token && id && (
-          <TabsContent value="behavioral">
-            <PatientBehavioralTab
-              token={token}
-              patientId={id}
-              canWrite={canWrite}
-              profile={behavioralProfile}
-              profileLoading={behavioralProfileLoading}
-              tpbRisk={tpbRisk}
-              tpbRiskLoading={tpbRiskLoading}
-            />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );
