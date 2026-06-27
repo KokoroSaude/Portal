@@ -24,10 +24,7 @@ import {
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import type { WhatsappSender, WhatsAppActivationStatusDto, WhatsAppSenderPurpose } from "@/types/api";
 import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
-import {
-  WhatsAppSenderPurposeSelect,
-  WhatsAppSenderPurposeBadge,
-} from "@/components/whatsapp/WhatsAppSenderPurposeSelect";
+import { WhatsAppSenderPurposeSelect } from "@/components/whatsapp/WhatsAppSenderPurposeSelect";
 
 type WizardStep = "overview" | "phone" | "otp" | "profile" | "done";
 
@@ -295,32 +292,6 @@ export function WhatsAppActivationWizard({
 
       {step === "overview" && (
         <div className="space-y-4">
-          {sendersQuery.data && sendersQuery.data.length > 0 && (
-            <ul className="space-y-2 text-sm">
-              {sendersQuery.data.map((sender) => (
-                <li
-                  key={sender.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{sender.displayName}</p>
-                    <p className="text-muted-foreground">{maskPhone(sender.phoneNumber)}</p>
-                  </div>
-                  <div className="text-right">
-                    <WhatsAppSenderPurposeBadge purpose={sender.purpose} showDescription />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {sendersQuery.data && sendersQuery.data.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Para alterar a finalidade de um número já cadastrado, use a tabela{" "}
-              <strong>Números cadastrados</strong> abaixo e clique em <strong>Editar</strong>.
-            </p>
-          )}
-
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setStep("phone")}>
               <Phone className="mr-2 size-4" />

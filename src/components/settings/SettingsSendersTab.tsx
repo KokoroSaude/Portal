@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +34,7 @@ import { matchesGridSearch } from "@/lib/gridSearch";
 import type { WhatsappSender } from "@/types/api";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import { WhatsappBusinessProfileEditor } from "@/components/whatsapp/WhatsappBusinessProfileEditor";
+import { AddSenderDialog } from "@/components/whatsapp/AddSenderDialog";
 import {
   WhatsAppSenderPurposeBadge,
   WhatsAppSenderPurposeSelect,
@@ -57,15 +57,11 @@ function SenderConnectionBadge({ sender }: { sender: WhatsappSender }) {
   );
 }
 
-type SettingsSendersTabProps = {
-  onAddViaOtp?: () => void;
-};
-
-export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
+export function SettingsSendersTab() {
   const { token, hasFeature } = useAuth();
   const queryClient = useQueryClient();
   const { input, setInput, query } = useGridSearch();
-  const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [profileSender, setProfileSender] = useState<WhatsappSender | null>(null);
   const [editing, setEditing] = useState<WhatsappSender | null>(null);
   const [form, setForm] = useState({
@@ -95,17 +91,6 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
     queryKey: ["senders"],
     queryFn: () => api.listSenders(token!),
     enabled: !!token && hasFeature(FEATURE_KEYS.whatsappSendersManage),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: () => api.createSender(token!, form),
-    onSuccess: () => {
-      toast.success("Número cadastrado");
-      setOpen(false);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ["senders"] });
-    },
-    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro"),
   });
 
   const editMutation = useMutation({
@@ -194,61 +179,10 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
-          {onAddViaOtp && (
-            <Button onClick={onAddViaOtp}>
-              <Plus className="size-4" />
-              Adicionar número (OTP)
-            </Button>
-          )}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="size-4" />
-                Inserir IDs manualmente
-              </Button>
-            </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Cadastro manual de remetente</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>Telefone (E.164)</Label>
-                <Input
-                  placeholder="+5511999999999"
-                  value={form.phoneNumber}
-                  onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nome de exibição</Label>
-                <Input
-                  value={form.displayName}
-                  onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>WABA ID</Label>
-                <Input
-                  value={form.wabaId}
-                  onChange={(e) => setForm((f) => ({ ...f, wabaId: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone ID</Label>
-                <Input
-                  value={form.phoneId}
-                  onChange={(e) => setForm((f) => ({ ...f, phoneId: e.target.value }))}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-                Cadastrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="size-4" />
+            Adicionar número
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -399,6 +333,8 @@ export function SettingsSendersTab({ onAddViaOtp }: SettingsSendersTabProps) {
         open={profileSender !== null}
         onOpenChange={(v) => !v && setProfileSender(null)}
       />
+
+      <AddSenderDialog open={addOpen} onOpenChange={setAddOpen} />
     </Card>
   );
 }
