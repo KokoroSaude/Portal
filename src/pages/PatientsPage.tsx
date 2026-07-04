@@ -822,7 +822,7 @@ export function PatientsPage() {
                           {p.name ?? "Sem nome"}
                         </Link>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{maskPhone(p.phone)}</TableCell>
+                      <TableCell className="font-mono text-sm">{maskPhone(p.phone, p.phoneLast4)}</TableCell>
                       <TableCell className="font-mono text-sm">
                         {p.cpf ? maskCpf(p.cpf) : "—"}
                       </TableCell>

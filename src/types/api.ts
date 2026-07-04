@@ -69,6 +69,7 @@ export interface Patient {
   id: string;
   name: string | null;
   phone: string;
+  phoneLast4?: string | null;
   cpf?: string | null;
   clinicalPriorityTier?: ClinicalPriorityTier | null;
   status: string;
@@ -1019,6 +1020,7 @@ export interface MoriskyPatientRank {
   patientId: string;
   patientName: string | null;
   phone: string;
+  phoneLast4?: string | null;
   score: number;
   maxScore: number;
   level: string;
@@ -1215,6 +1217,7 @@ export interface TpbPatientRank {
   patientId: string;
   patientName: string | null;
   phone: string;
+  phoneLast4?: string | null;
   intentionScore: number;
   constructScores: Record<string, number>;
   checkinAdherenceRate: number | null;

@@ -138,7 +138,7 @@ export function ReportsScalesPage() {
                                     to={`/pacientes/${row.patientId}`}
                                     className="font-medium text-primary hover:underline"
                                   >
-                                    {row.patientName ?? maskPhone(row.phone)}
+                                    {row.patientName ?? maskPhone(row.phone, row.phoneLast4)}
                                   </Link>
                                 </TableCell>
                                 <TableCell>
@@ -258,7 +258,7 @@ export function ReportsScalesPage() {
                                     to={`/pacientes/${row.patientId}`}
                                     className="font-medium text-primary hover:underline"
                                   >
-                                    {row.patientName ?? maskPhone(row.phone)}
+                                    {row.patientName ?? maskPhone(row.phone, row.phoneLast4)}
                                   </Link>
                                 </TableCell>
                                 <TableCell>{row.intentionScore.toFixed(1)}/5</TableCell>

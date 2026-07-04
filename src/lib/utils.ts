@@ -30,7 +30,17 @@ export function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-export function maskPhone(phone: string) {
+export function maskPhone(phone: string, phoneLast4?: string | null) {
+  if (phoneLast4 && /^\d{3,4}$/.test(phoneLast4)) {
+    return `•••• ${phoneLast4}`;
+  }
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length >= 8 && !phone.startsWith("KE1.")) {
+    return `•••• ${digits.slice(-4)}`;
+  }
+  if (phone.startsWith("KE1.")) {
+    return "•••• ••••";
+  }
   if (phone.length < 8) return phone;
   return `${phone.slice(0, 4)} •••• ${phone.slice(-4)}`;
 }

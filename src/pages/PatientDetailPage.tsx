@@ -290,7 +290,7 @@ export function PatientDetailPage() {
                 canConfigureTenant={canWrite}
               />
             )}
-            <span className="font-mono text-sm text-muted-foreground">{maskPhone(patient.phone)}</span>
+            <span className="font-mono text-sm text-muted-foreground">{maskPhone(patient.phone, patient.phoneLast4)}</span>
             {patient.cpf && (
               <span className="font-mono text-sm text-muted-foreground">
                 CPF {formatCpfDisplay(patient.cpf)}

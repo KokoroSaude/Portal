@@ -178,7 +178,7 @@ function tenantMoriskySection(morisky?: MoriskyReport): ReportPdfSection | null 
       title: "Ranking de pacientes",
       head: ["Paciente", "Score", "Nível", "Última avaliação"],
       body: morisky.patientRanking.slice(0, 30).map((p) => [
-        p.patientName ?? maskPhone(p.phone),
+        p.patientName ?? maskPhone(p.phone, p.phoneLast4),
         String(p.score),
         MORISKY_LEVEL_LABELS[p.level] ?? p.level,
         formatDate(p.completedAt),
@@ -230,7 +230,7 @@ function tenantTpbSection(tpb?: TpbReport, tpbRisk?: TpbRiskReport): ReportPdfSe
       title: "Ranking de pacientes",
       head: ["Paciente", "Intenção", "Última avaliação"],
       body: tpb.patientRanking.slice(0, 30).map((p) => [
-        p.patientName ?? maskPhone(p.phone),
+        p.patientName ?? maskPhone(p.phone, p.phoneLast4),
         `${p.intentionScore.toFixed(1)}/5`,
         formatDate(p.completedAt),
       ]),

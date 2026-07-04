@@ -340,7 +340,7 @@ export function AdminMoriskyPatientRankingTable({ rows }: { rows: AdminMoriskyPa
           r.tenantName,
           r.patientName,
           r.phone,
-          maskPhone(r.phone),
+          maskPhone(r.phone, r.phoneLast4),
           r.level,
           MORISKY_LEVEL_LABELS[r.level],
           r.score,
@@ -389,7 +389,7 @@ export function AdminMoriskyPatientRankingTable({ rows }: { rows: AdminMoriskyPa
               <TableRow key={`${r.tenantId}-${r.patientId}`}>
                 <TableCell className="text-muted-foreground">{r.tenantName}</TableCell>
                 <TableCell className="font-medium">{r.patientName ?? "Sem nome"}</TableCell>
-                <TableCell className="font-mono text-xs">{maskPhone(r.phone)}</TableCell>
+                <TableCell className="font-mono text-xs">{maskPhone(r.phone, r.phoneLast4)}</TableCell>
                 <TableCell>
                   {r.score}/{r.maxScore}
                 </TableCell>
