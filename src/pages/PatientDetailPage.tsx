@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
+import { PatientSchedulingPanel } from "@/components/patients/PatientSchedulingPanel";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
@@ -93,6 +94,12 @@ export function PatientDetailPage() {
     enabled: !!token && !!id,
   });
 
+  const { data: scheduling, isLoading: schedulingLoading } = useQuery({
+    queryKey: ["patient-scheduling", id],
+    queryFn: () => api.getPatientScheduling(token!, id!),
+    enabled: !!token && !!id,
+  });
+
   const { data: moriskyHistory } = useQuery({
     queryKey: ["patient-morisky", id],
     queryFn: () => api.getPatientMorisky(token!, id!),
@@ -162,6 +169,7 @@ export function PatientDetailPage() {
       setPauseReason("");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao pausar");
@@ -179,7 +187,9 @@ export function PatientDetailPage() {
       setReactivateOpen(false);
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
       queryClient.invalidateQueries({ queryKey: ["patient-timeline", id] });
+      queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao reativar");
@@ -200,6 +210,7 @@ export function PatientDetailPage() {
       setPhoneOpen(false);
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao atualizar");
@@ -563,6 +574,20 @@ export function PatientDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PatientSchedulingPanel
+        scheduling={scheduling}
+        isLoading={schedulingLoading}
+        patientId={patient.id}
+        patientStatus={patient.status}
+        canWrite={canWrite}
+        onPause={canPause ? () => setPauseOpen(true) : undefined}
+        onResume={
+          canResume || canReactivateFromOptOut ? () => resumeMutation.mutate() : undefined
+        }
+        isPausing={pauseMutation.isPending}
+        isResuming={resumeMutation.isPending}
+      />
 
       {achievements && achievements.items.some((a) => a.unlocked) && (
         <Card>

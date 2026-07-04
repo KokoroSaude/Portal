@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, ExternalLink, FileText, MessageCircle, Mic, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
+import { CalendarClock, FileText, MessageCircle, Mic, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
-import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { WhatsappConversationAiSummaryCard } from "@/components/whatsapp/WhatsappConversationAiSummaryCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
-import { CONVERSATION_STEP_LABELS, CONTENT_SOURCE_LABELS } from "@/lib/constants";
+import { CONTENT_SOURCE_LABELS } from "@/lib/constants";
 import { cn, formatDateTime, maskPhone } from "@/lib/utils";
 import { isWhatsappTimelineDebugEnabled } from "@/lib/whatsapp-timeline-debug";
-import type { WhatsappConversationMessage, WhatsappConversationThread } from "@/types/api";
+import type { WhatsappConversationMessage } from "@/types/api";
 
 function contentSourceLabel(source: string | null | undefined): string | null {
   if (!source) return null;
@@ -72,7 +71,15 @@ const INTENT_KIND_LABELS: Record<string, string> = {
   Ambiguous: "Ambíguo",
 };
 
-function MessageBubble({ message, showUnderstandingDebug }: { message: WhatsappConversationMessage; showUnderstandingDebug?: boolean }) {
+function MessageBubble({
+  message,
+  showUnderstandingDebug,
+  revealContent,
+}: {
+  message: WhatsappConversationMessage;
+  showUnderstandingDebug?: boolean;
+  revealContent?: boolean;
+}) {
   const outbound = message.direction === "Outbound";
   const isAudio = message.messageType === "audio";
   const isPrescriptionMedia =
@@ -88,12 +95,19 @@ function MessageBubble({ message, showUnderstandingDebug }: { message: WhatsappC
         ctx?.deliveryErrors?.[0]?.title ??
         ctx?.failureReason
       : null;
-  const displayText =
-    !outbound && isAudio && message.transcript
+  const displayText = revealContent
+    ? !outbound && isAudio && message.transcript
       ? message.transcript
       : !outbound && isPrescriptionMedia && message.transcript
         ? message.transcript
-        : message.content;
+        : message.content
+    : outbound
+      ? "Mensagem enviada"
+      : isAudio
+        ? "Áudio recebido"
+        : isPrescriptionMedia
+          ? "Receita recebida"
+          : "Mensagem recebida";
 
   return (
     <div className={cn("flex", outbound ? "justify-end" : "justify-start")}>
@@ -158,165 +172,21 @@ function MessageBubble({ message, showUnderstandingDebug }: { message: WhatsappC
         {deliveryError && (
           <p className="mb-1 text-[10px] font-medium text-destructive">{deliveryError}</p>
         )}
-        {!outbound && isAudio && message.transcript && message.transcript !== message.content && (
+        {!revealContent && (
+          <p className="mb-1 text-[10px] italic opacity-70">Conteúdo oculto — exibir sob demanda (LGPD)</p>
+        )}
+        {!outbound && revealContent && isAudio && message.transcript && message.transcript !== message.content && (
           <p className="mb-1 text-[10px] opacity-70">Transcrição automática</p>
         )}
-        {!outbound && isPrescriptionMedia && message.transcript && message.transcript !== message.content && (
+        {!outbound && revealContent && isPrescriptionMedia && message.transcript && message.transcript !== message.content && (
           <p className="mb-1 text-[10px] opacity-70">Texto extraído da receita</p>
         )}
         <p className="whitespace-pre-wrap break-words">{displayText}</p>
-        {!outbound && isAudio && !message.transcript && (
+        {!outbound && revealContent && isAudio && !message.transcript && (
           <p className="mt-1 text-[10px] opacity-70">Transcrição indisponível</p>
         )}
         <time className="mt-1 block text-[10px] opacity-70">{formatDateTime(message.createdAt)}</time>
       </div>
-    </div>
-  );
-}
-
-function SchedulingSidebar({
-  scheduling,
-  patientId,
-  patientStatus,
-  canWrite,
-  onPause,
-  onResume,
-  isPausing,
-  isResuming,
-}: {
-  scheduling: NonNullable<WhatsappConversationThread["scheduling"]>;
-  patientId: string;
-  patientStatus: string;
-  canWrite: boolean;
-  onPause: () => void;
-  onResume: () => void;
-  isPausing: boolean;
-  isResuming: boolean;
-}) {
-  const nextPending = scheduling.reminders
-    .filter((r) => r.status === "Pending")
-    .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))[0];
-
-  const firstReminderTomorrow =
-    nextPending &&
-    new Date(nextPending.scheduledFor).toDateString() >
-      new Date().toDateString();
-
-  return (
-    <div className="space-y-3 rounded-xl border p-3 text-sm">
-      <div className="flex items-center gap-2 font-medium">
-        <CalendarClock className="size-4" />
-        Agendamento
-      </div>
-
-      {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).length > 0 ? (
-        <div className="space-y-2 text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">
-            Medicamentos ({(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).length})
-          </p>
-          {(scheduling.carePlans?.length ? scheduling.carePlans : scheduling.carePlan ? [scheduling.carePlan] : []).map((plan, idx) => (
-            <div key={`${plan.medication}-${idx}`} className="rounded-lg bg-muted/40 px-2 py-1.5">
-              <p>
-                <span className="font-medium text-foreground">{plan.medication}</span>
-                {plan.dosage && <> · {plan.dosage}</>}
-              </p>
-              <p>Horários: {plan.scheduledTimes.replace(/,/g, ", ")}</p>
-            </div>
-          ))}
-          {scheduling.activatedAt && (
-            <p>Ativado em {formatDateTime(scheduling.activatedAt)}</p>
-          )}
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">Nenhum plano de cuidado ativo.</p>
-      )}
-
-      {nextPending ? (
-        <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
-          <p className="font-medium text-foreground">Próximo lembrete</p>
-          <p>{formatDateTime(nextPending.scheduledFor)}</p>
-          {firstReminderTomorrow && (
-            <p className="mt-1 text-muted-foreground">
-              O template de conclusão diz &quot;a partir de amanhã&quot; — o primeiro envio está agendado para amanhã.
-            </p>
-          )}
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">Sem lembretes pendentes.</p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" asChild>
-          <Link to={`/pacientes/${patientId}`}>
-            <ExternalLink className="size-3.5" />
-            Ficha do paciente
-          </Link>
-        </Button>
-        {canWrite && patientStatus === "Active" && (
-          <Button type="button" variant="outline" size="sm" disabled={isPausing} onClick={onPause}>
-            <Pause className="size-3.5" />
-            Pausar
-          </Button>
-        )}
-        {canWrite && (patientStatus === "Paused" || patientStatus === "Reengagement") && (
-          <Button type="button" variant="outline" size="sm" disabled={isResuming} onClick={onResume}>
-            <Play className="size-3.5" />
-            Retomar
-          </Button>
-        )}
-      </div>
-
-      {scheduling.pausedUntil && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          Pausado até {formatDateTime(scheduling.pausedUntil)}
-        </p>
-      )}
-
-      {(scheduling.consecutiveMissedCheckins ?? 0) >= 2 && (
-        <p className="text-xs text-muted-foreground">
-          {scheduling.consecutiveMissedCheckins} check-ins perdidos seguidos
-        </p>
-      )}
-
-      {scheduling.openReengagementAttempt != null && (
-        <p className="text-xs text-muted-foreground">
-          Reengajamento em andamento — tentativa {scheduling.openReengagementAttempt}
-          {scheduling.openReengagementSentAt && (
-            <> · enviado {formatDateTime(scheduling.openReengagementSentAt)}</>
-          )}
-        </p>
-      )}
-
-      {scheduling.conversationStep && (
-        <p className="text-xs text-muted-foreground">
-          Etapa da conversa:{" "}
-          <span className="font-medium text-foreground">
-            {CONVERSATION_STEP_LABELS[scheduling.conversationStep] ?? scheduling.conversationStep}
-          </span>
-        </p>
-      )}
-
-      {scheduling.reminders.some((r) => r.status === "Failed") && (
-        <p className="text-xs text-destructive">
-          Há lembretes com falha de envio — verifique a lista abaixo.
-        </p>
-      )}
-
-      {scheduling.reminders.length > 0 && (
-        <ul className="max-h-32 space-y-1 overflow-y-auto text-[11px] text-muted-foreground">
-          {scheduling.reminders.slice(0, 8).map((r) => (
-            <li key={r.id} className="flex flex-col gap-0.5">
-              <div className="flex justify-between gap-2">
-                <span>{formatDateTime(r.scheduledFor)}</span>
-                <span className={cn(r.status === "Failed" && "text-destructive")}>{r.status}</span>
-              </div>
-              {r.failureReason && (
-                <span className="text-destructive/80">{r.failureReason}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
@@ -331,6 +201,7 @@ export function WhatsappConversationsPanel() {
   const [requestCsat, setRequestCsat] = useState(false);
   const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
   const [showUnderstandingDebug] = useState(() => isWhatsappTimelineDebugEnabled());
+  const [messageContentRevealed, setMessageContentRevealed] = useState(false);
   const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -358,6 +229,10 @@ export function WhatsappConversationsPanel() {
     queryFn: () => api.getPromoDefaults(token!),
     enabled: !!token,
   });
+
+  useEffect(() => {
+    setMessageContentRevealed(false);
+  }, [selectedPatientId]);
 
   useEffect(() => {
     if (promoDefaults.data?.defaultMessage && !replyText) {
@@ -445,30 +320,6 @@ export function WhatsappConversationsPanel() {
       });
     },
     onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao excluir"),
-  });
-
-  const pausePatient = useMutation({
-    mutationFn: (patientId: string) => api.pausePatient(token!, patientId),
-    onSuccess: (result) => {
-      toastPatientStatusUpdated("Paciente pausado", result);
-      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
-      void queryClient.invalidateQueries({
-        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
-      });
-    },
-    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao pausar"),
-  });
-
-  const resumePatient = useMutation({
-    mutationFn: (patientId: string) => api.resumePatient(token!, patientId),
-    onSuccess: (result) => {
-      toastPatientStatusUpdated("Paciente reativado", result);
-      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
-      void queryClient.invalidateQueries({
-        queryKey: ["whatsapp-conversation-messages", selectedPatientId],
-      });
-    },
-    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : "Erro ao retomar"),
   });
 
   const generateTcpDraft = useMutation({
@@ -567,7 +418,7 @@ export function WhatsappConversationsPanel() {
             Conversas
           </CardTitle>
           <CardDescription>
-            Histórico real gravado pelo webhook — veja como a jornada se desenvolveu com cada contato.
+            Respostas da farmácia e histórico sob demanda. Agendamento e lembretes ficam na ficha do paciente.
           </CardDescription>
         </div>
         <Button
@@ -626,7 +477,10 @@ export function WhatsappConversationsPanel() {
                       {maskPhone(conversation.phone)}
                     </p>
                     <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {conversation.lastPreview}
+                      {conversation.lastMessageSummary ??
+                        (conversation.lastDirection === "Inbound"
+                          ? "Mensagem recebida"
+                          : "Mensagem enviada")}
                     </p>
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       {formatDateTime(conversation.lastMessageAt)}
@@ -708,8 +562,21 @@ export function WhatsappConversationsPanel() {
                 <WhatsappConversationAiSummaryCard token={token} patientId={selectedPatientId} />
               )}
 
-              <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[1fr_minmax(200px,240px)]">
+              <div className="flex min-h-0 flex-1 flex-col">
                 <div className="flex min-h-0 flex-col">
+                  <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
+                    <p className="text-xs text-muted-foreground">
+                      Conteúdo das mensagens oculto por padrão (LGPD).
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setMessageContentRevealed((v) => !v)}
+                    >
+                      {messageContentRevealed ? "Ocultar conteúdo" : "Exibir conteúdo"}
+                    </Button>
+                  </div>
                   <div
                     ref={threadScrollRef}
                     onScroll={handleThreadScroll}
@@ -736,6 +603,7 @@ export function WhatsappConversationsPanel() {
                             key={message.id}
                             message={message}
                             showUnderstandingDebug={showUnderstandingDebug}
+                            revealContent={messageContentRevealed}
                           />
                         ))}
                       </>
@@ -857,27 +725,18 @@ export function WhatsappConversationsPanel() {
                     )}
                   </div>
                 </div>
-
-                <div className="p-4">
-                  {thread.isLoading ? (
-                    <Skeleton className="h-40 w-full" />
-                  ) : thread.data?.scheduling ? (
-                    <SchedulingSidebar
-                      scheduling={thread.data.scheduling}
-                      patientId={thread.data.patient.id}
-                      patientStatus={thread.data.patient.status}
-                      canWrite={canWrite}
-                      isPausing={pausePatient.isPending}
-                      isResuming={resumePatient.isPending}
-                      onPause={() => {
-                        if (!window.confirm("Pausar lembretes deste paciente?")) return;
-                        pausePatient.mutate(thread.data.patient.id);
-                      }}
-                      onResume={() => resumePatient.mutate(thread.data.patient.id)}
-                    />
-                  ) : null}
-                </div>
               </div>
+
+              {selectedPatientId && (
+                <div className="border-t p-4">
+                  <Button type="button" variant="outline" size="sm" asChild className="w-full sm:w-auto">
+                    <Link to={`/pacientes/${selectedPatientId}#agendamento`}>
+                      <CalendarClock className="size-4" />
+                      Ver agendamento na ficha do paciente
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

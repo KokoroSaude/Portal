@@ -1719,7 +1719,9 @@ export interface WhatsappConversation {
   status: string | null;
   messageCount: number;
   lastMessageAt: string;
-  lastPreview: string;
+  /** @deprecated use lastMessageSummary — conteúdo não exposto por LGPD */
+  lastPreview?: string;
+  lastMessageSummary?: string;
   lastDirection: string;
   messagingWindow: WhatsappMessagingWindow;
 }
@@ -1777,6 +1779,8 @@ export interface WhatsappConversationScheduling {
     failureReason: string | null;
   }[];
 }
+
+export type PatientScheduling = WhatsappConversationScheduling;
 
 export interface WhatsappOutboundContent {
   mode: "TemplateOnly" | "AiOnly" | "Alternate";

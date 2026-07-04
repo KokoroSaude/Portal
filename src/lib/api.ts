@@ -83,6 +83,7 @@ import type {
   MoriskyScaleViewResponse,
   OnboardingJourney,
   Patient,
+  PatientScheduling,
   PatientStatusChangeResponse,
   PatientMoriskyHistory,
   PatientAchievements,
@@ -485,6 +486,9 @@ export const api = {
 
   getPatientTimeline: (token: string, id: string, page = 1, pageSize = 20) =>
     request<TimelineEvent[]>(`/api/patients/${id}/timeline${qs({ page, pageSize })}`, { token }),
+
+  getPatientScheduling: (token: string, id: string) =>
+    request<PatientScheduling>(`/api/patients/${id}/scheduling`, { token }),
 
   getPatientMorisky: (token: string, patientId: string) =>
     request<PatientMoriskyHistory>(`/api/patients/${patientId}/morisky`, { token }),
