@@ -1712,45 +1712,7 @@ export interface WhatsappDiagnostics {
   events: WhatsappDiagnosticEvent[];
 }
 
-export interface WhatsappConversation {
-  patientId: string;
-  name: string | null;
-  phone: string;
-  status: string | null;
-  messageCount: number;
-  lastMessageAt: string;
-  /** @deprecated use lastMessageSummary — conteúdo não exposto por LGPD */
-  lastPreview?: string;
-  lastMessageSummary?: string;
-  lastDirection: string;
-  messagingWindow: WhatsappMessagingWindow;
-}
-
-export interface WhatsappMessagingWindow {
-  lastInboundAt: string | null;
-  expiresAt: string | null;
-  isOpen: boolean;
-  templateConfigured: boolean;
-  promotionTemplateConfigured?: boolean;
-  canSendTemplate: boolean;
-  canSendPromotionTemplate?: boolean;
-}
-
-export interface WhatsappConversationMessage {
-  id: string;
-  direction: string;
-  status: string;
-  content: string;
-  wamId: string | null;
-  messageType: string | null;
-  transcript?: string | null;
-  contentSource: string | null;
-  templateKey: string | null;
-  contextJson: string | null;
-  createdAt: string;
-}
-
-export interface WhatsappConversationScheduling {
+export interface PatientScheduling {
   carePlan: {
     medication: string;
     dosage: string;
@@ -1778,41 +1740,6 @@ export interface WhatsappConversationScheduling {
     sentAt: string | null;
     failureReason: string | null;
   }[];
-}
-
-export type PatientScheduling = WhatsappConversationScheduling;
-
-export interface WhatsappOutboundContent {
-  mode: "TemplateOnly" | "AiOnly" | "Alternate";
-  alternateStrategy: "PerPatient" | "PerMessageKind";
-  nextChannel: string;
-  aiEnabled: boolean;
-  tpbEnabled: boolean;
-}
-
-export interface WhatsappConversationThread {
-  patient: {
-    id: string;
-    name: string | null;
-    phone: string;
-    status: string;
-    preferredMessageChannel?: "Text" | "Audio";
-    activatedAt?: string | null;
-    pausedUntil?: string | null;
-    consecutiveMissedCheckins?: number;
-  };
-  messages: WhatsappConversationMessage[];
-  messagingWindow?: WhatsappMessagingWindow;
-  outboundContent?: WhatsappOutboundContent;
-  scheduling?: WhatsappConversationScheduling;
-}
-
-export interface ConversationAiSummary {
-  summary: string;
-  riskLevel: string;
-  suggestedNextAction: string;
-  source: string;
-  generatedAt: string;
 }
 
 export interface BehavioralBarrierRow {

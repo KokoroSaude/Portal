@@ -174,18 +174,18 @@ export const TENANT_GUIDE: PortalGuide = {
           tips: [
             "Novos pacientes entram em onboarding até concluir o fluxo no WhatsApp.",
             "Se o paciente trocou de número, atualize o telefone na ficha.",
-            "Use Enviar mensagem na ficha para abrir a conversa deste paciente.",
+            "O agendamento (medicamentos, lembretes, pausa) fica na seção Agendamento da ficha do paciente.",
           ],
         },
         {
-          id: "patient-messages",
-          title: "Responder pacientes no WhatsApp",
+          id: "patient-promos",
+          title: "Promoções WhatsApp",
           description:
-            "Em Conversas com pacientes você vê o histórico real e pode responder manualmente como farmácia dentro da janela de 24h.",
-          to: "/whatsapp/conversas",
+            "Envie campanhas promocionais segmentadas para pacientes via template Meta aprovado.",
+          to: "/whatsapp/promocoes",
           tips: [
-            "Operadores enviam mensagens; perfis somente leitura apenas visualizam.",
-            "Fora da janela de 24h, use o envio via template Meta quando disponível.",
+            "Campanhas usam template Meta — não dependem da janela de 24h.",
+            "Segmente por medicamento ou envie para toda a base ativa.",
           ],
         },
       ],

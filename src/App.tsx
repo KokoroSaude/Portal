@@ -17,10 +17,6 @@ function lazyPage(
 
 const GuidePage = lazyPage(() => import("@/pages/GuidePage"), "GuidePage");
 const JourneyPage = lazyPage(() => import("@/pages/JourneyPage"), "JourneyPage");
-const WhatsappConversationsPage = lazyPage(
-  () => import("@/pages/WhatsappConversationsPage"),
-  "WhatsappConversationsPage",
-);
 const PromoCampaignsPage = lazyPage(
   () => import("@/pages/PromoCampaignsPage"),
   "PromoCampaignsPage",
@@ -246,8 +242,8 @@ export default function App() {
                     <Route path="templates" element={<TemplatesPage />} />
                     <Route path="conhecimento" element={<KnowledgePage />} />
                     <Route path="jornada" element={<JourneyPage />} />
-                    <Route path="whatsapp" element={<Navigate to="/whatsapp/conversas" replace />} />
-                    <Route path="whatsapp/conversas" element={<WhatsappConversationsPage />} />
+                    <Route path="whatsapp" element={<Navigate to="/whatsapp/promocoes" replace />} />
+                    <Route path="whatsapp/conversas" element={<Navigate to="/whatsapp/promocoes" replace />} />
                     <Route path="whatsapp/promocoes" element={<PromoCampaignsPage />} />
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="morisky" element={<MoriskySettingsPage />} />

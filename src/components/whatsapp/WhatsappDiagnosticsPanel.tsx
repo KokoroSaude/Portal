@@ -255,7 +255,7 @@ export function WhatsappDiagnosticsPanel() {
                     <code className="text-xs">processed_with_reply</code> → Kokoro enviou resposta à Meta.
                   </li>
                   <li>
-                    Conversas com <strong>Entendido: IA</strong> só após chamada real ao provedor acima.
+                    Respostas com IA só após chamada real ao provedor acima.
                   </li>
                 </ul>
               </div>

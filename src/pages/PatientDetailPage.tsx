@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Brain,
   ClipboardList,
-  MessageCircle,
   Pause,
   Pencil,
   Play,
@@ -222,7 +221,6 @@ export function PatientDetailPage() {
     onSuccess: () => {
       toast.success("Paciente excluído");
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
-      void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
       navigate("/pacientes");
     },
     onError: (err) => {
@@ -405,18 +403,6 @@ export function PatientDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {hasFeature(FEATURE_KEYS.whatsappConversations) && (
-            <Button
-              size="sm"
-              variant={canWrite ? "default" : "outline"}
-              asChild
-            >
-              <Link to={`/whatsapp/conversas?patientId=${id}`}>
-                <MessageCircle className="size-4" />
-                {canWrite ? "Enviar mensagem" : "Ver conversa"}
-              </Link>
-            </Button>
-          )}
           {canWrite && patient.status === "Onboarding" && (
             <Button
               size="sm"

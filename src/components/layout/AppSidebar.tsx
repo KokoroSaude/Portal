@@ -83,12 +83,6 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         icon: MessageCircle,
         children: [
           {
-            to: "/whatsapp/conversas",
-            label: "Conversas",
-            icon: MessageCircle,
-            feature: FEATURE_KEYS.whatsappConversations,
-          },
-          {
             to: "/whatsapp/promocoes",
             label: "Promoções",
             icon: Megaphone,

@@ -99,9 +99,6 @@ import type {
   UserInfo,
   UserProfile,
   PlatformUserInfo,
-  WhatsappConversation,
-  WhatsappConversationThread,
-  ConversationAiSummary,
   BehavioralBarriersReport,
   WhatsappDiagnostics,
   WhatsappSender,
@@ -1027,42 +1024,8 @@ export const api = {
   getWhatsAppDiagnostics: (token: string, limit = 50) =>
     request<WhatsappDiagnostics>(`/api/whatsapp/diagnostics?limit=${limit}`, { token }),
 
-  listWhatsAppConversations: (token: string, limit = 30) =>
-    request<WhatsappConversation[]>(`/api/whatsapp/conversations?limit=${limit}`, { token }),
-
-  getWhatsAppConversationMessages: (token: string, patientId: string, limit = 200) =>
-    request<WhatsappConversationThread>(
-      `/api/whatsapp/conversations/${patientId}/messages?limit=${limit}`,
-      { token },
-    ),
-
-  getConversationAiSummary: (token: string, patientId: string) =>
-    request<ConversationAiSummary>(`/api/whatsapp/conversations/${patientId}/ai-summary`, { token }),
-
-  deleteWhatsAppConversationMessages: (token: string, patientId: string) =>
-    request<{ deleted: number }>(`/api/whatsapp/conversations/${patientId}/messages`, {
-      method: "DELETE",
-      token,
-    }),
-
   clearWhatsAppDiagnosticEvents: (token: string) =>
     request<void>("/api/whatsapp/diagnostics/events", { method: "DELETE", token }),
-
-  sendWhatsAppOperatorReply: (
-    token: string,
-    patientId: string,
-    body: {
-      text: string;
-      useTemplate?: boolean;
-      usePromotionTemplate?: boolean;
-      forceTemplate?: boolean;
-      requestCsat?: boolean;
-    },
-  ) =>
-    request<{ messageId: string; wamId: string | null; messageType?: string; voiceFallbackReason?: string | null }>(
-      `/api/whatsapp/conversations/${patientId}/reply`,
-      { method: "POST", token, body },
-    ),
 
   getPromoDefaults: (token: string) =>
     request<PromoDefaults>("/api/promotions/defaults", { token }),

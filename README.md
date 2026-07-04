@@ -76,9 +76,9 @@ Superadmins podem ativar **2FA (TOTP)** em **Meu perfil** (`/perfil`). Após ati
 | `/relatorios` | Relatórios e gráficos |
 | `/templates` | Mensagens automáticas |
 | `/jornada` | Onboarding |
-| `/whatsapp` | Números WhatsApp (Meta) |
+| `/whatsapp` | WhatsApp (promoções e configuração) |
 | `/whatsapp/configuracao` | Ativação OTP / Embedded Signup |
-| `/whatsapp/conversas` | Inbox operador |
+| `/whatsapp/promocoes` | Campanhas promocionais |
 | `/configuracoes` | Settings operacionais |
 | `/perfil` | Foto, senha e 2FA (superadmin) |
 | `/farmacia` | Dashboard farmácia gov (quando habilitado) |
