@@ -50,6 +50,17 @@ type RawTenantSettings = TenantSettings & {
   PickupProcurementWebhookUrl?: string | null;
   PickupErpAllowedIps?: string | null;
   PickupErpSandboxMode?: boolean;
+  PharmacyContactPhone?: string | null;
+  ActiveInboundMode?: TenantSettings["activeInboundMode"];
+  OnboardingInboundMode?: TenantSettings["onboardingInboundMode"];
+  CheckinInboundMode?: TenantSettings["checkinInboundMode"];
+  MoriskyInboundMode?: TenantSettings["moriskyInboundMode"];
+  TpbInboundMode?: TenantSettings["tpbInboundMode"];
+  RetentionInboundMode?: TenantSettings["retentionInboundMode"];
+  HumanLatencyMinSeconds?: number;
+  HumanLatencyMaxSeconds?: number;
+  SelfServicePauseEnabled?: boolean;
+  WeeklyDigestEnabled?: boolean;
 };
 
 function normalizeAiFeatures(raw?: RawAiFeatures | null): AiPlatformFeatures | undefined {
@@ -134,6 +145,17 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.pickupProcurementWebhookUrl ?? raw.PickupProcurementWebhookUrl ?? null,
     pickupErpAllowedIps: raw.pickupErpAllowedIps ?? raw.PickupErpAllowedIps ?? null,
     pickupErpSandboxMode: raw.pickupErpSandboxMode ?? raw.PickupErpSandboxMode ?? false,
+    pharmacyContactPhone: raw.pharmacyContactPhone ?? raw.PharmacyContactPhone ?? null,
+    activeInboundMode: raw.activeInboundMode ?? raw.ActiveInboundMode ?? "AiGuidance",
+    onboardingInboundMode: raw.onboardingInboundMode ?? raw.OnboardingInboundMode ?? "AiPersonalize",
+    checkinInboundMode: raw.checkinInboundMode ?? raw.CheckinInboundMode ?? "AiPersonalize",
+    moriskyInboundMode: raw.moriskyInboundMode ?? raw.MoriskyInboundMode ?? "AiPersonalize",
+    tpbInboundMode: raw.tpbInboundMode ?? raw.TpbInboundMode ?? "AiPersonalize",
+    retentionInboundMode: raw.retentionInboundMode ?? raw.RetentionInboundMode ?? "AiGuidance",
+    humanLatencyMinSeconds: raw.humanLatencyMinSeconds ?? raw.HumanLatencyMinSeconds ?? 2,
+    humanLatencyMaxSeconds: raw.humanLatencyMaxSeconds ?? raw.HumanLatencyMaxSeconds ?? 8,
+    selfServicePauseEnabled: raw.selfServicePauseEnabled ?? raw.SelfServicePauseEnabled ?? true,
+    weeklyDigestEnabled: raw.weeklyDigestEnabled ?? raw.WeeklyDigestEnabled ?? true,
     aiFeatures,
   };
 }

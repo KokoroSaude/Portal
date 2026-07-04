@@ -64,6 +64,10 @@ const ReportsScalesPage = lazyPage(
   () => import("@/pages/reports/ReportsScalesPage"),
   "ReportsScalesPage",
 );
+const ReportsConversationalPage = lazyPage(
+  () => import("@/pages/reports/ReportsConversationalPage"),
+  "ReportsConversationalPage",
+);
 const MedicationProgramPage = lazyPage(
   () => import("@/pages/MedicationProgramPage"),
   "MedicationProgramPage",
@@ -79,6 +83,10 @@ const SettingsPickupPage = lazyPage(
   "SettingsPickupPage",
 );
 const SettingsAiPage = lazyPage(() => import("@/pages/SettingsAiPage"), "SettingsAiPage");
+const ConversationalSimulatorPage = lazyPage(
+  () => import("@/pages/settings/ConversationalSimulatorPage"),
+  "ConversationalSimulatorPage",
+);
 const SettingsUsersPage = lazyPage(
   () => import("@/pages/SettingsUsersPage"),
   "SettingsUsersPage",
@@ -235,6 +243,7 @@ export default function App() {
                       <Route path="engajamento" element={<ReportsEngagementPage />} />
                       <Route path="operacao" element={<ReportsOperationsPage />} />
                       <Route path="escalas" element={<ReportsScalesPage />} />
+                      <Route path="conversacional" element={<ReportsConversationalPage />} />
                     </Route>
                     <Route path="relatorios/programa-medicamento" element={<MedicationProgramPage />} />
                     <Route path="programas" element={<MedicationProgramsPage />} />
@@ -252,6 +261,7 @@ export default function App() {
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
                     <Route path="configuracoes/ia" element={<SettingsAiPage />} />
+                    <Route path="configuracoes/simulador" element={<ConversationalSimulatorPage />} />
                     <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
                     <Route element={<RequireGovPharmacy />}>

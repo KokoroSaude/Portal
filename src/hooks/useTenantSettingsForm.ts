@@ -55,6 +55,17 @@ function normalizeSettings(settings: TenantSettings): TenantSettings {
     pickupProcurementWebhookUrl: settings.pickupProcurementWebhookUrl ?? "",
     pickupErpAllowedIps: settings.pickupErpAllowedIps ?? "",
     pickupErpSandboxMode: settings.pickupErpSandboxMode ?? false,
+    pharmacyContactPhone: settings.pharmacyContactPhone ?? "",
+    activeInboundMode: settings.activeInboundMode ?? "AiGuidance",
+    onboardingInboundMode: settings.onboardingInboundMode ?? "AiPersonalize",
+    checkinInboundMode: settings.checkinInboundMode ?? "AiPersonalize",
+    moriskyInboundMode: settings.moriskyInboundMode ?? "AiPersonalize",
+    tpbInboundMode: settings.tpbInboundMode ?? "AiPersonalize",
+    retentionInboundMode: settings.retentionInboundMode ?? "AiGuidance",
+    humanLatencyMinSeconds: settings.humanLatencyMinSeconds ?? 2,
+    humanLatencyMaxSeconds: settings.humanLatencyMaxSeconds ?? 8,
+    selfServicePauseEnabled: settings.selfServicePauseEnabled ?? true,
+    weeklyDigestEnabled: settings.weeklyDigestEnabled ?? true,
   };
 }
 

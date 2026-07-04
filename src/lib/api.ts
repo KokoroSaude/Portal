@@ -62,6 +62,12 @@ import type {
   CreatePatientResponse,
   EngagementReport,
   NudgeEngagementReport,
+  ConversationQualityReport,
+  RetentionChurnReport,
+  OnboardingStepFunnelReport,
+  HandoffReport,
+  ConversationIncidentsReport,
+  ConversationSimulationResult,
   OperationsReport,
   PatientAdherenceRank,
   PatientFunnel,
@@ -754,6 +760,69 @@ export const api = {
 
   getPeriodComparison: (token: string, from?: string, to?: string) =>
     request<PeriodComparison>(`/api/reports/comparison${qs({ from, to })}`, { token }),
+
+  getConversationQualityReport: (token: string, from?: string, to?: string) =>
+    request<ConversationQualityReport>(
+      `/api/reports/conversation-quality${qs({ from, to })}`,
+      { token },
+    ),
+
+  getRetentionChurnReport: (token: string, from?: string, to?: string) =>
+    request<RetentionChurnReport>(`/api/reports/retention-churn${qs({ from, to })}`, { token }),
+
+  getOnboardingStepFunnelReport: (token: string, from?: string, to?: string) =>
+    request<OnboardingStepFunnelReport>(
+      `/api/reports/onboarding-funnel${qs({ from, to })}`,
+      { token },
+    ),
+
+  getHandoffReport: (token: string, from?: string, to?: string) =>
+    request<HandoffReport>(`/api/reports/handoffs${qs({ from, to })}`, { token }),
+
+  getConversationIncidentsReport: (
+    token: string,
+    from?: string,
+    to?: string,
+    limit = 50,
+    offset = 0,
+  ) =>
+    request<ConversationIncidentsReport>(
+      `/api/reports/conversation-incidents${qs({ from, to, limit, offset })}`,
+      { token },
+    ),
+
+  exportExitSurveysCsv: async (token: string, from?: string, to?: string) => {
+    const res = await fetch(
+      `${API_BASE}/api/reports/exit-surveys/export${qs({ from, to })}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) throw new ApiClientError(await res.text(), res.status);
+    return res.blob();
+  },
+
+  exportConversationIncidentsCsv: async (token: string, from?: string, to?: string) => {
+    const res = await fetch(
+      `${API_BASE}/api/reports/conversation-incidents/export${qs({ from, to })}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) throw new ApiClientError(await res.text(), res.status);
+    return res.blob();
+  },
+
+  simulateConversation: (
+    token: string,
+    payload: {
+      patientId: string;
+      patientMessage: string;
+      openSurfaceKind?: string | null;
+      scenario?: string | null;
+    },
+  ) =>
+    request<ConversationSimulationResult>("/api/conversational/simulate", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
 
   getMoriskyScale: (token: string) =>
     request<MoriskyScaleViewResponse>("/api/morisky/scale", { token }),

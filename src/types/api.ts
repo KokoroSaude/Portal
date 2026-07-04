@@ -229,6 +229,123 @@ export interface PatientAdherenceRank {
   lastCheckinAt: string | null;
 }
 
+export type InboundConversationalMode = "TemplateOnly" | "AiPersonalize" | "AiGuidance";
+
+export interface ConversationQualityByAgeBand {
+  ageBand: string;
+  label: string;
+  score: number;
+  sampleSize: number;
+}
+
+export interface ConversationQualityReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  score: number;
+  grade: string;
+  invalidTextRate: number;
+  menuFreeTextHandledRate: number;
+  scaleCompletionAfterDeviationRate: number;
+  onboardingStepCompletionRate: number;
+  handoffUnresolvedRate24h: number;
+  retentionSaveRate: number;
+  exitConfusedByBotRate: number;
+  byAgeBand: ConversationQualityByAgeBand[];
+}
+
+export interface ExitReasonBreakdown {
+  reason: string;
+  label: string;
+  count: number;
+  share: number;
+}
+
+export interface ExitReasonTrendPoint {
+  period: string;
+  count: number;
+}
+
+export interface RetentionChurnReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  interceptsStarted: number;
+  savedPause: number;
+  savedContinue: number;
+  savedHandoff: number;
+  optedOutAfterSurvey: number;
+  saveRate: number;
+  exitReasons: ExitReasonBreakdown[];
+  trend: ExitReasonTrendPoint[];
+}
+
+export interface OnboardingStepFunnel {
+  stepId: string;
+  stepLabel: string;
+  entered: number;
+  completed: number;
+  abandoned: number;
+  dropOffRate: number;
+  avgMinutesInStep: number;
+}
+
+export interface OnboardingStepFunnelReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  steps: OnboardingStepFunnel[];
+}
+
+export interface HandoffQueueItem {
+  patientId: string;
+  patientName: string | null;
+  requestedAt: string;
+  eventType: string;
+  minutesWaiting: number;
+}
+
+export interface HandoffReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  requested: number;
+  microCsatPositive: number;
+  microCsatNegative: number;
+  unresolvedOverSla: number;
+  avgResolutionMinutes: number;
+  pending: HandoffQueueItem[];
+}
+
+export interface ConversationIncident {
+  patientId: string;
+  patientName: string | null;
+  at: string;
+  incidentType: string;
+  flowLabel: string | null;
+  lastPatientMessage: string | null;
+  resolution: string | null;
+}
+
+export interface ConversationIncidentsReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: ConversationIncident[];
+}
+
+export interface ConversationSimulationResult {
+  tier: string;
+  mappedAction: string | null;
+  confidence: number | null;
+  guidancePreview: string | null;
+  bubbleCount: number;
+  estimatedDelaySeconds: number;
+}
+
 export interface OperationsReport {
   tenantId: string;
   from: string;
@@ -637,6 +754,17 @@ export interface TenantSettings {
   pickupProcurementWebhookUrl?: string | null;
   pickupErpAllowedIps?: string | null;
   pickupErpSandboxMode?: boolean;
+  pharmacyContactPhone?: string | null;
+  activeInboundMode?: InboundConversationalMode;
+  onboardingInboundMode?: InboundConversationalMode;
+  checkinInboundMode?: InboundConversationalMode;
+  moriskyInboundMode?: InboundConversationalMode;
+  tpbInboundMode?: InboundConversationalMode;
+  retentionInboundMode?: InboundConversationalMode;
+  humanLatencyMinSeconds?: number;
+  humanLatencyMaxSeconds?: number;
+  selfServicePauseEnabled?: boolean;
+  weeklyDigestEnabled?: boolean;
 }
 
 export interface ErpCredential {

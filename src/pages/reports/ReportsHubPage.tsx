@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, ClipboardList, LineChart, Pill, Settings2 } from "lucide-react";
+import { ArrowRight, BarChart3, ClipboardList, LineChart, MessageSquare, Pill, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +28,13 @@ const REPORT_LINKS: ReportLink[] = [
     feature: FEATURE_KEYS.reportsAdvanced,
   },
   {
+    to: "/relatorios/conversacional",
+    title: "Conversacional",
+    description: "Scorecard de qualidade, retenção, funil de onboarding, handoffs e incidentes.",
+    icon: MessageSquare,
+    feature: FEATURE_KEYS.reportsConversationQuality,
+  },
+  {
     to: "/relatorios/operacao",
     title: "Operação",
     description: "Lembretes, reengajamento e performance por remetente WhatsApp.",
@@ -53,6 +60,14 @@ export function ReportsHubPage() {
   const { hasFeature } = useAuth();
 
   const visibleLinks = REPORT_LINKS.filter((link) => {
+    if (link.to === "/relatorios/conversacional") {
+      return (
+        hasFeature(FEATURE_KEYS.reportsConversationQuality) ||
+        hasFeature(FEATURE_KEYS.reportsRetentionChurn) ||
+        hasFeature(FEATURE_KEYS.reportsOnboardingFunnel) ||
+        hasFeature(FEATURE_KEYS.reportsHandoffs)
+      );
+    }
     if (link.to === "/relatorios/operacao") {
       return hasFeature(FEATURE_KEYS.reportsOperations) || hasFeature(FEATURE_KEYS.reportsBySender);
     }

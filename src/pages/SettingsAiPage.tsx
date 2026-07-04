@@ -67,6 +67,9 @@ export function SettingsAiPage() {
             update={update}
           />
           <SettingsSaveButton onSave={save} pending={savePending} />
+          <Button asChild variant="outline" className="w-full sm:w-auto">
+            <Link to="/configuracoes/simulador">Abrir simulador conversacional</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>
