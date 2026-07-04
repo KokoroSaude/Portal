@@ -83,6 +83,7 @@ import type {
   MoriskyScaleViewResponse,
   OnboardingJourney,
   Patient,
+  PatientStatusChangeResponse,
   PatientMoriskyHistory,
   PatientAchievements,
   PagedResult,
@@ -540,10 +541,14 @@ export const api = {
     }),
 
   pausePatient: (token: string, id: string, reason?: string, pauseUntil?: string) =>
-    request<void>(`/api/patients/${id}/pause`, { method: "POST", token, body: { reason, pauseUntil } }),
+    request<PatientStatusChangeResponse>(`/api/patients/${id}/pause`, {
+      method: "POST",
+      token,
+      body: { reason, pauseUntil },
+    }),
 
   resumePatient: (token: string, id: string) =>
-    request<void>(`/api/patients/${id}/resume`, { method: "POST", token }),
+    request<PatientStatusChangeResponse>(`/api/patients/${id}/resume`, { method: "POST", token }),
 
   deletePatient: (token: string, id: string) =>
     request<void>(`/api/patients/${id}`, { method: "DELETE", token }),

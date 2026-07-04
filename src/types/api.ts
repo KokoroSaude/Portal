@@ -91,6 +91,12 @@ export interface CreatePatientResponse {
   welcomeFailureReason?: string | null;
 }
 
+export interface PatientStatusChangeResponse {
+  notificationSent: boolean;
+  usedMetaTemplate?: boolean;
+  notificationFailureReason?: string | null;
+}
+
 export interface PagedResult<T> {
   items: T[];
   total: number;

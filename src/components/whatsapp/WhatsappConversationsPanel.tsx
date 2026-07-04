@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ExternalLink, FileText, MessageCircle, Mic, Pause, Play, RefreshCw, Send, Sparkles, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -446,8 +447,8 @@ export function WhatsappConversationsPanel() {
 
   const pausePatient = useMutation({
     mutationFn: (patientId: string) => api.pausePatient(token!, patientId),
-    onSuccess: () => {
-      toast.success("Paciente pausado");
+    onSuccess: (result) => {
+      toastPatientStatusUpdated("Paciente pausado", result);
       void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
       void queryClient.invalidateQueries({
         queryKey: ["whatsapp-conversation-messages", selectedPatientId],
@@ -458,8 +459,8 @@ export function WhatsappConversationsPanel() {
 
   const resumePatient = useMutation({
     mutationFn: (patientId: string) => api.resumePatient(token!, patientId),
-    onSuccess: () => {
-      toast.success("Paciente reativado");
+    onSuccess: (result) => {
+      toastPatientStatusUpdated("Paciente reativado", result);
       void queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations"] });
       void queryClient.invalidateQueries({
         queryKey: ["whatsapp-conversation-messages", selectedPatientId],

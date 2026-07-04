@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
@@ -155,8 +156,8 @@ export function PatientDetailPage() {
 
   const pauseMutation = useMutation({
     mutationFn: () => api.pausePatient(token!, id!, pauseReason || undefined),
-    onSuccess: () => {
-      toast.success("Paciente pausado");
+    onSuccess: (result) => {
+      toastPatientStatusUpdated("Paciente pausado", result);
       setPauseOpen(false);
       setPauseReason("");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
@@ -169,12 +170,12 @@ export function PatientDetailPage() {
 
   const resumeMutation = useMutation({
     mutationFn: () => api.resumePatient(token!, id!),
-    onSuccess: () => {
-      toast.success(
+    onSuccess: (result) => {
+      const successMessage =
         patient?.status === "OptedOut"
           ? "Paciente reativado — lembretes e mensagens voltam a ser enviados"
-          : "Paciente reativado",
-      );
+          : "Paciente reativado";
+      toastPatientStatusUpdated(successMessage, result);
       setReactivateOpen(false);
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
