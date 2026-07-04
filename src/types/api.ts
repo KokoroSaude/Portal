@@ -589,6 +589,7 @@ export interface TenantSettings {
   tpbCooldownDays: number;
   csatPeriodicDays?: number | null;
   onboardingSurveyRandomPickEnabled?: boolean;
+  scaleMinDaysBetweenTypes?: number;
   onboardingResumeEnabled: boolean;
   onboardingResumeAfterDays: number;
   onboardingResumeCooldownHours: number;
@@ -1715,6 +1716,25 @@ export interface WhatsappDiagnostics {
   events: WhatsappDiagnosticEvent[];
 }
 
+export interface PatientWhatsAppWindow {
+  isOpen: boolean;
+  lastInboundAtUtc: string | null;
+  expiresAtUtc: string | null;
+  reminderTemplateConfigured: boolean;
+  canDeliverCheckinReminder: boolean;
+  status: "open" | "closed" | string;
+  bannerTitle: string;
+  bannerMessage: string;
+}
+
+export interface PatientTenantSendWindow {
+  sendWindowStart: string;
+  sendWindowEnd: string;
+  isWithinSendWindowNow: boolean;
+  bannerTitle: string;
+  bannerMessage: string;
+}
+
 export interface PatientScheduling {
   carePlan: {
     medication: string;
@@ -1742,7 +1762,10 @@ export interface PatientScheduling {
     status: string;
     sentAt: string | null;
     failureReason: string | null;
+    wamId?: string | null;
   }[];
+  whatsAppWindow?: PatientWhatsAppWindow | null;
+  tenantSendWindow?: PatientTenantSendWindow | null;
 }
 
 export interface BehavioralBarrierRow {

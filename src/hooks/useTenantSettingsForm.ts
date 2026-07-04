@@ -19,6 +19,7 @@ function normalizeSettings(settings: TenantSettings): TenantSettings {
     onboardingResumeAfterDays: settings.onboardingResumeAfterDays ?? 2,
     onboardingResumeCooldownHours: settings.onboardingResumeCooldownHours ?? 24,
     onboardingSurveyRandomPickEnabled: settings.onboardingSurveyRandomPickEnabled ?? false,
+    scaleMinDaysBetweenTypes: settings.scaleMinDaysBetweenTypes ?? 7,
     requirePreRegisteredPatients: settings.requirePreRegisteredPatients ?? false,
     defaultPromoMessage: settings.defaultPromoMessage ?? "",
     tenantOperationMode: settings.tenantOperationMode ?? "AdherenceProgram",

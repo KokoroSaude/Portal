@@ -181,6 +181,7 @@ export function MoriskySettingsPage() {
                 periodicKey="moriskyPeriodicDays"
                 missesKey="moriskyTriggerAfterMisses"
                 cooldownKey="moriskyCooldownDays"
+                periodicHint="Reaplica o MMAS-8 após N dias da última TCP concluída (quando ambas escalas estão habilitadas)."
                 onChange={(patch) => patchTriggers({
                   ...(patch.enabled !== undefined && { moriskyEnabled: patch.enabled }),
                   ...(patch.onOnboarding !== undefined && { moriskyOnOnboarding: patch.onOnboarding }),

@@ -190,6 +190,7 @@ export function TpbSettingsPage() {
                 periodicKey="tpbPeriodicDays"
                 missesKey="tpbTriggerAfterMisses"
                 cooldownKey="tpbCooldownDays"
+                periodicHint="Reaplica a TCP após N dias da última Morisky concluída (quando ambas escalas estão habilitadas)."
                 onChange={(patch) => patchTriggers({
                   ...(patch.enabled !== undefined && { tpbEnabled: patch.enabled }),
                   ...(patch.onOnboarding !== undefined && { tpbOnOnboarding: patch.onOnboarding }),

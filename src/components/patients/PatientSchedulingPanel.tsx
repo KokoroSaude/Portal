@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CONVERSATION_STEP_LABELS } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
 import type { PatientScheduling } from "@/types/api";
+import { hasUnconfirmedSentReminder } from "@/components/patients/PatientWhatsAppWindowBanner";
 
 type PatientSchedulingPanelProps = {
   scheduling: PatientScheduling | undefined;
@@ -150,6 +151,13 @@ export function PatientSchedulingPanel({
         </p>
       )}
 
+      {hasUnconfirmedSentReminder(scheduling) && (
+        <p className="text-xs text-destructive">
+          Há lembretes marcados como enviados sem confirmação da Meta (sem WamId) — o paciente pode
+          não ter recebido a mensagem.
+        </p>
+      )}
+
       {scheduling.reminders.some((r) => r.status === "Failed") && (
         <p className="text-xs text-destructive">
           Há lembretes com falha de envio — verifique a lista abaixo.
@@ -162,7 +170,14 @@ export function PatientSchedulingPanel({
             <li key={r.id} className="flex flex-col gap-0.5">
               <div className="flex justify-between gap-2">
                 <span>{formatDateTime(r.scheduledFor)}</span>
-                <span className={cn(r.status === "Failed" && "text-destructive")}>{r.status}</span>
+                <span
+                  className={cn(
+                    r.status === "Failed" && "text-destructive",
+                    r.status === "Sent" && !r.wamId && "text-amber-700 dark:text-amber-400",
+                  )}
+                >
+                  {r.status === "Sent" && !r.wamId ? "Sent (não confirmado)" : r.status}
+                </span>
               </div>
               {r.failureReason && <span className="text-destructive/80">{r.failureReason}</span>}
             </li>

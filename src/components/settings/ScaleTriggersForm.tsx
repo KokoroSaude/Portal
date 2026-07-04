@@ -17,6 +17,7 @@ type Props = {
   periodicKey: string;
   missesKey: string;
   cooldownKey: string;
+  periodicHint?: string;
   onChange: (patch: Partial<ScaleTriggerFields>) => void;
 };
 
@@ -28,6 +29,7 @@ export function ScaleTriggersForm({
   periodicKey,
   missesKey,
   cooldownKey,
+  periodicHint,
   onChange,
 }: Props) {
   return (
@@ -53,7 +55,10 @@ export function ScaleTriggersForm({
         <SettingsField
           htmlFor={periodicKey}
           label="Reaplicar a cada (dias)"
-          hint="Reenvia a escala periodicamente para monitorar evolução. Deixe vazio para desativar reaplicação automática."
+          hint={
+            periodicHint ??
+            "Reenvia a escala periodicamente para monitorar evolução. Deixe vazio para desativar reaplicação automática."
+          }
         >
           <Input
             id={periodicKey}
@@ -93,7 +98,7 @@ export function ScaleTriggersForm({
         <SettingsField
           htmlFor={cooldownKey}
           label="Intervalo mínimo (dias)"
-          hint="Tempo mínimo entre duas avaliações automáticas do mesmo paciente. Disparos manuais ignoram este intervalo."
+          hint="Tempo mínimo entre duas avaliações desta escala para o mesmo paciente. Disparos manuais ignoram este intervalo."
         >
           <Input
             id={cooldownKey}

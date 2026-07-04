@@ -79,6 +79,7 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.outboundAlternateStrategy ?? raw.OutboundAlternateStrategy ?? "PerPatient",
     onboardingResumeEnabled: raw.onboardingResumeEnabled ?? true,
     onboardingSurveyRandomPickEnabled: raw.onboardingSurveyRandomPickEnabled ?? false,
+    scaleMinDaysBetweenTypes: raw.scaleMinDaysBetweenTypes ?? 7,
     tenantOperationMode: raw.tenantOperationMode ?? raw.TenantOperationMode ?? "AdherenceProgram",
     govPharmacyPickupEnabled: raw.govPharmacyPickupEnabled ?? raw.GovPharmacyPickupEnabled ?? false,
     pickupQueuePrefix: raw.pickupQueuePrefix ?? raw.PickupQueuePrefix ?? "A",

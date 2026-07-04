@@ -126,10 +126,25 @@ export function SettingsOnboardingTab({
         <SettingsSwitchField
           id="onboardingSurveyRandomPickEnabled"
           label="Escolher uma escala por paciente"
-          hint="Ativo: cada paciente recebe só MMAS-8 ou só TCP ao concluir o cadastro (escolha estável). Desligado: aplica as duas em sequência."
+          hint="Ativo: cada paciente recebe só MMAS-8 ou só TCP ao concluir o cadastro (escolha estável). Desligado: aplica Morisky no cadastro; TCP é enviada depois, respeitando o intervalo abaixo."
           checked={form.onboardingSurveyRandomPickEnabled ?? false}
           onCheckedChange={(checked) => update("onboardingSurveyRandomPickEnabled", checked)}
         />
+
+        <SettingsField
+          htmlFor="scaleMinDaysBetweenTypes"
+          label="Intervalo mínimo entre Morisky e TCP (dias)"
+          hint="Evita enviar as duas escalas no mesmo dia. Após Morisky no cadastro, a TCP só é enviada automaticamente depois desse intervalo."
+        >
+          <Input
+            id="scaleMinDaysBetweenTypes"
+            type="number"
+            min={1}
+            value={form.scaleMinDaysBetweenTypes ?? 7}
+            onChange={(e) => update("scaleMinDaysBetweenTypes", Number(e.target.value) || 1)}
+          />
+        </SettingsField>
+
         <SettingsSaveButton onSave={save} pending={savePending} label="Salvar escalas no cadastro" />
       </TabsContent>
     </Tabs>

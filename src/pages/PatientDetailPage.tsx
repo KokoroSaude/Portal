@@ -18,6 +18,9 @@ import {
 import { toast } from "sonner";
 import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
 import { PatientSchedulingPanel } from "@/components/patients/PatientSchedulingPanel";
+import {
+  PatientWhatsAppWindowBanner,
+} from "@/components/patients/PatientWhatsAppWindowBanner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
@@ -533,6 +536,13 @@ export function PatientDetailPage() {
           )}
         </div>
       </div>
+
+      {!schedulingLoading && scheduling?.whatsAppWindow && (
+        <PatientWhatsAppWindowBanner
+          whatsAppWindow={scheduling.whatsAppWindow}
+          tenantSendWindow={scheduling.tenantSendWindow}
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
