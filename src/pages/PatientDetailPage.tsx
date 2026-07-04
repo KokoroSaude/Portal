@@ -50,7 +50,7 @@ import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
-import type { ClinicalPriorityTier, TimelineEvent } from "@/types/api";
+import type { ClinicalPriorityTier } from "@/types/api";
 
 const EVENT_LABELS: Record<string, string> = {
   message_inbound: "Mensagem recebida",
@@ -75,9 +75,8 @@ export function PatientDetailPage() {
   const [cpfInput, setCpfInput] = useState("");
   const [priorityInput, setPriorityInput] = useState<ClinicalPriorityTier>("Normal");
   const [channelInput, setChannelInput] = useState<"Text" | "Audio">("Text");
-  const [timelinePage, setTimelinePage] = useState(1);
-  const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
-  const timelinePageSize = 20;
+  const [reactivateOpen, setReactivateOpen] = useState(false);
+  const timelineLimit = 5;
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -88,8 +87,8 @@ export function PatientDetailPage() {
   const voiceFeatureEnabled = hasFeature(FEATURE_KEYS.whatsappVoice);
 
   const { data: timeline, isLoading: timelineLoading } = useQuery({
-    queryKey: ["patient-timeline", id, timelinePage],
-    queryFn: () => api.getPatientTimeline(token!, id!, timelinePage, timelinePageSize),
+    queryKey: ["patient-timeline", id, timelineLimit],
+    queryFn: () => api.getPatientTimeline(token!, id!, 1, timelineLimit),
     enabled: !!token && !!id,
   });
 
@@ -154,18 +153,6 @@ export function PatientDetailPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar lembrete de cadastro"),
   });
 
-  const hasMoreTimeline = (timeline?.length ?? 0) >= timelinePageSize;
-
-  useEffect(() => {
-    setTimelinePage(1);
-    setTimelineItems([]);
-  }, [id]);
-
-  useEffect(() => {
-    if (!timeline) return;
-    setTimelineItems((prev) => (timelinePage === 1 ? timeline : [...prev, ...timeline]));
-  }, [timeline, timelinePage]);
-
   const pauseMutation = useMutation({
     mutationFn: () => api.pausePatient(token!, id!, pauseReason || undefined),
     onSuccess: () => {
@@ -183,12 +170,18 @@ export function PatientDetailPage() {
   const resumeMutation = useMutation({
     mutationFn: () => api.resumePatient(token!, id!),
     onSuccess: () => {
-      toast.success("Paciente reativado");
+      toast.success(
+        patient?.status === "OptedOut"
+          ? "Paciente reativado — lembretes e mensagens voltam a ser enviados"
+          : "Paciente reativado",
+      );
+      setReactivateOpen(false);
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-timeline", id] });
     },
     onError: (err) => {
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao retomar");
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao reativar");
     },
   });
 
@@ -253,6 +246,7 @@ export function PatientDetailPage() {
 
   const canPause = patient.status === "Active" || patient.status === "Onboarding";
   const canResume = patient.status === "Paused";
+  const canReactivateFromOptOut = patient.status === "OptedOut";
 
   const showMoreSection =
     id &&
@@ -478,6 +472,36 @@ export function PatientDetailPage() {
               Retomar
             </Button>
           )}
+          {canWrite && canReactivateFromOptOut && (
+            <Dialog open={reactivateOpen} onOpenChange={setReactivateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Play className="size-4" />
+                  Reativar paciente
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reativar paciente em opt-out</DialogTitle>
+                  <DialogDescription>
+                    Este paciente pediu para sair das mensagens automáticas. Ao reativar, lembretes,
+                    check-ins e outras comunicações voltam a ser enviados pelo WhatsApp.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setReactivateOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => resumeMutation.mutate()}
+                    disabled={resumeMutation.isPending}
+                  >
+                    {resumeMutation.isPending ? "Reativando…" : "Confirmar reativação"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           {canWrite && (
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
               <DialogTrigger asChild>
@@ -649,7 +673,7 @@ export function PatientDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Timeline</CardTitle>
-              <CardDescription>Eventos recentes (sem conteúdo sensível de mensagens)</CardDescription>
+              <CardDescription>Últimos 5 eventos (sem conteúdo sensível de mensagens)</CardDescription>
             </CardHeader>
             <CardContent>
               {timelineLoading ? (
@@ -658,41 +682,27 @@ export function PatientDetailPage() {
                     <Skeleton key={i} className="h-14 w-full" />
                   ))}
                 </div>
-              ) : timelineItems.length === 0 ? (
+              ) : (timeline?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
               ) : (
-                <>
-                  <ul className="space-y-3">
-                    {timelineItems.map((ev, i) => (
-                      <li
-                        key={`${ev.occurredAt}-${i}`}
-                        className="flex items-start gap-4 rounded-lg border p-4"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium">
-                            {EVENT_LABELS[ev.eventKind] ?? ev.eventKind}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{ev.summary}</p>
-                        </div>
-                        <time className="shrink-0 text-xs text-muted-foreground">
-                          {formatDateTime(ev.occurredAt)}
-                        </time>
-                      </li>
-                    ))}
-                  </ul>
-                  {hasMoreTimeline && (
-                    <div className="mt-4 flex justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTimelinePage((p) => p + 1)}
-                        disabled={timelineLoading}
-                      >
-                        Carregar mais
-                      </Button>
-                    </div>
-                  )}
-                </>
+                <ul className="space-y-3">
+                  {timeline!.map((ev, i) => (
+                    <li
+                      key={`${ev.occurredAt}-${i}`}
+                      className="flex items-start gap-4 rounded-lg border p-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">
+                          {EVENT_LABELS[ev.eventKind] ?? ev.eventKind}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{ev.summary}</p>
+                      </div>
+                      <time className="shrink-0 text-xs text-muted-foreground">
+                        {formatDateTime(ev.occurredAt)}
+                      </time>
+                    </li>
+                  ))}
+                </ul>
               )}
             </CardContent>
           </Card>
