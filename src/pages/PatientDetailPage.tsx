@@ -23,6 +23,7 @@ import {
 } from "@/components/patients/PatientWhatsAppWindowBanner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
+import { MessageContentSourceBadge } from "@/components/messages/MessageContentSourceBadge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
 import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
@@ -53,6 +54,7 @@ import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
+import { timelineContentSource } from "@/lib/message-content-source";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
 import type { ClinicalPriorityTier } from "@/types/api";
 
@@ -695,7 +697,10 @@ export function PatientDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Timeline</CardTitle>
-              <CardDescription>Últimos 5 eventos (sem conteúdo sensível de mensagens)</CardDescription>
+              <CardDescription>
+                Últimos 5 eventos (sem conteúdo sensível). Mensagens enviadas exibem origem: IA, regras ou
+                template.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {timelineLoading ? (
@@ -714,9 +719,14 @@ export function PatientDetailPage() {
                       className="flex items-start gap-4 rounded-lg border p-4"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">
-                          {EVENT_LABELS[ev.eventKind] ?? ev.eventKind}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {EVENT_LABELS[ev.eventKind] ?? ev.eventKind}
+                          </p>
+                          {ev.eventKind === "message_outbound" && (
+                            <MessageContentSourceBadge source={timelineContentSource(ev.meta)} />
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">{ev.summary}</p>
                       </div>
                       <time className="shrink-0 text-xs text-muted-foreground">

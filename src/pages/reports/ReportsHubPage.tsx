@@ -30,7 +30,7 @@ const REPORT_LINKS: ReportLink[] = [
   {
     to: "/relatorios/conversacional",
     title: "Conversacional",
-    description: "Scorecard de qualidade, retenção, funil de onboarding, handoffs e incidentes.",
+    description: "Scorecard de qualidade, retenção, funil de onboarding, handoffs e origem IA das mensagens.",
     icon: MessageSquare,
     feature: FEATURE_KEYS.reportsConversationQuality,
   },
@@ -65,7 +65,8 @@ export function ReportsHubPage() {
         hasFeature(FEATURE_KEYS.reportsConversationQuality) ||
         hasFeature(FEATURE_KEYS.reportsRetentionChurn) ||
         hasFeature(FEATURE_KEYS.reportsOnboardingFunnel) ||
-        hasFeature(FEATURE_KEYS.reportsHandoffs)
+        hasFeature(FEATURE_KEYS.reportsHandoffs) ||
+        hasFeature(FEATURE_KEYS.reportsBasic)
       );
     }
     if (link.to === "/relatorios/operacao") {

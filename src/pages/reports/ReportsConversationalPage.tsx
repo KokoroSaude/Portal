@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useReportRange } from "@/contexts/ReportRangeContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { MessageContentSourceBadge } from "@/components/messages/MessageContentSourceBadge";
 import { formatDateTime, formatPercent } from "@/lib/utils";
 
 function ReportError({ error }: { error: unknown }) {
@@ -45,8 +46,9 @@ export function ReportsConversationalPage() {
   const hasRetention = hasFeature(FEATURE_KEYS.reportsRetentionChurn);
   const hasFunnel = hasFeature(FEATURE_KEYS.reportsOnboardingFunnel);
   const hasHandoffs = hasFeature(FEATURE_KEYS.reportsHandoffs);
+  const hasMessageSources = hasFeature(FEATURE_KEYS.reportsBasic);
 
-  const hasAny = hasQuality || hasRetention || hasFunnel || hasHandoffs;
+  const hasAny = hasQuality || hasRetention || hasFunnel || hasHandoffs || hasMessageSources;
 
   const quality = useQuery({
     queryKey: ["conversation-quality-report", range],
@@ -78,6 +80,12 @@ export function ReportsConversationalPage() {
     enabled: !!token && hasHandoffs,
   });
 
+  const messageSources = useQuery({
+    queryKey: ["message-content-sources-report", range],
+    queryFn: () => api.getMessageContentSourceReport(token!, range.from, range.to),
+    enabled: !!token && hasMessageSources,
+  });
+
   if (!hasAny) {
     return (
       <FeatureLocked
@@ -89,11 +97,13 @@ export function ReportsConversationalPage() {
 
   const defaultTab = hasQuality
     ? "quality"
-    : hasRetention
-      ? "retention"
-      : hasFunnel
-        ? "funnel"
-        : "handoffs";
+    : hasMessageSources
+      ? "message-sources"
+      : hasRetention
+        ? "retention"
+        : hasFunnel
+          ? "funnel"
+          : "handoffs";
 
   return (
     <Tabs defaultValue={defaultTab}>
@@ -103,6 +113,7 @@ export function ReportsConversationalPage() {
         {hasFunnel && <TabsTrigger value="funnel">Funil onboarding</TabsTrigger>}
         {hasHandoffs && <TabsTrigger value="handoffs">Handoffs</TabsTrigger>}
         {hasHandoffs && <TabsTrigger value="incidents">Incidentes</TabsTrigger>}
+        {hasMessageSources && <TabsTrigger value="message-sources">Origem IA</TabsTrigger>}
       </TabsList>
 
       {hasQuality && (
@@ -421,6 +432,112 @@ export function ReportsConversationalPage() {
             ) : null}
           </TabsContent>
         </>
+      )}
+
+      {hasMessageSources && (
+        <TabsContent value="message-sources" className="space-y-6">
+          {messageSources.isError ? (
+            <ReportError error={messageSources.error} />
+          ) : messageSources.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : messageSources.data ? (
+            <>
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardDescription>Mensagens enviadas no período</CardDescription>
+                  <CardTitle className="font-serif text-3xl">
+                    {messageSources.data.totalOutbound.toLocaleString("pt-BR")}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {messageSources.data.totalWithAi.toLocaleString("pt-BR")} com origem{" "}
+                    <strong>IA</strong> ({formatPercent(
+                      messageSources.data.totalOutbound === 0
+                        ? 0
+                        : messageSources.data.totalWithAi / messageSources.data.totalOutbound,
+                    )}
+                    )
+                  </p>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-lg">Por origem</CardTitle>
+                  <CardDescription>
+                    IA = LLM · Regras = personalização determinística · Template = texto fixo
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {messageSources.data.bySource.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma mensagem enviada no período.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Origem</TableHead>
+                          <TableHead>Quantidade</TableHead>
+                          <TableHead>Participação</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {messageSources.data.bySource.map((row) => (
+                          <TableRow key={row.source}>
+                            <TableCell>
+                              <MessageContentSourceBadge source={row.source} />
+                              <span className="ml-2">{row.label}</span>
+                            </TableCell>
+                            <TableCell>{row.count.toLocaleString("pt-BR")}</TableCell>
+                            <TableCell>{formatPercent(row.share)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {messageSources.data.byTemplate.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-serif text-lg">Por template (top 20)</CardTitle>
+                    <CardDescription>
+                      Quantas vezes cada template foi enviado e com qual origem predominante.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Template</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>IA</TableHead>
+                          <TableHead>Regras</TableHead>
+                          <TableHead>Template</TableHead>
+                          <TableHead>Outros</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {messageSources.data.byTemplate.map((row) => (
+                          <TableRow key={row.templateKey}>
+                            <TableCell className="max-w-xs">
+                              <p className="font-medium">{row.templateLabel}</p>
+                              <p className="text-xs text-muted-foreground">{row.templateKey}</p>
+                            </TableCell>
+                            <TableCell>{row.total}</TableCell>
+                            <TableCell>{row.aiCount}</TableCell>
+                            <TableCell>{row.rulesCount}</TableCell>
+                            <TableCell>{row.templateCount}</TableCell>
+                            <TableCell>{row.otherCount}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : null}
+        </TabsContent>
       )}
     </Tabs>
   );

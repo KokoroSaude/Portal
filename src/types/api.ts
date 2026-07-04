@@ -254,6 +254,34 @@ export interface ConversationQualityReport {
   byAgeBand: ConversationQualityByAgeBand[];
 }
 
+export interface MessageContentSourceBreakdown {
+  source: string;
+  label: string;
+  count: number;
+  share: number;
+}
+
+export interface MessageContentSourceTemplateRow {
+  templateKey: string;
+  templateLabel: string;
+  total: number;
+  aiCount: number;
+  rulesCount: number;
+  templateCount: number;
+  otherCount: number;
+}
+
+export interface MessageContentSourceReport {
+  tenantId: string;
+  from: string;
+  to: string;
+  patientId: string | null;
+  totalOutbound: number;
+  totalWithAi: number;
+  bySource: MessageContentSourceBreakdown[];
+  byTemplate: MessageContentSourceTemplateRow[];
+}
+
 export interface ExitReasonBreakdown {
   reason: string;
   label: string;

@@ -63,6 +63,7 @@ import type {
   EngagementReport,
   NudgeEngagementReport,
   ConversationQualityReport,
+  MessageContentSourceReport,
   RetentionChurnReport,
   OnboardingStepFunnelReport,
   HandoffReport,
@@ -764,6 +765,12 @@ export const api = {
   getConversationQualityReport: (token: string, from?: string, to?: string) =>
     request<ConversationQualityReport>(
       `/api/reports/conversation-quality${qs({ from, to })}`,
+      { token },
+    ),
+
+  getMessageContentSourceReport: (token: string, from?: string, to?: string, patientId?: string) =>
+    request<MessageContentSourceReport>(
+      `/api/reports/message-content-sources${qs({ from, to, patientId })}`,
       { token },
     ),
 
