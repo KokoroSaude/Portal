@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { CONVERSATION_STEP_LABELS, CONTENT_SOURCE_LABELS } from "@/lib/constants";
 import { cn, formatDateTime, maskPhone } from "@/lib/utils";
+import { isWhatsappTimelineDebugEnabled } from "@/lib/whatsapp-timeline-debug";
 import type { WhatsappConversationMessage, WhatsappConversationThread } from "@/types/api";
 
 function contentSourceLabel(source: string | null | undefined): string | null {
@@ -71,7 +72,7 @@ const INTENT_KIND_LABELS: Record<string, string> = {
   Ambiguous: "Ambíguo",
 };
 
-function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
+function MessageBubble({ message, showUnderstandingDebug }: { message: WhatsappConversationMessage; showUnderstandingDebug?: boolean }) {
   const outbound = message.direction === "Outbound";
   const isAudio = message.messageType === "audio";
   const isPrescriptionMedia =
@@ -131,7 +132,7 @@ function MessageBubble({ message }: { message: WhatsappConversationMessage }) {
               {sourceLabel}
             </Badge>
           )}
-          {understandingSource && (
+          {showUnderstandingDebug && understandingSource && (
             <Badge variant="outline" className="text-[10px]">
               Entendido: {understandingSource}
               {understandingKind && ` · ${INTENT_KIND_LABELS[understandingKind] ?? understandingKind}`}
@@ -329,6 +330,7 @@ export function WhatsappConversationsPanel() {
   const [replyText, setReplyText] = useState("");
   const [requestCsat, setRequestCsat] = useState(false);
   const [onlyPharmacyMessages, setOnlyPharmacyMessages] = useState(false);
+  const [showUnderstandingDebug] = useState(() => isWhatsappTimelineDebugEnabled());
   const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const threadScrollRef = useRef<HTMLDivElement>(null);
@@ -730,7 +732,11 @@ export function WhatsappConversationsPanel() {
                           </button>
                         )}
                         {visibleMessages.map((message) => (
-                          <MessageBubble key={message.id} message={message} />
+                          <MessageBubble
+                            key={message.id}
+                            message={message}
+                            showUnderstandingDebug={showUnderstandingDebug}
+                          />
                         ))}
                       </>
                     )}
