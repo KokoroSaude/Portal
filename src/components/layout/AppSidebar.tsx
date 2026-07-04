@@ -142,6 +142,12 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
             feature: FEATURE_KEYS.reportsAdvanced,
           },
           {
+            to: "/relatorios/conversacional",
+            label: "Conversacional",
+            icon: MessageCircle,
+            feature: FEATURE_KEYS.reportsConversationQuality,
+          },
+          {
             to: "/relatorios/operacao",
             label: "Operação",
             icon: Send,

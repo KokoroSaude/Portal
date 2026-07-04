@@ -14,11 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportSectionNav } from "@/components/reports/ReportSectionNav";
 import { useAuth } from "@/contexts/AuthContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { resolveReportTab } from "@/lib/reportNavigation";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import { MessageContentSourceBadge } from "@/components/messages/MessageContentSourceBadge";
 import { formatDateTime, formatPercent } from "@/lib/utils";
 
@@ -31,7 +33,8 @@ function ReportError({ error }: { error: unknown }) {
 
 export function ReportsConversationalPage() {
   const { token, hasFeature } = useAuth();
-  const { range } = useReportRange();
+  const { tab, setTab, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
 
   async function downloadBlob(blob: Blob, fileName: string) {
     const url = URL.createObjectURL(blob);
@@ -51,38 +54,38 @@ export function ReportsConversationalPage() {
   const hasAny = hasQuality || hasRetention || hasFunnel || hasHandoffs || hasMessageSources;
 
   const quality = useQuery({
-    queryKey: ["conversation-quality-report", range],
-    queryFn: () => api.getConversationQualityReport(token!, range.from, range.to),
+    queryKey: ["conversation-quality-report", from, to],
+    queryFn: () => api.getConversationQualityReport(token!, from, to),
     enabled: !!token && hasQuality,
   });
 
   const retention = useQuery({
-    queryKey: ["retention-churn-report", range],
-    queryFn: () => api.getRetentionChurnReport(token!, range.from, range.to),
+    queryKey: ["retention-churn-report", from, to],
+    queryFn: () => api.getRetentionChurnReport(token!, from, to),
     enabled: !!token && hasRetention,
   });
 
   const funnel = useQuery({
-    queryKey: ["onboarding-funnel-report", range],
-    queryFn: () => api.getOnboardingStepFunnelReport(token!, range.from, range.to),
+    queryKey: ["onboarding-funnel-report", from, to],
+    queryFn: () => api.getOnboardingStepFunnelReport(token!, from, to),
     enabled: !!token && hasFunnel,
   });
 
   const handoffs = useQuery({
-    queryKey: ["handoff-report", range],
-    queryFn: () => api.getHandoffReport(token!, range.from, range.to),
+    queryKey: ["handoff-report", from, to],
+    queryFn: () => api.getHandoffReport(token!, from, to),
     enabled: !!token && hasHandoffs,
   });
 
   const incidents = useQuery({
-    queryKey: ["conversation-incidents-report", range],
-    queryFn: () => api.getConversationIncidentsReport(token!, range.from, range.to),
+    queryKey: ["conversation-incidents-report", from, to],
+    queryFn: () => api.getConversationIncidentsReport(token!, from, to),
     enabled: !!token && hasHandoffs,
   });
 
   const messageSources = useQuery({
-    queryKey: ["message-content-sources-report", range],
-    queryFn: () => api.getMessageContentSourceReport(token!, range.from, range.to),
+    queryKey: ["message-content-sources-report", from, to],
+    queryFn: () => api.getMessageContentSourceReport(token!, from, to),
     enabled: !!token && hasMessageSources,
   });
 
@@ -105,19 +108,26 @@ export function ReportsConversationalPage() {
           ? "funnel"
           : "handoffs";
 
-  return (
-    <Tabs defaultValue={defaultTab}>
-      <TabsList className="flex h-auto flex-wrap gap-1">
-        {hasQuality && <TabsTrigger value="quality">Scorecard</TabsTrigger>}
-        {hasRetention && <TabsTrigger value="retention">Retenção</TabsTrigger>}
-        {hasFunnel && <TabsTrigger value="funnel">Funil onboarding</TabsTrigger>}
-        {hasHandoffs && <TabsTrigger value="handoffs">Handoffs</TabsTrigger>}
-        {hasHandoffs && <TabsTrigger value="incidents">Incidentes</TabsTrigger>}
-        {hasMessageSources && <TabsTrigger value="message-sources">Origem IA</TabsTrigger>}
-      </TabsList>
+  const navItems = [
+    { value: "quality", label: "Scorecard", hidden: !hasQuality },
+    { value: "retention", label: "Retenção", hidden: !hasRetention },
+    { value: "funnel", label: "Funil onboarding", hidden: !hasFunnel },
+    { value: "handoffs", label: "Handoffs", hidden: !hasHandoffs },
+    { value: "incidents", label: "Incidentes", hidden: !hasHandoffs },
+    { value: "message-sources", label: "Origem IA", hidden: !hasMessageSources },
+  ];
+  const activeTab = resolveReportTab(
+    tab,
+    defaultTab,
+    navItems.filter((i) => !i.hidden).map((i) => i.value),
+  );
 
-      {hasQuality && (
-        <TabsContent value="quality" className="space-y-6">
+  return (
+    <div className="space-y-4">
+      <ReportSectionNav items={navItems} value={activeTab} onChange={setTab} />
+
+      {activeTab === "quality" && hasQuality && (
+        <div className="space-y-4">
           {quality.isError ? (
             <ReportError error={quality.error} />
           ) : quality.isLoading ? (
@@ -192,11 +202,11 @@ export function ReportsConversationalPage() {
               )}
             </>
           ) : null}
-        </TabsContent>
+        </div>
       )}
 
-      {hasRetention && (
-        <TabsContent value="retention" className="space-y-6">
+      {activeTab === "retention" && hasRetention && (
+        <div className="space-y-4">
           {retention.isError ? (
             <ReportError error={retention.error} />
           ) : retention.isLoading ? (
@@ -209,7 +219,7 @@ export function ReportsConversationalPage() {
                   size="sm"
                   onClick={() =>
                     void api
-                      .exportExitSurveysCsv(token!, range.from, range.to)
+                      .exportExitSurveysCsv(token!, from, to)
                       .then((blob) => downloadBlob(blob, "exit-surveys.csv"))
                   }
                 >
@@ -253,11 +263,11 @@ export function ReportsConversationalPage() {
               )}
             </>
           ) : null}
-        </TabsContent>
+        </div>
       )}
 
-      {hasFunnel && (
-        <TabsContent value="funnel" className="space-y-6">
+      {activeTab === "funnel" && hasFunnel && (
+        <div className="space-y-4">
           {funnel.isError ? (
             <ReportError error={funnel.error} />
           ) : funnel.isLoading ? (
@@ -300,12 +310,11 @@ export function ReportsConversationalPage() {
               </CardContent>
             </Card>
           ) : null}
-        </TabsContent>
+        </div>
       )}
 
-      {hasHandoffs && (
-        <>
-          <TabsContent value="handoffs" className="space-y-6">
+      {activeTab === "handoffs" && hasHandoffs && (
+        <div className="space-y-4">
             {handoffs.isError ? (
               <ReportError error={handoffs.error} />
             ) : handoffs.isLoading ? (
@@ -341,7 +350,16 @@ export function ReportsConversationalPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {handoffs.data.pending.map((row) => (
+                          {handoffs.data.pending
+                            .filter((row) =>
+                              matchesGridSearch(
+                                searchQuery,
+                                row.patientName,
+                                row.eventType,
+                                row.minutesWaiting,
+                              ),
+                            )
+                            .map((row) => (
                             <TableRow key={`${row.patientId}-${row.requestedAt}`}>
                               <TableCell>
                                 <Link
@@ -363,9 +381,11 @@ export function ReportsConversationalPage() {
                 </Card>
               </>
             ) : null}
-          </TabsContent>
+        </div>
+      )}
 
-          <TabsContent value="incidents" className="space-y-6">
+      {activeTab === "incidents" && hasHandoffs && (
+        <div className="space-y-4">
             {incidents.isError ? (
               <ReportError error={incidents.error} />
             ) : incidents.isLoading ? (
@@ -384,7 +404,7 @@ export function ReportsConversationalPage() {
                     size="sm"
                     onClick={() =>
                       void api
-                        .exportConversationIncidentsCsv(token!, range.from, range.to)
+                        .exportConversationIncidentsCsv(token!, from, to)
                         .then((blob) => downloadBlob(blob, "conversation-incidents.csv"))
                     }
                   >
@@ -406,7 +426,17 @@ export function ReportsConversationalPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {incidents.data.items.map((row) => (
+                        {incidents.data.items
+                          .filter((row) =>
+                            matchesGridSearch(
+                              searchQuery,
+                              row.patientName,
+                              row.incidentType,
+                              row.flowLabel,
+                              row.lastPatientMessage,
+                            ),
+                          )
+                          .map((row) => (
                           <TableRow key={`${row.patientId}-${row.at}`}>
                             <TableCell>
                               <Link
@@ -430,12 +460,11 @@ export function ReportsConversationalPage() {
                 </CardContent>
               </Card>
             ) : null}
-          </TabsContent>
-        </>
+        </div>
       )}
 
-      {hasMessageSources && (
-        <TabsContent value="message-sources" className="space-y-6">
+      {activeTab === "message-sources" && hasMessageSources && (
+        <div className="space-y-4">
           {messageSources.isError ? (
             <ReportError error={messageSources.error} />
           ) : messageSources.isLoading ? (
@@ -537,8 +566,8 @@ export function ReportsConversationalPage() {
               )}
             </>
           ) : null}
-        </TabsContent>
+        </div>
       )}
-    </Tabs>
+    </div>
   );
 }

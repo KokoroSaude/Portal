@@ -1,55 +1,73 @@
-import { Outlet } from "react-router-dom";
-import { AdminReportTenantSelector } from "@/components/admin/AdminReportTenantSelector";
-import { PageHeader } from "@/components/PageHeader";
-import { ReportRangePicker } from "@/components/reports/ReportsShared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminReportScopeControl } from "@/components/admin/AdminReportScopeControl";
+import { ReportsLayoutShell } from "@/components/reports/ReportsLayoutShell";
 import {
   AdminReportTenantProvider,
   useAdminReportTenants,
 } from "@/contexts/AdminReportTenantContext";
-import { ReportRangeProvider, useReportRange } from "@/contexts/ReportRangeContext";
+import { ReportRangeProvider } from "@/contexts/ReportRangeContext";
 import { useActiveAdminTenants } from "@/hooks/useAdminTenants";
 
 function AdminReportsLayoutContent() {
-  const { range, setRange } = useReportRange();
-  const { selectedIds, setSelectedIds, tenantsLoading } = useAdminReportTenants();
+  const { selectedIds, tenantsLoading } = useAdminReportTenants();
   const { tenants: activeTenants } = useActiveAdminTenants();
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
+  if (tenantsLoading) {
+    return (
+      <ReportsLayoutShell
         title="Relatórios da plataforma"
-        description="Métricas consolidadas de todas as organizações — escolha quais incluir"
-      />
-
-      {tenantsLoading ? (
+        description="Métricas consolidadas de todas as organizações"
+        showToolbar={false}
+      >
         <Skeleton className="h-40 w-full" />
-      ) : (
-        <AdminReportTenantSelector
-          tenants={activeTenants}
-          selectedIds={selectedIds}
-          onChange={setSelectedIds}
-        />
-      )}
+      </ReportsLayoutShell>
+    );
+  }
 
-      {selectedIds.size === 0 ? (
+  if (activeTenants.length === 0) {
+    return (
+      <ReportsLayoutShell
+        title="Relatórios da plataforma"
+        description="Métricas consolidadas de todas as organizações"
+        showToolbar={false}
+      >
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma organização ativa disponível.
+          </CardContent>
+        </Card>
+      </ReportsLayoutShell>
+    );
+  }
+
+  if (selectedIds.size === 0) {
+    return (
+      <ReportsLayoutShell
+        title="Relatórios da plataforma"
+        description="Métricas consolidadas de todas as organizações"
+        scopeControl={<AdminReportScopeControl />}
+        showToolbar={false}
+      >
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Selecione ao menos uma organização para carregar os relatórios.
           </CardContent>
         </Card>
-      ) : (
-        <>
-          <ReportRangePicker range={range} onChange={setRange} />
-          <Outlet />
-        </>
-      )}
-    </div>
+      </ReportsLayoutShell>
+    );
+  }
+
+  return (
+    <ReportsLayoutShell
+      title="Relatórios da plataforma"
+      description="Métricas consolidadas das organizações selecionadas"
+      scopeControl={<AdminReportScopeControl />}
+    />
   );
 }
 
-function AdminReportsLayoutInner() {
+export function AdminReportsLayout() {
   return (
     <ReportRangeProvider>
       <AdminReportTenantProvider>
@@ -57,8 +75,4 @@ function AdminReportsLayoutInner() {
       </AdminReportTenantProvider>
     </ReportRangeProvider>
   );
-}
-
-export function AdminReportsLayout() {
-  return <AdminReportsLayoutInner />;
 }

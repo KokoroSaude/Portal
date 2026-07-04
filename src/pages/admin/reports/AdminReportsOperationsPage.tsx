@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { formatPercent } from "@/lib/utils";
 
@@ -29,6 +29,7 @@ function isOperationsTab(value: string | null): value is OperationsTab {
 export function AdminReportsOperationsPage() {
   const { token } = useAuth();
   const { range } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -44,25 +45,25 @@ export function AdminReportsOperationsPage() {
 
   const operations = useQuery({
     queryKey: ["admin-operations", range, tenantFilter],
-    queryFn: () => api.adminGetOperationsReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetOperationsReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const volume = useQuery({
     queryKey: ["admin-volume", range, tenantFilter],
-    queryFn: () => api.adminGetMessageVolumeMetrics(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetMessageVolumeMetrics(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const satisfaction = useQuery({
     queryKey: ["admin-satisfaction", range, tenantFilter],
-    queryFn: () => api.adminGetSatisfactionMetrics(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetSatisfactionMetrics(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const latency = useQuery({
     queryKey: ["admin-latency", range, tenantFilter],
-    queryFn: () => api.adminGetOperationalLatencyMetrics(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetOperationalLatencyMetrics(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 

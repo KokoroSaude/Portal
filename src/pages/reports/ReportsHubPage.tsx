@@ -1,7 +1,5 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, ClipboardList, LineChart, MessageSquare, Pill, Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, ClipboardList, LineChart, MessageSquare, Pill, Settings2 } from "lucide-react";
+import { ReportHubCard } from "@/components/reports/ReportHubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { FEATURE_KEYS } from "@/lib/constants";
 
@@ -82,32 +80,13 @@ export function ReportsHubPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-serif text-xl">Visão geral</h2>
-        <p className="text-sm text-muted-foreground">
-          Escolha uma área de relatório. O filtro de período acima se aplica a todas as páginas.
-        </p>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Escolha uma área. Período e busca ficam na barra ao abrir cada relatório.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visibleLinks.map((link) => (
-          <Card key={link.to}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <link.icon className="size-4 text-primary" />
-                {link.title}
-              </CardTitle>
-              <CardDescription>{link.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={link.to}>
-                  Abrir relatório
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <ReportHubCard key={link.to} {...link} compact />
         ))}
       </div>
     </div>

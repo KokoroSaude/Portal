@@ -14,7 +14,9 @@ import { MetricCard } from "@/components/reports/ReportsShared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportSectionNav } from "@/components/reports/ReportSectionNav";
+import { resolveReportTab } from "@/lib/reportNavigation";
+import { matchesGridSearch } from "@/lib/gridSearch";
 import {
   Table,
   TableBody,
@@ -24,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import {
   FEATURE_KEYS,
@@ -36,17 +38,18 @@ import { formatPercent, maskPhone } from "@/lib/utils";
 
 export function ReportsScalesPage() {
   const { token, hasFeature } = useAuth();
-  const { range } = useReportRange();
+  const { tab, setTab, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
 
   const morisky = useQuery({
-    queryKey: ["morisky-report", range],
-    queryFn: () => api.getMoriskyReport(token!, range.from, range.to),
+    queryKey: ["morisky-report", from, to],
+    queryFn: () => api.getMoriskyReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.scalesMorisky),
   });
 
   const tpb = useQuery({
-    queryKey: ["tpb-report", range],
-    queryFn: () => api.getTpbReport(token!, range.from, range.to),
+    queryKey: ["tpb-report", from, to],
+    queryFn: () => api.getTpbReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
@@ -65,17 +68,23 @@ export function ReportsScalesPage() {
     );
   }
 
-  return (
-    <Tabs defaultValue={hasFeature(FEATURE_KEYS.scalesMorisky) ? "morisky" : "tpb"}>
-      <TabsList className="flex h-auto flex-wrap gap-1">
-        {hasFeature(FEATURE_KEYS.scalesMorisky) && (
-          <TabsTrigger value="morisky">MMAS-8</TabsTrigger>
-        )}
-        {hasFeature(FEATURE_KEYS.scalesTpb) && <TabsTrigger value="tpb">TCP</TabsTrigger>}
-      </TabsList>
+  const navItems = [
+    { value: "morisky", label: "MMAS-8", hidden: !hasFeature(FEATURE_KEYS.scalesMorisky) },
+    { value: "tpb", label: "TCP", hidden: !hasFeature(FEATURE_KEYS.scalesTpb) },
+  ];
+  const defaultTab = hasFeature(FEATURE_KEYS.scalesMorisky) ? "morisky" : "tpb";
+  const activeTab = resolveReportTab(
+    tab,
+    defaultTab,
+    navItems.filter((i) => !i.hidden).map((i) => i.value),
+  );
 
-      {hasFeature(FEATURE_KEYS.scalesMorisky) && (
-        <TabsContent value="morisky" className="space-y-6">
+  return (
+    <div className="space-y-4">
+      <ReportSectionNav items={navItems} value={activeTab} onChange={setTab} />
+
+      {activeTab === "morisky" && hasFeature(FEATURE_KEYS.scalesMorisky) && (
+        <div className="space-y-4">
           {morisky.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : morisky.data ? (
@@ -83,8 +92,8 @@ export function ReportsScalesPage() {
               {token && (
                 <ReportAiInsightCard
                   token={token}
-                  from={range.from}
-                  to={range.to}
+                  from={from}
+                  to={to}
                   variant="morisky"
                 />
               )}
@@ -131,7 +140,7 @@ export function ReportsScalesPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {morisky.data.patientRanking.map((row) => (
+                            {morisky.data.patientRanking.filter((row) => matchesGridSearch(searchQuery, row.patientName, row.phone, MORISKY_LEVEL_LABELS[row.level], row.score)).map((row) => (
                               <TableRow key={`${row.patientId}-${row.completedAt}`}>
                                 <TableCell>
                                   <Link
@@ -167,11 +176,11 @@ export function ReportsScalesPage() {
               )}
             </>
           ) : null}
-        </TabsContent>
+        </div>
       )}
 
-      {hasFeature(FEATURE_KEYS.scalesTpb) && (
-        <TabsContent value="tpb" className="space-y-6">
+      {activeTab === "tpb" && hasFeature(FEATURE_KEYS.scalesTpb) && (
+        <div className="space-y-4">
           {tpb.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : tpb.data ? (
@@ -179,8 +188,8 @@ export function ReportsScalesPage() {
               {token && (
                 <ReportAiInsightCard
                   token={token}
-                  from={range.from}
-                  to={range.to}
+                  from={from}
+                  to={to}
                   variant="tpb"
                 />
               )}
@@ -251,7 +260,7 @@ export function ReportsScalesPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {tpb.data.patientRanking.map((row) => (
+                            {tpb.data.patientRanking.filter((row) => matchesGridSearch(searchQuery, row.patientName, row.phone, row.intentionScore)).map((row) => (
                               <TableRow key={`${row.patientId}-${row.completedAt}`}>
                                 <TableCell>
                                   <Link
@@ -288,8 +297,8 @@ export function ReportsScalesPage() {
               )}
             </>
           ) : null}
-        </TabsContent>
+        </div>
       )}
-    </Tabs>
+    </div>
   );
 }

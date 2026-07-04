@@ -21,18 +21,19 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { formatPercent } from "@/lib/utils";
 
 export function AdminReportsScalesPage() {
   const { token } = useAuth();
-  const { range } = useReportRange();
+  const { range, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
 
   const morisky = useQuery({
     queryKey: ["admin-morisky", range, tenantFilter],
-    queryFn: () => api.adminGetMoriskyReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetMoriskyReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -136,7 +137,7 @@ export function AdminReportsScalesPage() {
           )}
 
           {morisky.data.patientRanking.length > 0 && (
-            <AdminMoriskyPatientRankingTable rows={morisky.data.patientRanking} />
+            <AdminMoriskyPatientRankingTable rows={morisky.data.patientRanking} searchQuery={searchQuery} />
           )}
 
           {morisky.data.totalAssessments === 0 && (

@@ -244,8 +244,8 @@ export default function App() {
                       <Route path="operacao" element={<ReportsOperationsPage />} />
                       <Route path="escalas" element={<ReportsScalesPage />} />
                       <Route path="conversacional" element={<ReportsConversationalPage />} />
+                      <Route path="programa-medicamento" element={<MedicationProgramPage />} />
                     </Route>
-                    <Route path="relatorios/programa-medicamento" element={<MedicationProgramPage />} />
                     <Route path="programas" element={<MedicationProgramsPage />} />
                     <Route path="medicamentos" element={<MedicationsPage />} />
                     <Route path="templates" element={<TemplatesPage />} />

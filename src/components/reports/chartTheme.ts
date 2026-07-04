@@ -4,7 +4,7 @@ export const CHART = {
   taken: "#10B981",
   missed: "#EF4444",
   muted: "#94A3B8",
-  grid: "oklch(0.92 0.015 25)",
+  grid: "#E8E0E0",
 } as const;
 
 export const DOW_LABELS: Record<string, string> = {

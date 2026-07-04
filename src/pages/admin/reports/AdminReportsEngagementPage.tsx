@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 
 const ENGAGEMENT_TABS = ["engajamento", "cohort"] as const;
@@ -24,7 +24,8 @@ function isEngagementTab(value: string | null): value is EngagementTab {
 
 export function AdminReportsEngagementPage() {
   const { token } = useAuth();
-  const { range } = useReportRange();
+  const { range, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -40,7 +41,7 @@ export function AdminReportsEngagementPage() {
 
   const engagement = useQuery({
     queryKey: ["admin-engagement", range, tenantFilter],
-    queryFn: () => api.adminGetEngagementReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetEngagementReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -52,13 +53,13 @@ export function AdminReportsEngagementPage() {
 
   const rankingBest = useQuery({
     queryKey: ["admin-ranking-best", range, tenantFilter],
-    queryFn: () => api.adminGetPatientRanking(token!, range.from, range.to, 10, false, tenantFilter),
+    queryFn: () => api.adminGetPatientRanking(token!, from, to, 10, false, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const rankingWorst = useQuery({
     queryKey: ["admin-ranking-worst", range, tenantFilter],
-    queryFn: () => api.adminGetPatientRanking(token!, range.from, range.to, 10, true, tenantFilter),
+    queryFn: () => api.adminGetPatientRanking(token!, from, to, 10, true, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -89,8 +90,8 @@ export function AdminReportsEngagementPage() {
                 />
                 <EngagementBarChart title="Por template" rows={engagement.data.byTemplate} />
               </div>
-              <EngagementTable title="Detalhe por tipo" rows={engagement.data.byMessageKind} />
-              <EngagementTable title="Detalhe por template" rows={engagement.data.byTemplate} />
+              <EngagementTable title="Detalhe por tipo" rows={engagement.data.byMessageKind} searchQuery={searchQuery} />
+              <EngagementTable title="Detalhe por template" rows={engagement.data.byTemplate} searchQuery={searchQuery} />
             </div>
           ) : null}
         </TabsContent>
@@ -106,12 +107,14 @@ export function AdminReportsEngagementPage() {
               title="Melhor adesão no período"
               rows={rankingBest.data}
               loading={rankingBest.isLoading}
+              searchQuery={searchQuery}
             />
           </div>
           <AdminRankingTable
             title="Menor adesão no período"
             rows={rankingWorst.data}
             loading={rankingWorst.isLoading}
+            searchQuery={searchQuery}
           />
         </TabsContent>
       </Tabs>

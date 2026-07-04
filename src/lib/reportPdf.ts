@@ -12,10 +12,18 @@ export interface ReportPdfTable {
   body: string[][];
 }
 
+export interface ReportPdfChart {
+  title?: string;
+  dataUrl: string;
+  widthMm?: number;
+  heightMm?: number;
+}
+
 export interface ReportPdfSection {
   title: string;
   metrics?: ReportPdfMetric[];
   tables?: ReportPdfTable[];
+  charts?: ReportPdfChart[];
 }
 
 export interface ReportPdfDocument {
@@ -39,6 +47,29 @@ function ensureSpace(pdf: jsPDF, y: number, needed: number): number {
     pdf.addPage();
     return MARGIN;
   }
+  return y;
+}
+
+function drawCharts(pdf: jsPDF, charts: ReportPdfChart[], startY: number): number {
+  let y = startY;
+  const defaultWidth = PAGE_WIDTH - MARGIN * 2;
+
+  for (const chart of charts) {
+    const widthMm = chart.widthMm ?? defaultWidth;
+    const heightMm = chart.heightMm ?? widthMm * 0.45;
+    y = ensureSpace(pdf, y, heightMm + 12);
+
+    if (chart.title) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.text(chart.title, MARGIN, y);
+      y += 5;
+    }
+
+    pdf.addImage(chart.dataUrl, "PNG", MARGIN, y, widthMm, heightMm);
+    y += heightMm + 8;
+  }
+
   return y;
 }
 
@@ -96,6 +127,10 @@ export function downloadReportPdf(doc: ReportPdfDocument): void {
 
     if (section.metrics?.length) {
       y = drawMetrics(pdf, section.metrics, y);
+    }
+
+    if (section.charts?.length) {
+      y = drawCharts(pdf, section.charts, y);
     }
 
     for (const table of section.tables ?? []) {

@@ -2,28 +2,30 @@ import { useQuery } from "@tanstack/react-query";
 import { FeatureLocked } from "@/components/PageHeader";
 import { SimpleBarChart } from "@/components/reports/ReportCharts";
 import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
+import { ReportSectionNav } from "@/components/reports/ReportSectionNav";
 import { MetricCard, SendersPerformanceTable } from "@/components/reports/ReportsShared";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { resolveReportTab } from "@/lib/reportNavigation";
 import { formatPercent } from "@/lib/utils";
 
 export function ReportsOperationsPage() {
   const { token, hasFeature } = useAuth();
-  const { range } = useReportRange();
+  const { tab, setTab, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
 
   const operations = useQuery({
-    queryKey: ["operations-report", range],
-    queryFn: () => api.getOperationsReport(token!, range.from, range.to),
+    queryKey: ["operations-report", from, to],
+    queryFn: () => api.getOperationsReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsOperations),
   });
 
   const senders = useQuery({
-    queryKey: ["sender-performance", range],
-    queryFn: () => api.getSenderPerformance(token!, range.from, range.to),
+    queryKey: ["sender-performance", from, to],
+    queryFn: () => api.getSenderPerformance(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsBySender),
   });
 
@@ -36,32 +38,31 @@ export function ReportsOperationsPage() {
     );
   }
 
-  return (
-    <Tabs defaultValue={hasFeature(FEATURE_KEYS.reportsOperations) ? "operations" : "senders"}>
-      <TabsList className="flex h-auto flex-wrap gap-1">
-        {hasFeature(FEATURE_KEYS.reportsOperations) && (
-          <TabsTrigger value="operations">Operação</TabsTrigger>
-        )}
-        {hasFeature(FEATURE_KEYS.reportsBySender) && (
-          <TabsTrigger value="senders">Remetentes</TabsTrigger>
-        )}
-      </TabsList>
+  const navItems = [
+    { value: "operations", label: "Operação", hidden: !hasFeature(FEATURE_KEYS.reportsOperations) },
+    { value: "senders", label: "Remetentes", hidden: !hasFeature(FEATURE_KEYS.reportsBySender) },
+  ];
+  const defaultTab = hasFeature(FEATURE_KEYS.reportsOperations) ? "operations" : "senders";
+  const activeTab = resolveReportTab(
+    tab,
+    defaultTab,
+    navItems.filter((i) => !i.hidden).map((i) => i.value),
+  );
 
-      {hasFeature(FEATURE_KEYS.reportsOperations) && (
-        <TabsContent value="operations" className="space-y-6">
+  return (
+    <div className="space-y-4">
+      <ReportSectionNav items={navItems} value={activeTab} onChange={setTab} />
+
+      {activeTab === "operations" && hasFeature(FEATURE_KEYS.reportsOperations) && (
+        <>
           {operations.isLoading ? (
             <Skeleton className="h-48" />
           ) : operations.data ? (
-            <>
+            <div className="space-y-4">
               {token && (
-                <ReportAiInsightCard
-                  token={token}
-                  from={range.from}
-                  to={range.to}
-                  variant="operations"
-                />
+                <ReportAiInsightCard token={token} from={from} to={to} variant="operations" />
               )}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard title="Lembretes enviados" value={operations.data.reminders.sent} />
                 <MetricCard
                   title="Taxa de falha"
@@ -74,7 +75,7 @@ export function ReportsOperationsPage() {
                 />
               </div>
               {hasFeature(FEATURE_KEYS.reportsCharts) && (
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2">
                   <SimpleBarChart
                     title="Lembretes"
                     description="Status no período"
@@ -96,26 +97,23 @@ export function ReportsOperationsPage() {
                   />
                 </div>
               )}
-            </>
+            </div>
           ) : null}
-        </TabsContent>
+        </>
       )}
 
-      {hasFeature(FEATURE_KEYS.reportsBySender) && (
-        <TabsContent value="senders">
+      {activeTab === "senders" && hasFeature(FEATURE_KEYS.reportsBySender) && (
+        <div className="space-y-4">
           {token && (
-            <div className="mb-6">
-              <ReportAiInsightCard
-                token={token}
-                from={range.from}
-                to={range.to}
-                variant="senders"
-              />
-            </div>
+            <ReportAiInsightCard token={token} from={from} to={to} variant="senders" />
           )}
-          <SendersPerformanceTable rows={senders.data ?? []} loading={senders.isLoading} />
-        </TabsContent>
+          <SendersPerformanceTable
+            rows={senders.data ?? []}
+            loading={senders.isLoading}
+            searchQuery={searchQuery}
+          />
+        </div>
       )}
-    </Tabs>
+    </div>
   );
 }

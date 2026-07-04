@@ -9,7 +9,7 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
+import { ReportHubCard } from "@/components/reports/ReportHubCard";
 
 const ADMIN_REPORT_CARDS = [
   {
@@ -17,65 +17,55 @@ const ADMIN_REPORT_CARDS = [
     title: "Adesão",
     description: "Taxa de adesão consolidada, tendências e detalhe por organização.",
     to: "/admin/relatorios/adesao",
-    actionLabel: "Ver adesão",
   },
   {
     icon: MessageSquare,
     title: "Engajamento",
     description: "Respostas por tipo de mensagem e funil de pacientes.",
     to: "/admin/relatorios/engajamento",
-    actionLabel: "Ver engajamento",
   },
   {
     icon: Send,
     title: "Operação",
     description: "Lembretes, volume de mensagens, satisfação e latência clínica.",
     to: "/admin/relatorios/operacao",
-    actionLabel: "Ver operação",
   },
   {
     icon: ClipboardList,
     title: "Escalas",
     description: "Avaliações Morisky (MMAS-8) consolidadas por organização.",
     to: "/admin/relatorios/escalas",
-    actionLabel: "Ver escalas",
   },
   {
     icon: ScrollText,
     title: "Rastreabilidade",
     description: "Audit log e eventos de interação no período.",
     to: "/admin/relatorios/rastreabilidade",
-    actionLabel: "Ver rastreabilidade",
   },
   {
     icon: BarChart3,
     title: "Remetentes",
     description: "Performance por número WhatsApp nas organizações selecionadas.",
     to: "/admin/relatorios/remetentes",
-    actionLabel: "Ver remetentes",
   },
   {
     icon: GitCompare,
     title: "Comparativo",
     description: "Variação de adesão entre período atual e anterior.",
     to: "/admin/relatorios/comparativo",
-    actionLabel: "Ver comparativo",
   },
 ] as const;
 
 export function AdminReportsHubPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-serif text-xl">Visão geral</h2>
-        <p className="text-sm text-muted-foreground">
-          Escolha uma área para explorar métricas consolidadas da plataforma.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Escolha uma área. Organizações e período ficam na barra ao abrir cada relatório.
+      </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ADMIN_REPORT_CARDS.map((card) => (
-          <PatientFeatureLinkCard key={card.to} {...card} />
+          <ReportHubCard key={card.to} {...card} compact />
         ))}
       </div>
 
@@ -85,7 +75,7 @@ export function AdminReportsHubPage() {
           Dica
         </p>
         <p className="mt-1">
-          Selecione as organizações acima e ajuste o período. Exporte PDF na tela de{" "}
+          Exporte PDF na tela de{" "}
           <Link to="/admin/relatorios/adesao" className="text-primary hover:underline">
             Adesão
           </Link>

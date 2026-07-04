@@ -17,13 +17,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
+import { PatientTimelineCard } from "@/components/patients/PatientTimelineCard";
 import { PatientSchedulingPanel } from "@/components/patients/PatientSchedulingPanel";
 import {
   PatientWhatsAppWindowBanner,
 } from "@/components/patients/PatientWhatsAppWindowBanner";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { MessageContentSourceBadge } from "@/components/messages/MessageContentSourceBadge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
 import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
@@ -54,18 +54,8 @@ import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS, CLINICAL_PRIORITY_TIER_LABELS } from "@/lib/constants";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDate, formatDateTime, maskPhone } from "@/lib/utils";
-import { timelineContentSource } from "@/lib/message-content-source";
 import { formatCpfDisplay, stripCpf } from "@/lib/cpf";
 import type { ClinicalPriorityTier } from "@/types/api";
-
-const EVENT_LABELS: Record<string, string> = {
-  message_inbound: "Mensagem recebida",
-  message_outbound: "Mensagem enviada",
-  reminder_sent: "Lembrete enviado",
-  checkin: "Check-in",
-  followup: "Follow-up",
-  reengagement: "Reengajamento",
-};
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +72,6 @@ export function PatientDetailPage() {
   const [priorityInput, setPriorityInput] = useState<ClinicalPriorityTier>("Normal");
   const [channelInput, setChannelInput] = useState<"Text" | "Audio">("Text");
   const [reactivateOpen, setReactivateOpen] = useState(false);
-  const timelineLimit = 5;
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -91,12 +80,6 @@ export function PatientDetailPage() {
   });
 
   const voiceFeatureEnabled = hasFeature(FEATURE_KEYS.whatsappVoice);
-
-  const { data: timeline, isLoading: timelineLoading } = useQuery({
-    queryKey: ["patient-timeline", id, timelineLimit],
-    queryFn: () => api.getPatientTimeline(token!, id!, 1, timelineLimit),
-    enabled: !!token && !!id,
-  });
 
   const { data: scheduling, isLoading: schedulingLoading } = useQuery({
     queryKey: ["patient-scheduling", id],
@@ -694,50 +677,7 @@ export function PatientDetailPage() {
         </TabsList>
 
         <TabsContent value="timeline">
-          <Card>
-            <CardHeader>
-              <CardTitle>Timeline</CardTitle>
-              <CardDescription>
-                Últimos 5 eventos (sem conteúdo sensível). Mensagens enviadas exibem origem: IA, regras ou
-                template.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {timelineLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full" />
-                  ))}
-                </div>
-              ) : (timeline?.length ?? 0) === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {timeline!.map((ev, i) => (
-                    <li
-                      key={`${ev.occurredAt}-${i}`}
-                      className="flex items-start gap-4 rounded-lg border p-4"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium">
-                            {EVENT_LABELS[ev.eventKind] ?? ev.eventKind}
-                          </p>
-                          {ev.eventKind === "message_outbound" && (
-                            <MessageContentSourceBadge source={timelineContentSource(ev.meta)} />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{ev.summary}</p>
-                      </div>
-                      <time className="shrink-0 text-xs text-muted-foreground">
-                        {formatDateTime(ev.occurredAt)}
-                      </time>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          {token && id && <PatientTimelineCard token={token} patientId={id} />}
         </TabsContent>
 
         <TabsContent value="careplan">

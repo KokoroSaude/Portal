@@ -4,17 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 
 export function AdminReportsComparisonPage() {
   const { token } = useAuth();
   const { range } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
 
   const comparison = useQuery({
     queryKey: ["admin-comparison", range, tenantFilter],
-    queryFn: () => api.adminGetPeriodComparison(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetPeriodComparison(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 

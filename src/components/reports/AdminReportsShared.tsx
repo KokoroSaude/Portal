@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
-import { GridSearchBar } from "@/components/grid/GridSearchBar";
+import { ReportTableCard } from "@/components/reports/ReportTableCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,13 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useGridSearch } from "@/hooks/useGridSearch";
 import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
 import { formatPercent, maskPhone } from "@/lib/utils";
 import type { AdminMoriskyPatientRank } from "@/types/api";
 
-export { ComparisonCard, EngagementTable, MetricCard, ReportRangePicker } from "@/components/reports/ReportsShared";
+export {
+  ComparisonCard,
+  EngagementTable,
+  MetricCard,
+  NudgeEngagementTable,
+  RankingTable,
+  SendersPerformanceTable,
+} from "@/components/reports/ReportsShared";
 
 export function TenantMetricsTable({
   rows,
@@ -68,32 +74,40 @@ export function TraceabilityTable({
   title,
   description,
   rows,
+  searchQuery = "",
 }: {
   title: string;
   description: string;
   rows: { id: string; when: string; type: string; detail: string; meta?: string }[];
+  searchQuery?: string;
 }) {
+  const filtered = useMemo(
+    () =>
+      rows.filter((row) =>
+        matchesGridSearch(searchQuery, row.type, row.detail, row.meta, row.when),
+      ),
+    [rows, searchQuery],
+  );
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-serif text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum registro no período.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quando</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Detalhe</TableHead>
-                <TableHead>Contexto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
+    <ReportTableCard title={title} description={description} count={rows.length}>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhum registro no período.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Quando</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Detalhe</TableHead>
+              <TableHead>Contexto</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 && (
+              <GridEmptyRow colSpan={4} message="Nenhum registro corresponde à busca." />
+            )}
+            {filtered.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="whitespace-nowrap text-xs">
                     {new Date(row.when).toLocaleString("pt-BR")}
@@ -104,12 +118,11 @@ export function TraceabilityTable({
                   <TableCell className="max-w-xs truncate text-sm">{row.detail || "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{row.meta ?? "—"}</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </ReportTableCard>
   );
 }
 
@@ -117,6 +130,7 @@ export function AdminRankingTable({
   title,
   rows,
   loading,
+  searchQuery = "",
 }: {
   title: string;
   rows?: {
@@ -128,13 +142,13 @@ export function AdminRankingTable({
     totalCheckins: number;
   }[];
   loading: boolean;
+  searchQuery?: string;
 }) {
-  const { input, setInput, query } = useGridSearch();
   const filtered = useMemo(
     () =>
       (rows ?? []).filter((r) =>
         matchesGridSearch(
-          query,
+          searchQuery,
           r.tenantName,
           r.name,
           r.status,
@@ -143,70 +157,58 @@ export function AdminRankingTable({
           formatPercent(r.adherenceRate),
         ),
       ),
-    [query, rows],
+    [searchQuery, rows],
   );
 
   return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div>
-          <CardTitle className="font-serif text-lg">{title}</CardTitle>
-          <CardDescription>Mínimo 3 check-ins no período</CardDescription>
-        </div>
-        {!loading && (rows?.length ?? 0) > 0 && (
-          <GridSearchBar
-            value={input}
-            onChange={setInput}
-            placeholder="Buscar organização, paciente ou status"
-            resultCount={filtered.length}
-            totalCount={rows?.length}
-          />
-        )}
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-32" />
-        ) : !rows?.length ? (
-          <p className="text-sm text-muted-foreground">Sem dados suficientes.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Organização</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Adesão</TableHead>
-                <TableHead>Check-ins</TableHead>
+    <ReportTableCard
+      title={title}
+      description="Mínimo 3 check-ins no período"
+      count={rows?.length}
+    >
+      {loading ? (
+        <Skeleton className="h-32" />
+      ) : !rows?.length ? (
+        <p className="text-sm text-muted-foreground">Sem dados suficientes.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Organização</TableHead>
+              <TableHead>Paciente</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Adesão</TableHead>
+              <TableHead>Check-ins</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 && (
+              <GridEmptyRow colSpan={5} message="Nenhum registro corresponde à busca." />
+            )}
+            {filtered.map((r) => (
+              <TableRow key={`${r.tenantName}-${r.patientId}`}>
+                <TableCell className="text-muted-foreground">{r.tenantName}</TableCell>
+                <TableCell className="font-medium">{r.name ?? "Sem nome"}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {PATIENT_STATUS_LABELS[r.status] ?? r.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{formatPercent(r.adherenceRate)}</TableCell>
+                <TableCell>{r.totalCheckins}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 && (
-                <GridEmptyRow colSpan={5} message="Nenhum registro corresponde à busca." />
-              )}
-              {filtered.map((r) => (
-                <TableRow key={`${r.tenantName}-${r.patientId}`}>
-                  <TableCell className="text-muted-foreground">{r.tenantName}</TableCell>
-                  <TableCell className="font-medium">{r.name ?? "Sem nome"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {PATIENT_STATUS_LABELS[r.status] ?? r.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatPercent(r.adherenceRate)}</TableCell>
-                  <TableCell>{r.totalCheckins}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </ReportTableCard>
   );
 }
 
 export function AdminSendersTable({
   rows,
   loading,
+  searchQuery = "",
 }: {
   rows: {
     tenantName: string;
@@ -218,13 +220,13 @@ export function AdminSendersTable({
     adherenceRate: number;
   }[];
   loading: boolean;
+  searchQuery?: string;
 }) {
-  const { input, setInput, query } = useGridSearch();
   const filtered = useMemo(
     () =>
       rows.filter((s) =>
         matchesGridSearch(
-          query,
+          searchQuery,
           s.tenantName,
           s.displayName,
           s.phoneNumber,
@@ -234,64 +236,51 @@ export function AdminSendersTable({
           formatPercent(s.adherenceRate),
         ),
       ),
-    [query, rows],
+    [searchQuery, rows],
   );
 
   if (loading) return <Skeleton className="h-48" />;
 
   return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div>
-          <CardTitle className="font-serif text-lg">Performance por remetente</CardTitle>
-          <CardDescription>Números WhatsApp das organizações selecionadas</CardDescription>
-        </div>
-        {rows.length > 0 && (
-          <GridSearchBar
-            value={input}
-            onChange={setInput}
-            placeholder="Buscar organização, nome ou telefone"
-            resultCount={filtered.length}
-            totalCount={rows.length}
-          />
-        )}
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum remetente ativo nas organizações selecionadas.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Organização</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Ativos</TableHead>
-                <TableHead>Check-ins</TableHead>
-                <TableHead>Adesão</TableHead>
+    <ReportTableCard
+      title="Performance por remetente"
+      description="Números WhatsApp das organizações selecionadas"
+      count={rows.length}
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum remetente ativo nas organizações selecionadas.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Organização</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>Ativos</TableHead>
+              <TableHead>Check-ins</TableHead>
+              <TableHead>Adesão</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 && (
+              <GridEmptyRow colSpan={6} message="Nenhum remetente corresponde à busca." />
+            )}
+            {filtered.map((s) => (
+              <TableRow key={s.senderId}>
+                <TableCell className="text-muted-foreground">{s.tenantName}</TableCell>
+                <TableCell className="font-medium">{s.displayName}</TableCell>
+                <TableCell className="font-mono text-xs">{maskPhone(s.phoneNumber)}</TableCell>
+                <TableCell>{s.activePatients}</TableCell>
+                <TableCell>{s.checkinsTotal}</TableCell>
+                <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 && (
-                <GridEmptyRow colSpan={6} message="Nenhum remetente corresponde à busca." />
-              )}
-              {filtered.map((s) => (
-                <TableRow key={s.senderId}>
-                  <TableCell className="text-muted-foreground">{s.tenantName}</TableCell>
-                  <TableCell className="font-medium">{s.displayName}</TableCell>
-                  <TableCell className="font-mono text-xs">{maskPhone(s.phoneNumber)}</TableCell>
-                  <TableCell>{s.activePatients}</TableCell>
-                  <TableCell>{s.checkinsTotal}</TableCell>
-                  <TableCell>{formatPercent(s.adherenceRate)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </ReportTableCard>
   );
 }
 
@@ -330,13 +319,18 @@ export function AdminMoriskyTriggerTable({
   );
 }
 
-export function AdminMoriskyPatientRankingTable({ rows }: { rows: AdminMoriskyPatientRank[] }) {
-  const { input, setInput, query } = useGridSearch();
+export function AdminMoriskyPatientRankingTable({
+  rows,
+  searchQuery = "",
+}: {
+  rows: AdminMoriskyPatientRank[];
+  searchQuery?: string;
+}) {
   const filtered = useMemo(
     () =>
       rows.filter((r) =>
         matchesGridSearch(
-          query,
+          searchQuery,
           r.tenantName,
           r.patientName,
           r.phone,
@@ -348,69 +342,52 @@ export function AdminMoriskyPatientRankingTable({ rows }: { rows: AdminMoriskyPa
           r.checkinAdherenceRate != null ? formatPercent(r.checkinAdherenceRate) : "",
         ),
       ),
-    [query, rows],
+    [rows, searchQuery],
   );
 
   return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div>
-          <CardTitle className="font-serif text-lg">Ranking de pacientes</CardTitle>
-          <CardDescription>Última avaliação Morisky por paciente no período</CardDescription>
-        </div>
-        {rows.length > 0 && (
-          <GridSearchBar
-            value={input}
-            onChange={setInput}
-            placeholder="Buscar organização, paciente ou telefone"
-            resultCount={filtered.length}
-            totalCount={rows.length}
-          />
-        )}
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Organização</TableHead>
-              <TableHead>Paciente</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Nível</TableHead>
-              <TableHead>Adesão check-in</TableHead>
-              <TableHead>Concluída em</TableHead>
+    <ReportTableCard
+      title="Ranking de pacientes"
+      description="Última avaliação Morisky por paciente no período"
+      count={rows.length}
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Organização</TableHead>
+            <TableHead>Paciente</TableHead>
+            <TableHead>Telefone</TableHead>
+            <TableHead>Score</TableHead>
+            <TableHead>Nível</TableHead>
+            <TableHead>Adesão check-in</TableHead>
+            <TableHead>Concluída em</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filtered.length === 0 && (
+            <GridEmptyRow colSpan={7} message="Nenhum registro corresponde à busca." />
+          )}
+          {filtered.map((r) => (
+            <TableRow key={`${r.tenantId}-${r.patientId}`}>
+              <TableCell className="text-muted-foreground">{r.tenantName}</TableCell>
+              <TableCell className="font-medium">{r.patientName ?? "Sem nome"}</TableCell>
+              <TableCell className="font-mono text-xs">{maskPhone(r.phone, r.phoneLast4)}</TableCell>
+              <TableCell>
+                {r.score}/{r.maxScore}
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary">{MORISKY_LEVEL_LABELS[r.level] ?? r.level}</Badge>
+              </TableCell>
+              <TableCell>
+                {r.checkinAdherenceRate != null ? formatPercent(r.checkinAdherenceRate) : "—"}
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {new Date(r.completedAt).toLocaleDateString("pt-BR")}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
-              <GridEmptyRow colSpan={7} message="Nenhum registro corresponde à busca." />
-            )}
-            {filtered.map((r) => (
-              <TableRow key={`${r.tenantId}-${r.patientId}`}>
-                <TableCell className="text-muted-foreground">{r.tenantName}</TableCell>
-                <TableCell className="font-medium">{r.patientName ?? "Sem nome"}</TableCell>
-                <TableCell className="font-mono text-xs">{maskPhone(r.phone, r.phoneLast4)}</TableCell>
-                <TableCell>
-                  {r.score}/{r.maxScore}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {MORISKY_LEVEL_LABELS[r.level] ?? r.level}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {r.checkinAdherenceRate != null
-                    ? formatPercent(r.checkinAdherenceRate)
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {new Date(r.completedAt).toLocaleDateString("pt-BR")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+          ))}
+        </TableBody>
+      </Table>
+    </ReportTableCard>
   );
 }

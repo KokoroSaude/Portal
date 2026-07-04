@@ -23,6 +23,7 @@ import type {
   TpbRiskReport,
 } from "@/types/api";
 import { formatDate, formatDateTime, formatPercent, maskPhone } from "@/lib/utils";
+import type { ReportPdfChartImages } from "@/lib/reportChartCapture";
 import type { ReportPdfDocument, ReportPdfSection } from "@/lib/reportPdf";
 import {
   MORISKY_LEVEL_LABELS,
@@ -331,18 +332,32 @@ function adminMoriskySection(morisky?: AdminMoriskyReport): ReportPdfSection | n
   };
 }
 
+function applyChartImages(
+  sections: ReportPdfSection[],
+  chartImages?: ReportPdfChartImages,
+): ReportPdfSection[] {
+  if (!chartImages) return sections;
+  return sections.map((section) => {
+    const charts = chartImages[section.title];
+    return charts?.length ? { ...section, charts } : section;
+  });
+}
+
 export interface TenantReportPdfFeatures {
   charts: boolean;
   advanced: boolean;
   cohort: boolean;
   operations: boolean;
   bySender: boolean;
+  morisky?: boolean;
+  tpb?: boolean;
 }
 
 export interface TenantReportPdfInput {
   range: { from: string; to: string };
   orgName?: string;
   features: TenantReportPdfFeatures;
+  chartImages?: ReportPdfChartImages;
   adherence?: AdherenceReport;
   trend?: AdherenceTrendPoint[];
   engagement?: EngagementReport;
@@ -479,10 +494,11 @@ export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocu
     });
   }
 
-  const moriskySec = tenantMoriskySection(input.morisky);
+  const moriskySec =
+    input.features.morisky !== false ? tenantMoriskySection(input.morisky) : null;
   if (moriskySec) sections.push(moriskySec);
 
-  const tpbSec = tenantTpbSection(input.tpb, input.tpbRisk);
+  const tpbSec = input.features.tpb !== false ? tenantTpbSection(input.tpb, input.tpbRisk) : null;
   if (tpbSec) sections.push(tpbSec);
 
   return {
@@ -490,7 +506,7 @@ export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocu
     subtitle: input.orgName,
     periodLabel: periodLabel(input.range.from, input.range.to),
     generatedAt: formatDateTime(new Date()),
-    sections,
+    sections: applyChartImages(sections, input.chartImages),
     filename: pdfFilename("relatorio-kokoro"),
   };
 }
@@ -498,6 +514,7 @@ export function buildTenantReportPdf(input: TenantReportPdfInput): ReportPdfDocu
 export interface AdminReportPdfInput {
   range: { from: string; to: string };
   tenantNames: string[];
+  chartImages?: ReportPdfChartImages;
   adherence?: AdminAdherenceReport;
   trend?: AdherenceTrendPoint[];
   engagement?: AdminEngagementReport;
@@ -674,7 +691,7 @@ export function buildAdminReportPdf(input: AdminReportPdfInput): ReportPdfDocume
     subtitle: tenantSubtitle,
     periodLabel: periodLabel(input.range.from, input.range.to),
     generatedAt: formatDateTime(new Date()),
-    sections,
+    sections: applyChartImages(sections, input.chartImages),
     filename: pdfFilename("relatorio-plataforma-kokoro"),
   };
 }

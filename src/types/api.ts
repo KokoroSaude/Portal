@@ -106,11 +106,26 @@ export interface PagedResult<T> {
 }
 
 export interface TimelineEvent {
-  eventKind: string;
+  eventKind: TimelineEventKind;
   occurredAt: string;
   summary: string;
   status: string | null;
   meta: Record<string, unknown> | null;
+}
+
+export type TimelineEventKind =
+  | "message_inbound"
+  | "message_outbound"
+  | "reminder_sent"
+  | "followup_sent"
+  | "checkin"
+  | "reengagement";
+
+export interface TimelinePagedResult {
+  items: TimelineEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface AdherenceReport {

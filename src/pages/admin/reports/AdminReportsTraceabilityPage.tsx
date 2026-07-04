@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 
 const TRACEABILITY_TABS = ["audit", "events"] as const;
@@ -17,7 +17,8 @@ function isTraceabilityTab(value: string | null): value is TraceabilityTab {
 
 export function AdminReportsTraceabilityPage() {
   const { token } = useAuth();
-  const { range } = useReportRange();
+  const { range, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -35,8 +36,8 @@ export function AdminReportsTraceabilityPage() {
     queryKey: ["admin-audit-log", range, tenantFilter],
     queryFn: () =>
       api.adminGetAuditLog(token!, {
-        from: range.from,
-        to: range.to,
+        from: from,
+        to: to,
         tenantIds: tenantFilter,
         limit: 50,
       }),
@@ -47,8 +48,8 @@ export function AdminReportsTraceabilityPage() {
     queryKey: ["admin-interaction-events", range, tenantFilter],
     queryFn: () =>
       api.adminGetInteractionEvents(token!, {
-        from: range.from,
-        to: range.to,
+        from: from,
+        to: to,
         tenantIds: tenantFilter,
         limit: 50,
       }),
@@ -77,6 +78,7 @@ export function AdminReportsTraceabilityPage() {
             <TraceabilityTable
               title="Audit log"
               description={`${auditLog.data?.total ?? 0} registros no período`}
+              searchQuery={searchQuery}
               rows={(auditLog.data?.items ?? []).map((e) => ({
                 id: e.id,
                 when: e.createdAt,
@@ -95,6 +97,7 @@ export function AdminReportsTraceabilityPage() {
             <TraceabilityTable
               title="Interaction events"
               description={`${interactionEvents.data?.total ?? 0} eventos no período`}
+              searchQuery={searchQuery}
               rows={(interactionEvents.data?.items ?? []).map((e) => ({
                 id: e.id,
                 when: e.occurredAt,

@@ -9,12 +9,13 @@ import {
   ResponseByDayChart,
 } from "@/components/reports/ReportCharts";
 import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
+import { ReportSectionHeader } from "@/components/reports/ReportSectionNav";
 import { BehavioralBarriersReportCard } from "@/components/reports/BehavioralBarriersReportCard";
 import { MetricCard } from "@/components/reports/ReportsShared";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
@@ -22,23 +23,24 @@ import { formatPercent } from "@/lib/utils";
 export function ReportsAdherencePage() {
   const { token, hasFeature } = useAuth();
   const { range } = useReportRange();
+  const { from, to } = useReportApiRange();
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const adherence = useQuery({
-    queryKey: ["adherence-report", range],
-    queryFn: () => api.getAdherenceReport(token!, range.from, range.to),
+    queryKey: ["adherence-report", from, to],
+    queryFn: () => api.getAdherenceReport(token!, from, to),
     enabled: !!token,
   });
 
   const trend = useQuery({
-    queryKey: ["adherence-trend", range],
-    queryFn: () => api.getAdherenceTrend(token!, range.from, range.to),
+    queryKey: ["adherence-trend", from, to],
+    queryFn: () => api.getAdherenceTrend(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCharts),
   });
 
   const engagement = useQuery({
-    queryKey: ["engagement-report", range],
-    queryFn: () => api.getEngagementReport(token!, range.from, range.to),
+    queryKey: ["engagement-report", from, to],
+    queryFn: () => api.getEngagementReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsAdvanced),
   });
 
@@ -49,44 +51,44 @@ export function ReportsAdherencePage() {
   });
 
   const rankingBest = useQuery({
-    queryKey: ["patient-ranking-best", range],
-    queryFn: () => api.getPatientRanking(token!, range.from, range.to, 8, false),
+    queryKey: ["patient-ranking-best", from, to],
+    queryFn: () => api.getPatientRanking(token!, from, to, 8, false),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
   const rankingWorst = useQuery({
-    queryKey: ["patient-ranking-worst", range],
-    queryFn: () => api.getPatientRanking(token!, range.from, range.to, 8, true),
+    queryKey: ["patient-ranking-worst", from, to],
+    queryFn: () => api.getPatientRanking(token!, from, to, 8, true),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
   const operations = useQuery({
-    queryKey: ["operations-report", range],
-    queryFn: () => api.getOperationsReport(token!, range.from, range.to),
+    queryKey: ["operations-report", from, to],
+    queryFn: () => api.getOperationsReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsOperations),
   });
 
   const senders = useQuery({
-    queryKey: ["sender-performance", range],
-    queryFn: () => api.getSenderPerformance(token!, range.from, range.to),
+    queryKey: ["sender-performance", from, to],
+    queryFn: () => api.getSenderPerformance(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsBySender),
   });
 
   const comparison = useQuery({
-    queryKey: ["period-comparison", range],
-    queryFn: () => api.getPeriodComparison(token!, range.from, range.to),
+    queryKey: ["period-comparison", from, to],
+    queryFn: () => api.getPeriodComparison(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.reportsCohort),
   });
 
   const morisky = useQuery({
-    queryKey: ["morisky-report", range],
-    queryFn: () => api.getMoriskyReport(token!, range.from, range.to),
+    queryKey: ["morisky-report", from, to],
+    queryFn: () => api.getMoriskyReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.scalesMorisky),
   });
 
   const tpb = useQuery({
-    queryKey: ["tpb-report", range],
-    queryFn: () => api.getTpbReport(token!, range.from, range.to),
+    queryKey: ["tpb-report", from, to],
+    queryFn: () => api.getTpbReport(token!, from, to),
     enabled: !!token && hasFeature(FEATURE_KEYS.scalesTpb),
   });
 
@@ -104,10 +106,33 @@ export function ReportsAdherencePage() {
 
     setExportingPdf(true);
     try {
-      const [{ buildTenantReportPdf }, { downloadReportPdf }] = await Promise.all([
-        import("@/lib/buildReportPdfDocument"),
-        import("@/lib/reportPdf"),
-      ]);
+      const [{ buildTenantReportPdf }, { downloadReportPdf }, { captureTenantReportCharts }] =
+        await Promise.all([
+          import("@/lib/buildReportPdfDocument"),
+          import("@/lib/reportPdf"),
+          import("@/lib/reportChartCapture"),
+        ]);
+
+      let chartImages;
+      try {
+        chartImages = await captureTenantReportCharts({
+          features: {
+            charts: hasFeature(FEATURE_KEYS.reportsCharts),
+            advanced: hasFeature(FEATURE_KEYS.reportsAdvanced),
+            cohort: hasFeature(FEATURE_KEYS.reportsCohort),
+            morisky: hasFeature(FEATURE_KEYS.scalesMorisky),
+            tpb: hasFeature(FEATURE_KEYS.scalesTpb),
+          },
+          trend: trend.data,
+          adherence: adherence.data,
+          engagement: engagement.data,
+          funnel: funnel.data,
+        });
+      } catch {
+        toast.message("PDF gerado sem alguns gráficos.");
+        chartImages = undefined;
+      }
+
       const doc = buildTenantReportPdf({
         range,
         features: {
@@ -116,7 +141,10 @@ export function ReportsAdherencePage() {
           cohort: hasFeature(FEATURE_KEYS.reportsCohort),
           operations: hasFeature(FEATURE_KEYS.reportsOperations),
           bySender: hasFeature(FEATURE_KEYS.reportsBySender),
+          morisky: hasFeature(FEATURE_KEYS.scalesMorisky),
+          tpb: hasFeature(FEATURE_KEYS.scalesTpb),
         },
+        chartImages,
         adherence: adherence.data,
         trend: trend.data,
         engagement: engagement.data,
@@ -140,31 +168,36 @@ export function ReportsAdherencePage() {
   };
 
   return (
-    <div className="space-y-6">
-      {hasFeature(FEATURE_KEYS.reportsPdf) && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            onClick={handleExportPdf}
-            disabled={exportingPdf || adherence.isLoading || !adherence.data}
-          >
-            <FileDown className="size-4" />
-            {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
-          </Button>
-        </div>
-      )}
+    <div className="space-y-4">
+      <ReportSectionHeader
+        title="Adesão"
+        description="Taxa de check-ins, tendências e barreiras no período selecionado."
+        actions={
+          hasFeature(FEATURE_KEYS.reportsPdf) ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={exportingPdf || adherence.isLoading || !adherence.data}
+            >
+              <FileDown className="size-4" />
+              {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {adherence.isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : adherence.data ? (
         <>
-          {token && <ReportAiInsightCard token={token} from={range.from} to={range.to} />}
+          {token && <ReportAiInsightCard token={token} from={from} to={to} />}
 
           {token && hasFeature(FEATURE_KEYS.behavioralProfile) && (
             <BehavioralBarriersReportCard token={token} />
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard title="Taxa de adesão" value={formatPercent(adherence.data.adherenceRate)} />
             <MetricCard title="Check-ins" value={adherence.data.totalCheckins} />
             <MetricCard title="Tomados" value={adherence.data.takenCount} />
@@ -172,7 +205,7 @@ export function ReportsAdherencePage() {
           </div>
 
           {hasFeature(FEATURE_KEYS.reportsCharts) ? (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               {trend.isLoading ? (
                 <Skeleton className="h-72" />
               ) : (

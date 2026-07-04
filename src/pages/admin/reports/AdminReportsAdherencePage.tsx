@@ -10,35 +10,37 @@ import {
   SimpleBarChart,
 } from "@/components/reports/ReportCharts";
 import { MetricCard, TenantMetricsTable } from "@/components/reports/AdminReportsShared";
+import { ReportSectionHeader } from "@/components/reports/ReportSectionNav";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { formatPercent } from "@/lib/utils";
 
 export function AdminReportsAdherencePage() {
   const { token } = useAuth();
   const { range } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch, selectedTenantNames } = useAdminReportTenants();
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const adherence = useQuery({
     queryKey: ["admin-adherence", range, tenantFilter],
-    queryFn: () => api.adminGetAdherenceReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetAdherenceReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const trend = useQuery({
     queryKey: ["admin-adherence-trend", range, tenantFilter],
-    queryFn: () => api.adminGetAdherenceTrend(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetAdherenceTrend(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const engagement = useQuery({
     queryKey: ["admin-engagement", range, tenantFilter],
-    queryFn: () => api.adminGetEngagementReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetEngagementReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -50,37 +52,37 @@ export function AdminReportsAdherencePage() {
 
   const rankingBest = useQuery({
     queryKey: ["admin-ranking-best", range, tenantFilter],
-    queryFn: () => api.adminGetPatientRanking(token!, range.from, range.to, 10, false, tenantFilter),
+    queryFn: () => api.adminGetPatientRanking(token!, from, to, 10, false, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const rankingWorst = useQuery({
     queryKey: ["admin-ranking-worst", range, tenantFilter],
-    queryFn: () => api.adminGetPatientRanking(token!, range.from, range.to, 10, true, tenantFilter),
+    queryFn: () => api.adminGetPatientRanking(token!, from, to, 10, true, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const operations = useQuery({
     queryKey: ["admin-operations", range, tenantFilter],
-    queryFn: () => api.adminGetOperationsReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetOperationsReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const senders = useQuery({
     queryKey: ["admin-senders", range, tenantFilter],
-    queryFn: () => api.adminGetSenderPerformance(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetSenderPerformance(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const comparison = useQuery({
     queryKey: ["admin-comparison", range, tenantFilter],
-    queryFn: () => api.adminGetPeriodComparison(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetPeriodComparison(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
   const morisky = useQuery({
     queryKey: ["admin-morisky", range, tenantFilter],
-    queryFn: () => api.adminGetMoriskyReport(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetMoriskyReport(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -92,13 +94,30 @@ export function AdminReportsAdherencePage() {
 
     setExportingPdf(true);
     try {
-      const [{ buildAdminReportPdf }, { downloadReportPdf }] = await Promise.all([
-        import("@/lib/buildReportPdfDocument"),
-        import("@/lib/reportPdf"),
-      ]);
+      const [{ buildAdminReportPdf }, { downloadReportPdf }, { captureAdminReportCharts }] =
+        await Promise.all([
+          import("@/lib/buildReportPdfDocument"),
+          import("@/lib/reportPdf"),
+          import("@/lib/reportChartCapture"),
+        ]);
+
+      let chartImages;
+      try {
+        chartImages = await captureAdminReportCharts({
+          trend: trend.data,
+          adherence: adherence.data,
+          engagement: engagement.data,
+          funnel: funnel.data,
+          morisky: morisky.data,
+        });
+      } catch {
+        toast.message("PDF gerado sem alguns gráficos.");
+      }
+
       const doc = buildAdminReportPdf({
         range,
         tenantNames: selectedTenantNames,
+        chartImages,
         adherence: adherence.data,
         trend: trend.data,
         engagement: engagement.data,
@@ -120,21 +139,22 @@ export function AdminReportsAdherencePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-xl">Adesão</h2>
-          <p className="text-sm text-muted-foreground">Métricas consolidadas de adesão no período.</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={handleExportPdf}
-          disabled={exportingPdf || adherence.isLoading || !adherence.data}
-        >
-          <FileDown className="size-4" />
-          {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <ReportSectionHeader
+        title="Adesão"
+        description="Métricas consolidadas de adesão no período."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={exportingPdf || adherence.isLoading || !adherence.data}
+          >
+            <FileDown className="size-4" />
+            {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
+          </Button>
+        }
+      />
 
       {adherence.isError ? (
         <QueryErrorState

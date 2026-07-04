@@ -2,17 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { AdminSendersTable } from "@/components/reports/AdminReportsShared";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
-import { useReportRange } from "@/contexts/ReportRangeContext";
+import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 
 export function AdminReportsSendersPage() {
   const { token } = useAuth();
-  const { range } = useReportRange();
+  const { range, searchQuery } = useReportRange();
+  const { from, to } = useReportApiRange();
   const { tenantFilter, canFetch } = useAdminReportTenants();
 
   const senders = useQuery({
     queryKey: ["admin-senders", range, tenantFilter],
-    queryFn: () => api.adminGetSenderPerformance(token!, range.from, range.to, tenantFilter),
+    queryFn: () => api.adminGetSenderPerformance(token!, from, to, tenantFilter),
     enabled: !!token && canFetch,
   });
 
@@ -25,7 +26,7 @@ export function AdminReportsSendersPage() {
         </p>
       </div>
 
-      <AdminSendersTable rows={senders.data ?? []} loading={senders.isLoading} />
+      <AdminSendersTable rows={senders.data ?? []} loading={senders.isLoading} searchQuery={searchQuery} />
     </div>
   );
 }

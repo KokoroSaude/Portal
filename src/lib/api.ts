@@ -102,7 +102,8 @@ import type {
   UpsertTemplateResponse,
   KnowledgeDocument,
   TenantUser,
-  TimelineEvent,
+  TimelineEventKind,
+  TimelinePagedResult,
   UserInfo,
   UserProfile,
   PlatformUserInfo,
@@ -488,8 +489,21 @@ export const api = {
   getPatient: (token: string, id: string) =>
     request<Patient>(`/api/patients/${id}`, { token }),
 
-  getPatientTimeline: (token: string, id: string, page = 1, pageSize = 20) =>
-    request<TimelineEvent[]>(`/api/patients/${id}/timeline${qs({ page, pageSize })}`, { token }),
+  getPatientTimeline: (
+    token: string,
+    id: string,
+    page = 1,
+    pageSize = 20,
+    kinds?: TimelineEventKind[],
+  ) =>
+    request<TimelinePagedResult>(
+      `/api/patients/${id}/timeline${qs({
+        page,
+        pageSize,
+        kinds: kinds && kinds.length > 0 ? kinds.join(",") : undefined,
+      })}`,
+      { token },
+    ),
 
   getPatientScheduling: (token: string, id: string) =>
     request<PatientScheduling>(`/api/patients/${id}/scheduling`, { token }),
