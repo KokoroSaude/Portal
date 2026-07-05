@@ -34,6 +34,8 @@ const EVENT_LABELS: Record<TimelineEventKind, string> = {
   message_inbound: "Mensagem recebida",
   message_outbound: "Mensagem enviada",
   reminder_sent: "Lembrete enviado",
+  reminder_scheduled: "Lembrete agendado",
+  reminder_failed: "Lembrete falhou",
   followup_sent: "Follow-up enviado",
   checkin: "Check-in",
   reengagement: "Reengajamento",

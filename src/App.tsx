@@ -82,7 +82,22 @@ const SettingsPickupPage = lazyPage(
   () => import("@/pages/SettingsPickupPage"),
   "SettingsPickupPage",
 );
-const SettingsAiPage = lazyPage(() => import("@/pages/SettingsAiPage"), "SettingsAiPage");
+const SettingsAiLayout = lazyPage(
+  () => import("@/pages/settings/SettingsAiLayout"),
+  "SettingsAiLayout",
+);
+const SettingsAiGeneralPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiGeneralPage"),
+  "SettingsAiGeneralPage",
+);
+const SettingsAiOutboundPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiOutboundPage"),
+  "SettingsAiOutboundPage",
+);
+const SettingsAiConversationPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiConversationPage"),
+  "SettingsAiConversationPage",
+);
 const ConversationalSimulatorPage = lazyPage(
   () => import("@/pages/settings/ConversationalSimulatorPage"),
   "ConversationalSimulatorPage",
@@ -260,7 +275,12 @@ export default function App() {
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
-                    <Route path="configuracoes/ia" element={<SettingsAiPage />} />
+                    <Route path="configuracoes/ia" element={<SettingsAiLayout />}>
+                      <Route index element={<Navigate to="geral" replace />} />
+                      <Route path="geral" element={<SettingsAiGeneralPage />} />
+                      <Route path="mensagens" element={<SettingsAiOutboundPage />} />
+                      <Route path="conversacao" element={<SettingsAiConversationPage />} />
+                    </Route>
                     <Route path="configuracoes/simulador" element={<ConversationalSimulatorPage />} />
                     <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />

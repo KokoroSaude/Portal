@@ -43,6 +43,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { DOCS_URL } from "@/lib/auth-redirect";
+import { loadAuth, setAuthCookie } from "@/lib/api";
 import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
 import { isNavToActive } from "@/lib/nav";
@@ -51,6 +53,7 @@ import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
 
 export type NavItem = {
   to?: string;
+  href?: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
@@ -208,7 +211,6 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         adminOnly: true,
         children: [
           { to: "/configuracoes?tab=operacao", label: "Operação", icon: Settings },
-          { to: "/configuracoes/ia", label: "IA", icon: Sparkles },
           { to: "/configuracoes?tab=engajamento", label: "Engajamento", icon: Megaphone },
           { to: "/configuracoes?tab=onboarding", label: "Onboarding", icon: GitBranch },
           { to: "/configuracoes?tab=pesquisas", label: "Pesquisas", icon: Star },
@@ -218,6 +220,17 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
             icon: Users,
             feature: FEATURE_KEYS.usersManage,
           },
+        ],
+      },
+      {
+        label: "IA",
+        icon: Sparkles,
+        adminOnly: true,
+        children: [
+          { to: "/configuracoes/ia/geral", label: "Geral", icon: Sparkles },
+          { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos", icon: Send },
+          { to: "/configuracoes/ia/conversacao", label: "Conversação", icon: MessageCircle },
+          { to: "/configuracoes/simulador", label: "Simulador", icon: GitBranch },
         ],
       },
       {
@@ -244,7 +257,10 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
   },
   {
     title: "Ajuda",
-    items: [{ to: "/guia", label: "Guia passo a passo", icon: HelpCircle }],
+    items: [
+      { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
+      { href: DOCS_URL, label: "Documentação", icon: BookOpen },
+    ],
   },
 ];
 
@@ -293,7 +309,10 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
   },
   {
     title: "Ajuda",
-    items: [{ to: "/guia", label: "Guia passo a passo", icon: HelpCircle }],
+    items: [
+      { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
+      { href: DOCS_URL, label: "Documentação", icon: BookOpen },
+    ],
   },
 ];
 
@@ -370,6 +389,56 @@ function NavLinkItem({
   );
 }
 
+function NavExternalLinkItem({
+  href,
+  label,
+  icon: Icon,
+  onNavigate,
+  collapsed,
+  sectionTitle,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onNavigate?: () => void;
+  collapsed?: boolean;
+  sectionTitle?: string;
+}) {
+  function handleClick() {
+    const auth = loadAuth();
+    if (auth?.token) {
+      const secondsLeft = Math.floor((auth.expiresAt - Date.now()) / 1000);
+      if (secondsLeft > 0) setAuthCookie(auth.token, secondsLeft);
+    }
+    onNavigate?.();
+  }
+
+  return (
+    <SidebarCollapsedFlyout
+      collapsed={collapsed}
+      label={label}
+      description={collapsed ? sectionTitle : undefined}
+    >
+      <a
+        href={href}
+        onClick={handleClick}
+        className={cn(
+          "flex items-start rounded-lg py-2 text-sm font-medium transition-colors",
+          collapsed ? "justify-center px-2" : "gap-3 px-3",
+          "text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
+        )}
+      >
+        <Icon className={cn("mt-0.5 shrink-0", collapsed ? "size-4" : "size-4 opacity-90")} />
+        {!collapsed && (
+          <span className="min-w-0 flex-1 line-clamp-2 leading-snug" title={label}>
+            {label}
+          </span>
+        )}
+      </a>
+    </SidebarCollapsedFlyout>
+  );
+}
+
 function NavGroup({
   item,
   hasFeature,
@@ -396,7 +465,10 @@ function NavGroup({
     if (!child.to) return false;
     const path = child.to.split("?")[0] ?? child.to;
     if (path === "/configuracoes") return pathname === "/configuracoes";
-    return pathname === child.to || pathname.startsWith(`${child.to}/`);
+    if (path.startsWith("/configuracoes/ia")) {
+      return pathname === path || pathname.startsWith(`${path}/`) || pathname.startsWith("/configuracoes/ia/");
+    }
+    return pathname === child.to || pathname.startsWith(`${path}/`);
   });
   const [open, setOpen] = useState(isGroupActive);
   const wasActiveRef = useRef(false);
@@ -520,6 +592,16 @@ function NavSection({
             onNavigate={onNavigate}
             collapsed={collapsed}
             pathname={pathname}
+          />
+        ) : item.href ? (
+          <NavExternalLinkItem
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+            sectionTitle={title}
           />
         ) : item.to ? (
           <NavLinkItem

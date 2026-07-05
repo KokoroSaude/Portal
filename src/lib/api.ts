@@ -1928,6 +1928,39 @@ export const api = {
 export const IMPERSONATION_STORAGE_KEY = "kokoro.impersonation";
 
 export const AUTH_STORAGE_KEY = "kokoro.auth";
+/** Cookie compartilhado entre portal e docs (*.kokorosaude.com.br). */
+export const AUTH_COOKIE_NAME = "kokoro_token";
+
+function resolveAuthCookieDomain(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const host = window.location.hostname;
+  if (host === "kokorosaude.com.br" || host.endsWith(".kokorosaude.com.br")) {
+    return ".kokorosaude.com.br";
+  }
+  return undefined;
+}
+
+export function setAuthCookie(token: string, maxAgeSeconds: number) {
+  if (typeof document === "undefined") return;
+  const parts = [
+    `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`,
+    "path=/",
+    `max-age=${Math.max(maxAgeSeconds, 0)}`,
+    "SameSite=Lax",
+  ];
+  if (window.location.protocol === "https:") parts.push("Secure");
+  const domain = resolveAuthCookieDomain();
+  if (domain) parts.push(`domain=${domain}`);
+  document.cookie = parts.join("; ");
+}
+
+export function clearAuthCookie() {
+  if (typeof document === "undefined") return;
+  const parts = [`${AUTH_COOKIE_NAME}=`, "path=/", "max-age=0"];
+  const domain = resolveAuthCookieDomain();
+  if (domain) parts.push(`domain=${domain}`);
+  document.cookie = parts.join("; ");
+}
 
 export interface StoredAuth {
   token: string;
@@ -1959,8 +1992,10 @@ export function saveAuth(data: Omit<StoredAuth, "expiresAt">, expiresInSeconds: 
     AUTH_STORAGE_KEY,
     JSON.stringify({ ...data, expiresAt: Date.now() + expiresInSeconds * 1000 }),
   );
+  setAuthCookie(data.token, expiresInSeconds);
 }
 
 export function clearAuth() {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  clearAuthCookie();
 }

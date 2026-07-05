@@ -117,6 +117,8 @@ export type TimelineEventKind =
   | "message_inbound"
   | "message_outbound"
   | "reminder_sent"
+  | "reminder_scheduled"
+  | "reminder_failed"
   | "followup_sent"
   | "checkin"
   | "reengagement";

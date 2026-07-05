@@ -54,9 +54,12 @@ export function PatientSchedulingPanel({
     (r) => r.status === "Sent" && !r.wamId,
   );
 
-  const firstReminderTomorrow =
+  const hasAnySentReminder = scheduling.reminders.some((r) => r.status === "Sent");
+
+  const firstSlotIsTomorrowOnly =
     nextPending &&
-    new Date(nextPending.scheduledFor).toDateString() > new Date().toDateString();
+    new Date(nextPending.scheduledFor).toDateString() > new Date().toDateString() &&
+    !hasAnySentReminder;
 
   return (
     <div id="agendamento" className="space-y-3 rounded-xl border p-4 text-sm scroll-mt-24">
@@ -89,10 +92,10 @@ export function PatientSchedulingPanel({
         <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
           <p className="font-medium text-foreground">Próximo lembrete</p>
           <p>{formatDateTime(nextPending.scheduledFor)}</p>
-          {firstReminderTomorrow && !unconfirmedSent && (
+          {firstSlotIsTomorrowOnly && !unconfirmedSent && (
             <p className="mt-1 text-muted-foreground">
-              O texto de conclusão do cadastro referiu o próximo envio para amanhã — o agendamento abaixo
-              confirma a data real.
+              O primeiro lembrete está agendado para amanhã — o texto de conclusão do cadastro deve refletir
+              essa data.
             </p>
           )}
           {unconfirmedSent && (

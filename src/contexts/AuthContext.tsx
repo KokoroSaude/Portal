@@ -16,6 +16,7 @@ import {
   isTwoFactorChallenge,
   loadAuth,
   saveAuth,
+  setAuthCookie,
   type StoredAuth,
 } from "@/lib/api";
 import type { LoginResponse, TenantFeature } from "@/types/api";
@@ -71,6 +72,13 @@ function applyLoginResponse(res: LoginResponse, extra?: Partial<StoredAuth>): St
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<StoredAuth | null>(() => loadAuth());
+
+  useEffect(() => {
+    const current = loadAuth();
+    if (!current?.token) return;
+    const secondsLeft = Math.floor((current.expiresAt - Date.now()) / 1000);
+    if (secondsLeft > 0) setAuthCookie(current.token, secondsLeft);
+  }, []);
 
   const refreshSession = useCallback(async () => {
     const current = loadAuth();

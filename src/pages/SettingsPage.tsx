@@ -77,7 +77,7 @@ export function SettingsPage() {
   });
 
   if (tabParam === "ia") {
-    return <Navigate to="/configuracoes/ia" replace />;
+    return <Navigate to="/configuracoes/ia/geral" replace />;
   }
   if (tabParam === "usuarios") {
     return <Navigate to="/configuracoes/usuarios" replace />;

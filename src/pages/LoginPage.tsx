@@ -18,12 +18,15 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { redirectAfterAuth, resolveAuthReturnTarget } from "@/lib/auth-redirect";
 
 export function LoginPage() {
   const { login, completeTwoFactorLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const returnToParam = new URLSearchParams(location.search).get("returnTo");
+  const fromState = (location.state as { from?: string } | null)?.from;
+  const from = resolveAuthReturnTarget(returnToParam, fromState);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,7 +87,7 @@ export function LoginPage() {
         return;
       }
       toast.success("Login realizado");
-      navigate(from, { replace: true });
+      redirectAfterAuth(from, navigate);
     } catch (err) {
       const msg = err instanceof ApiClientError ? err.message : "Falha no login";
       toast.error(msg);
@@ -104,7 +107,7 @@ export function LoginPage() {
         useRecovery ? { recoveryCode: recoveryCode.trim() } : { code: totpCode },
       );
       toast.success("Login realizado");
-      navigate(from, { replace: true });
+      redirectAfterAuth(from, navigate);
     } catch (err) {
       const msg = err instanceof ApiClientError ? err.message : "Código inválido";
       toast.error(msg);
