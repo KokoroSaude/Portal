@@ -1199,6 +1199,9 @@ export const api = {
   getPatientAiPrompts: (token: string) =>
     request<PatientAiPrompt[]>("/api/settings/ai/prompts", { token }),
 
+  adminGetPatientAiPrompts: (token: string) =>
+    request<PatientAiPrompt[]>("/api/admin/platform/ai/prompts", { token }),
+
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>
     request<void>("/api/settings", { method: "PUT", token, body: payload }),
 

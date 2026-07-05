@@ -1,4 +1,6 @@
-import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileText, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import {
   Select,
@@ -22,6 +24,15 @@ type Props = {
 export function SettingsAiGeneralSection({ form, settings, hasFeature, update }: Props) {
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link to="/configuracoes/ia/prompts">
+            <FileText className="size-4" />
+            Ver prompts enviados ao paciente
+          </Link>
+        </Button>
+      </div>
+
       {hasFeature(FEATURE_KEYS.aiCopilot) && (
         <div className="space-y-2 rounded-lg border border-dashed bg-muted/20 p-4">
           <div className="flex flex-wrap items-center gap-2">

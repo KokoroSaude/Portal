@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 
 const AI_SETTINGS_TABS = [
   { to: "/configuracoes/ia/geral", label: "Geral" },
+  { to: "/configuracoes/ia/prompts", label: "Prompts IA" },
   { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos" },
   { to: "/configuracoes/ia/conversacao/modos", label: "Conversação" },
-  { to: "/configuracoes/ia/prompts", label: "Prompts IA" },
 ] as const;
 
 export function SettingsAiLayout() {

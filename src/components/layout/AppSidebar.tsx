@@ -230,11 +230,11 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         adminOnly: true,
         children: [
           { to: "/configuracoes/ia/geral", label: "Geral", icon: Sparkles },
+          { to: "/configuracoes/ia/prompts", label: "Prompts IA", icon: FileText },
           { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos", icon: Send },
           { to: "/configuracoes/ia/conversacao/modos", label: "Modos inbound", icon: MessageCircle },
           { to: "/configuracoes/ia/conversacao/handoff", label: "Handoff e timing", icon: Clock },
           { to: "/configuracoes/ia/conversacao/automacao", label: "Automação", icon: Activity },
-          { to: "/configuracoes/ia/prompts", label: "Prompts IA", icon: FileText },
           { to: "/configuracoes/simulador", label: "Simulador", icon: GitBranch },
         ],
       },
@@ -309,6 +309,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     title: "Ferramentas",
     items: [
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
+      { to: "/admin/prompts-ia", label: "Prompts IA (paciente)", icon: FileText },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
     ],
   },
