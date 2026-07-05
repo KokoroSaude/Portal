@@ -45,7 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FEATURE_KEYS } from "@/lib/constants";
-import { DOCS_URL } from "@/lib/auth-redirect";
+import { DOCS_URL, DOCS_PLATFORM_URL } from "@/lib/auth-redirect";
 import { loadAuth, setAuthCookie } from "@/lib/api";
 import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
@@ -317,6 +317,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     items: [
       { to: "/guia", label: "Guia passo a passo", icon: HelpCircle },
       { href: DOCS_URL, label: "Documentação", icon: BookOpen },
+      { href: DOCS_PLATFORM_URL, label: "Docs plataforma", icon: Shield },
     ],
   },
 ];
