@@ -109,7 +109,6 @@ import type {
   PlatformUserInfo,
   BehavioralBarriersReport,
   WhatsappDiagnostics,
-  WhatsappSender,
   WhatsAppSenderPurpose,
   MetaEmbeddedSignupConfig,
   MetaEmbeddedSignupFlowResult,
@@ -142,6 +141,7 @@ import type {
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
+import { normalizeWhatsappSender, WHATSAPP_SENDER_PURPOSE_TO_API } from "@/lib/normalize-whatsapp-sender";
 import { normalizeAdminTenant } from "@/lib/normalize-admin-tenant";
 import { normalizeAdminDeletedTenant } from "@/lib/normalize-admin-deleted-tenant";
 
@@ -998,7 +998,13 @@ export const api = {
   deleteUser: (token: string, userId: string) =>
     request<void>(`/api/users/${userId}`, { method: "DELETE", token }),
 
-  listSenders: (token: string) => request<WhatsappSender[]>("/api/senders", { token }),
+  listSenders: async (token: string) => {
+    const rows = await request<Parameters<typeof normalizeWhatsappSender>[0][]>(
+      "/api/senders",
+      { token },
+    );
+    return (rows ?? []).map(normalizeWhatsappSender);
+  },
 
   createSender: (
     token: string,
@@ -1016,7 +1022,13 @@ export const api = {
       isActive?: boolean;
       purpose?: WhatsAppSenderPurpose;
     },
-  ) => request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body: payload }),
+  ) => {
+    const body =
+      payload.purpose !== undefined
+        ? { ...payload, purpose: WHATSAPP_SENDER_PURPOSE_TO_API[payload.purpose] }
+        : payload;
+    return request<void>(`/api/senders/${senderId}`, { method: "PUT", token, body });
+  },
 
   deleteSender: (token: string, senderId: string) =>
     request<void>(`/api/senders/${senderId}`, { method: "DELETE", token }),

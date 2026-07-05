@@ -97,7 +97,7 @@ export const WHATSAPP_ACTIVATION_STATUS_LABELS: Record<number, string> = {
 };
 
 export const WHATSAPP_SENDER_PURPOSE_LABELS: Record<number, string> = {
-  0: "Adesão medicamentosa",
+  0: "Geral",
   1: "Adesão medicamentosa",
   2: "Promoções e campanhas",
   3: "Adesão e promoções",

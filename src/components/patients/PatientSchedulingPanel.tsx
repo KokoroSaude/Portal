@@ -50,6 +50,10 @@ export function PatientSchedulingPanel({
     .filter((r) => r.status === "Pending")
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))[0];
 
+  const unconfirmedSent = scheduling.reminders.some(
+    (r) => r.status === "Sent" && !r.wamId,
+  );
+
   const firstReminderTomorrow =
     nextPending &&
     new Date(nextPending.scheduledFor).toDateString() > new Date().toDateString();
@@ -85,10 +89,16 @@ export function PatientSchedulingPanel({
         <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
           <p className="font-medium text-foreground">Próximo lembrete</p>
           <p>{formatDateTime(nextPending.scheduledFor)}</p>
-          {firstReminderTomorrow && (
+          {firstReminderTomorrow && !unconfirmedSent && (
             <p className="mt-1 text-muted-foreground">
-              O template de conclusão diz &quot;a partir de amanhã&quot; — o primeiro envio está agendado para
-              amanhã.
+              O texto de conclusão do cadastro referiu o próximo envio para amanhã — o agendamento abaixo
+              confirma a data real.
+            </p>
+          )}
+          {unconfirmedSent && (
+            <p className="mt-1 text-amber-800 dark:text-amber-300">
+              Há lembrete marcado como enviado sem confirmação da Meta (sem ID WhatsApp). O paciente pode não
+              ter recebido — verifique o número, a janela de 24h e o remetente de adesão em Configuração.
             </p>
           )}
         </div>

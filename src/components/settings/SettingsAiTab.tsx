@@ -50,6 +50,14 @@ function InboundModeSelect({
 }
 
 export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
+  const inboundUsesAi =
+    (form.activeInboundMode ?? "AiGuidance") !== "TemplateOnly" ||
+    (form.onboardingInboundMode ?? "AiGuidance") !== "TemplateOnly" ||
+    (form.checkinInboundMode ?? "AiGuidance") !== "TemplateOnly" ||
+    (form.moriskyInboundMode ?? "AiPersonalize") !== "TemplateOnly" ||
+    (form.tpbInboundMode ?? "AiPersonalize") !== "TemplateOnly" ||
+    (form.retentionInboundMode ?? "AiGuidance") !== "TemplateOnly";
+
   return (
     <div className="space-y-4">
       {hasFeature(FEATURE_KEYS.aiCopilot) && (
@@ -176,6 +184,19 @@ export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
 
       <div className="space-y-3 rounded-lg border p-3">
         <p className="text-sm font-medium">Conversação WhatsApp</p>
+
+        {!form.aiEnabled && inboundUsesAi && (
+          <p className="text-sm text-amber-900">
+            Os modos <strong>IA com orientação</strong> e <strong>IA personalizada</strong> só funcionam com o
+            toggle <strong>Ativar IA</strong> ligado acima. Sem isso, as respostas usam templates e regras fixas.
+          </p>
+        )}
+
+        <p className="text-sm text-muted-foreground">
+          Cliques no menu do WhatsApp (botões e listas) continuam com respostas estruturadas (Template). A IA entra
+          em texto livre, respostas ambíguas e desvios nos fluxos configurados — não substitui check-in confirmado
+          (Sim/Não) nem ações diretas do menu.
+        </p>
 
         <SettingsField
           htmlFor="pharmacyContactPhone"

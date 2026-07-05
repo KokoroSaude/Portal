@@ -403,15 +403,22 @@ export function PatientDetailPage() {
             </Button>
           )}
           {canWrite && hasFeature(FEATURE_KEYS.satisfactionCsat) && patient.status !== "Onboarding" && patient.status !== "OptedOut" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => triggerCsatMutation.mutate()}
-              disabled={triggerCsatMutation.isPending}
-            >
-              <Star className="size-4" />
-              {triggerCsatMutation.isPending ? "Enviando…" : "Pesquisa de satisfação"}
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => triggerCsatMutation.mutate()}
+                disabled={triggerCsatMutation.isPending}
+              >
+                <Star className="size-4" />
+                {triggerCsatMutation.isPending ? "Enviando…" : "Pesquisa de satisfação"}
+              </Button>
+              {scheduling?.conversationStep === "WaitingCheckin" && (
+                <p className="max-w-xs text-right text-xs text-muted-foreground">
+                  Interrompe o check-in pendente e envia a pesquisa agora.
+                </p>
+              )}
+            </div>
           )}
           {canWrite && canPause && (
             <Dialog open={pauseOpen} onOpenChange={setPauseOpen}>
