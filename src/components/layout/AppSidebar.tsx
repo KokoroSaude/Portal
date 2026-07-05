@@ -779,7 +779,7 @@ export function AppSidebar({
           )}
         >
             {collapsed ? (
-              <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2">
                 <SidebarCollapsedFlyout
                   collapsed
                   label={displayName}
@@ -800,20 +800,22 @@ export function AppSidebar({
                     />
                   </NavLink>
                 </SidebarCollapsedFlyout>
-                <PwaInstallButton variant="sidebar" collapsed />
-                <ThemeToggle collapsed />
-                <SidebarCollapsedFlyout collapsed label="Sair">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                    aria-label="Sair"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="size-4" />
-                  </Button>
-                </SidebarCollapsedFlyout>
+                <div className="flex items-center justify-center gap-1">
+                  <PwaInstallButton variant="sidebar" collapsed />
+                  <ThemeToggle collapsed />
+                  <SidebarCollapsedFlyout collapsed label="Sair">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                      aria-label="Sair"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="size-4" />
+                    </Button>
+                  </SidebarCollapsedFlyout>
+                </div>
               </div>
             ) : (
               <>
@@ -836,17 +838,22 @@ export function AppSidebar({
                     </Badge>
                   </div>
                 </NavLink>
-                <PwaInstallButton variant="sidebar" />
-                <ThemeToggle />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="size-4" />
-                  Sair
-                </Button>
+                <div className="flex items-center justify-center gap-1">
+                  <PwaInstallButton variant="sidebar" iconOnly />
+                  <ThemeToggle iconOnly />
+                  <SidebarCollapsedFlyout forceTooltip placement="top" label="Sair">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground"
+                      aria-label="Sair"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="size-4" />
+                    </Button>
+                  </SidebarCollapsedFlyout>
+                </div>
                 <p className="mt-3 text-center text-[10px] text-primary-foreground/50">v{APP_VERSION}</p>
               </>
             )}

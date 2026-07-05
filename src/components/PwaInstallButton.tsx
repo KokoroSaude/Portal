@@ -1,5 +1,6 @@
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
 import { usePwaInstall } from "@/contexts/PwaInstallContext";
 import { cn } from "@/lib/utils";
 import { PwaInstallInstructionsDialog } from "@/components/PwaInstallInstructionsDialog";
@@ -7,30 +8,46 @@ import { PwaInstallInstructionsDialog } from "@/components/PwaInstallInstruction
 type Props = {
   variant?: "sidebar" | "login";
   collapsed?: boolean;
+  iconOnly?: boolean;
   className?: string;
 };
 
-export function PwaInstallButton({ variant = "sidebar", collapsed = false, className }: Props) {
+const sidebarIconClass =
+  "size-8 shrink-0 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground";
+
+export function PwaInstallButton({
+  variant = "sidebar",
+  collapsed = false,
+  iconOnly = false,
+  className,
+}: Props) {
   const { showInstallButton, instructionsOpen, setInstructionsOpen, promptInstall } = usePwaInstall();
 
   if (!showInstallButton) return null;
 
-  if (variant === "sidebar" && collapsed) {
+  if (variant === "sidebar" && (collapsed || iconOnly)) {
+    const button = (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={cn(sidebarIconClass, className)}
+        aria-label="Instalar aplicativo"
+        onClick={() => void promptInstall()}
+      >
+        <Download className="size-4" />
+      </Button>
+    );
+
     return (
       <>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "size-8 text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground",
-            className,
-          )}
-          aria-label="Instalar aplicativo"
-          onClick={() => void promptInstall()}
-        >
-          <Download className="size-4" />
-        </Button>
+        {iconOnly ? (
+          <SidebarCollapsedFlyout forceTooltip placement="top" label="Instalar aplicativo">
+            {button}
+          </SidebarCollapsedFlyout>
+        ) : (
+          button
+        )}
         <PwaInstallInstructionsDialog open={instructionsOpen} onOpenChange={setInstructionsOpen} />
       </>
     );

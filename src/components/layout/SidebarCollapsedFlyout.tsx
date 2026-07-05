@@ -8,6 +8,9 @@ type SidebarCollapsedFlyoutProps = {
   description?: string;
   children: React.ReactNode;
   className?: string;
+  /** Show tooltip even when the sidebar is expanded (e.g. footer icon row). */
+  forceTooltip?: boolean;
+  placement?: "right" | "top";
 };
 
 export function SidebarCollapsedFlyout({
@@ -16,6 +19,8 @@ export function SidebarCollapsedFlyout({
   description,
   children,
   className,
+  forceTooltip = false,
+  placement = "right",
 }: SidebarCollapsedFlyoutProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -25,11 +30,18 @@ export function SidebarCollapsedFlyout({
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    if (placement === "top") {
+      setPosition({
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2,
+      });
+      return;
+    }
     setPosition({
       top: rect.top + rect.height / 2,
       left: rect.right + 10,
     });
-  }, []);
+  }, [placement]);
 
   const show = () => {
     updatePosition();
@@ -49,9 +61,17 @@ export function SidebarCollapsedFlyout({
     };
   }, [visible, updatePosition]);
 
-  if (!collapsed) {
+  if (!collapsed && !forceTooltip) {
     return <>{children}</>;
   }
+
+  const tooltipPositionClass =
+    placement === "top" ? "-translate-x-1/2 -translate-y-full" : "-translate-y-1/2";
+
+  const arrowClass =
+    placement === "top"
+      ? "absolute -bottom-[5px] left-1/2 size-2.5 -translate-x-1/2 rotate-45 border-r border-b border-border/70 bg-card"
+      : "absolute -left-[5px] top-1/2 size-2.5 -translate-y-1/2 rotate-45 border-b border-l border-border/70 bg-card";
 
   return (
     <>
@@ -72,12 +92,9 @@ export function SidebarCollapsedFlyout({
             style={{ top: position.top, left: position.left }}
             role="tooltip"
           >
-            <div className="-translate-y-1/2 animate-in fade-in-0 zoom-in-95 duration-150">
+            <div className={cn("animate-in fade-in-0 zoom-in-95 duration-150", tooltipPositionClass)}>
               <div className="relative flex min-w-[10rem] max-w-[14rem] flex-col gap-0.5 rounded-xl border border-border/70 bg-card px-3.5 py-2.5 text-left shadow-soft-lg">
-                <span
-                  aria-hidden
-                  className="absolute -left-[5px] top-1/2 size-2.5 -translate-y-1/2 rotate-45 border-b border-l border-border/70 bg-card"
-                />
+                <span aria-hidden className={arrowClass} />
                 <span className="text-sm font-semibold leading-tight text-foreground">{label}</span>
                 {description && (
                   <span className="text-xs leading-snug text-muted-foreground">{description}</span>

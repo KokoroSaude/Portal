@@ -20,8 +20,12 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: [
         "favicon.svg",
+        "apple-touch-icon.png",
+        "brand/pwa-logo-source.png",
         "web-app-manifest-192x192.png",
+        "web-app-manifest-192x192-maskable.png",
         "web-app-manifest-512x512.png",
+        "web-app-manifest-512x512-maskable.png",
         "manifest.webmanifest",
       ],
       manifest: false,
