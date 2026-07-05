@@ -234,6 +234,7 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           { to: "/configuracoes/ia/conversacao/modos", label: "Modos inbound", icon: MessageCircle },
           { to: "/configuracoes/ia/conversacao/handoff", label: "Handoff e timing", icon: Clock },
           { to: "/configuracoes/ia/conversacao/automacao", label: "Automação", icon: Activity },
+          { to: "/configuracoes/ia/prompts", label: "Prompts IA", icon: FileText },
           { to: "/configuracoes/simulador", label: "Simulador", icon: GitBranch },
         ],
       },

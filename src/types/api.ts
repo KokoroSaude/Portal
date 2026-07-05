@@ -1615,6 +1615,19 @@ export interface PlatformAiTestResult {
   error: string | null;
 }
 
+export interface PatientAiPrompt {
+  id: string;
+  title: string;
+  category: string;
+  aiUseCaseKey: string;
+  aiUseCaseLabel: string;
+  sendsToPatient: boolean;
+  whenUsed: string;
+  systemPrompt: string;
+  userPayloadDescription: string;
+  notes?: string[] | null;
+}
+
 export interface AdminMetaTemplateVariable {
   name: string;
   example: string;

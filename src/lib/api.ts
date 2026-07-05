@@ -39,6 +39,7 @@ import type {
   OnboardingBulkTriggerResult,
   OnboardingManualTriggerResult,
   PatientAiBrief,
+  PatientAiPrompt,
   PatientAiSuggestions,
   PatientInsightPromptPreview,
   PatientTpbHistory,
@@ -1194,6 +1195,9 @@ export const api = {
 
   getSettings: async (token: string) =>
     normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),
+
+  getPatientAiPrompts: (token: string) =>
+    request<PatientAiPrompt[]>("/api/settings/ai/prompts", { token }),
 
   updateSettings: (token: string, payload: Partial<TenantSettings>) =>
     request<void>("/api/settings", { method: "PUT", token, body: payload }),

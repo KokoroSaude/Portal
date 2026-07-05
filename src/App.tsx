@@ -111,6 +111,10 @@ const SettingsAiConversationAutomationPage = lazyPage(
   () => import("@/pages/settings/SettingsAiConversationAutomationPage"),
   "SettingsAiConversationAutomationPage",
 );
+const SettingsAiPromptsPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiPromptsPage"),
+  "SettingsAiPromptsPage",
+);
 const ConversationalSimulatorPage = lazyPage(
   () => import("@/pages/settings/ConversationalSimulatorPage"),
   "ConversationalSimulatorPage",
@@ -299,6 +303,7 @@ export default function App() {
                         <Route path="handoff" element={<SettingsAiConversationHandoffPage />} />
                         <Route path="automacao" element={<SettingsAiConversationAutomationPage />} />
                       </Route>
+                      <Route path="prompts" element={<SettingsAiPromptsPage />} />
                     </Route>
                     <Route path="configuracoes/simulador" element={<ConversationalSimulatorPage />} />
                     <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />

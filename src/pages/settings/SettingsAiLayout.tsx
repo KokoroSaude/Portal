@@ -12,6 +12,7 @@ const AI_SETTINGS_TABS = [
   { to: "/configuracoes/ia/geral", label: "Geral" },
   { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos" },
   { to: "/configuracoes/ia/conversacao/modos", label: "Conversação" },
+  { to: "/configuracoes/ia/prompts", label: "Prompts IA" },
 ] as const;
 
 export function SettingsAiLayout() {
@@ -98,7 +99,9 @@ export function SettingsAiLayout() {
         </CardHeader>
         <CardContent className="space-y-6">
           <Outlet context={{ form, settings, update, save, savePending }} />
-          <SettingsSaveButton onSave={save} pending={savePending} />
+          {!pathname.endsWith("/prompts") ? (
+            <SettingsSaveButton onSave={save} pending={savePending} />
+          ) : null}
         </CardContent>
       </Card>
     </div>
