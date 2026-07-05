@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { cn } from "@/lib/utils";
 const AI_SETTINGS_TABS = [
   { to: "/configuracoes/ia/geral", label: "Geral" },
   { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos" },
-  { to: "/configuracoes/ia/conversacao", label: "Conversação" },
+  { to: "/configuracoes/ia/conversacao/modos", label: "Conversação" },
 ] as const;
 
 export function SettingsAiLayout() {
   const { isAdmin } = useAuth();
+  const { pathname } = useLocation();
   const { settings, form, update, save, savePending, isLoading } = useTenantSettingsForm();
 
   if (isLoading || !form || !settings) {
@@ -70,22 +71,29 @@ export function SettingsAiLayout() {
             className="flex flex-wrap gap-1 border-b border-border pb-0"
             aria-label="Seções de configuração de IA"
           >
-            {AI_SETTINGS_TABS.map((tab) => (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                className={({ isActive }) =>
-                  cn(
-                    "-mb-px rounded-t-md border border-transparent px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-border border-b-background bg-background text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )
-                }
-              >
-                {tab.label}
-              </NavLink>
-            ))}
+            {AI_SETTINGS_TABS.map((tab) => {
+              const isConversationTab = tab.to.startsWith("/configuracoes/ia/conversacao");
+              const isActive = isConversationTab
+                ? pathname.startsWith("/configuracoes/ia/conversacao")
+                : pathname === tab.to;
+
+              return (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  className={() =>
+                    cn(
+                      "-mb-px rounded-t-md border border-transparent px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-border border-b-background bg-background text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )
+                  }
+                >
+                  {tab.label}
+                </NavLink>
+              );
+            })}
           </nav>
         </CardHeader>
         <CardContent className="space-y-6">

@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronDown,
   ClipboardList,
+  Clock,
   FileText,
   GitBranch,
   GitCompare,
@@ -33,6 +34,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { KokoroLogo } from "@/components/KokoroLogo";
+import { PwaInstallButton } from "@/components/PwaInstallButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserAvatar } from "@/components/UserAvatar";
 import { SidebarCollapsedFlyout } from "@/components/layout/SidebarCollapsedFlyout";
@@ -229,7 +231,9 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         children: [
           { to: "/configuracoes/ia/geral", label: "Geral", icon: Sparkles },
           { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos", icon: Send },
-          { to: "/configuracoes/ia/conversacao", label: "Conversação", icon: MessageCircle },
+          { to: "/configuracoes/ia/conversacao/modos", label: "Modos inbound", icon: MessageCircle },
+          { to: "/configuracoes/ia/conversacao/handoff", label: "Handoff e timing", icon: Clock },
+          { to: "/configuracoes/ia/conversacao/automacao", label: "Automação", icon: Activity },
           { to: "/configuracoes/simulador", label: "Simulador", icon: GitBranch },
         ],
       },
@@ -796,6 +800,7 @@ export function AppSidebar({
                     />
                   </NavLink>
                 </SidebarCollapsedFlyout>
+                <PwaInstallButton variant="sidebar" collapsed />
                 <ThemeToggle collapsed />
                 <SidebarCollapsedFlyout collapsed label="Sair">
                   <Button
@@ -831,6 +836,7 @@ export function AppSidebar({
                     </Badge>
                   </div>
                 </NavLink>
+                <PwaInstallButton variant="sidebar" />
                 <ThemeToggle />
                 <Button
                   variant="ghost"

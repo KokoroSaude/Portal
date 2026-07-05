@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { KokoroLogo } from "@/components/KokoroLogo";
+import { PwaInstallButton } from "@/components/PwaInstallButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -143,6 +144,10 @@ export function LoginPage() {
           <p className="mt-5 text-base leading-relaxed text-primary-foreground/85">
             Acompanhe pacientes, adesão e interações do seu programa de medicamentos via WhatsApp.
           </p>
+        </div>
+
+        <div className="relative z-10 max-w-sm space-y-4">
+          <PwaInstallButton variant="login" />
         </div>
 
         <p className="relative z-10 text-sm text-primary-foreground/65">
@@ -321,6 +326,10 @@ export function LoginPage() {
             )}
           </CardContent>
         </Card>
+
+        <div className="mt-6 w-full max-w-md lg:hidden">
+          <PwaInstallButton variant="login" className="border-border/70 bg-background text-foreground hover:bg-muted" />
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PwaInstallProvider } from "@/contexts/PwaInstallContext";
 import { AuthQuerySync } from "@/components/AuthQuerySync";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { GuestRoute, ProtectedRoute } from "@/components/layout/ProtectedRoute";
@@ -94,9 +95,21 @@ const SettingsAiOutboundPage = lazyPage(
   () => import("@/pages/settings/SettingsAiOutboundPage"),
   "SettingsAiOutboundPage",
 );
-const SettingsAiConversationPage = lazyPage(
-  () => import("@/pages/settings/SettingsAiConversationPage"),
-  "SettingsAiConversationPage",
+const SettingsAiConversationLayout = lazyPage(
+  () => import("@/pages/settings/SettingsAiConversationLayout"),
+  "SettingsAiConversationLayout",
+);
+const SettingsAiConversationModesPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiConversationModesPage"),
+  "SettingsAiConversationModesPage",
+);
+const SettingsAiConversationHandoffPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiConversationHandoffPage"),
+  "SettingsAiConversationHandoffPage",
+);
+const SettingsAiConversationAutomationPage = lazyPage(
+  () => import("@/pages/settings/SettingsAiConversationAutomationPage"),
+  "SettingsAiConversationAutomationPage",
 );
 const ConversationalSimulatorPage = lazyPage(
   () => import("@/pages/settings/ConversationalSimulatorPage"),
@@ -223,6 +236,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <PwaInstallProvider>
         <AuthQuerySync />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
@@ -279,7 +293,12 @@ export default function App() {
                       <Route index element={<Navigate to="geral" replace />} />
                       <Route path="geral" element={<SettingsAiGeneralPage />} />
                       <Route path="mensagens" element={<SettingsAiOutboundPage />} />
-                      <Route path="conversacao" element={<SettingsAiConversationPage />} />
+                      <Route path="conversacao" element={<SettingsAiConversationLayout />}>
+                        <Route index element={<Navigate to="modos" replace />} />
+                        <Route path="modos" element={<SettingsAiConversationModesPage />} />
+                        <Route path="handoff" element={<SettingsAiConversationHandoffPage />} />
+                        <Route path="automacao" element={<SettingsAiConversationAutomationPage />} />
+                      </Route>
                     </Route>
                     <Route path="configuracoes/simulador" element={<ConversationalSimulatorPage />} />
                     <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />
@@ -322,6 +341,7 @@ export default function App() {
           </Suspense>
         </BrowserRouter>
         <Toaster richColors position="top-right" />
+        </PwaInstallProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
