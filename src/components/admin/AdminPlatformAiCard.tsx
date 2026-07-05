@@ -260,8 +260,8 @@ export function AdminPlatformAiCard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gemini">Gemini (Google — tier gratuito)</SelectItem>
-                  <SelectItem value="groq">Llama via Groq (tier gratuito)</SelectItem>
+                  <SelectItem value="gemini">Gemini (Google)</SelectItem>
+                  <SelectItem value="groq">Llama via Groq</SelectItem>
                   <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
                   <SelectItem value="openai">GPT (OpenAI)</SelectItem>
                 </SelectContent>
@@ -347,7 +347,7 @@ export function AdminPlatformAiCard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Roteamento por funcionalidade</CardTitle>
           <CardDescription>
-            Ex.: Groq no WhatsApp + Gemini grátis só na receita. Provedor vazio usa o padrão global.
+            Ex.: Groq no WhatsApp + Gemini só na receita. Provedor vazio usa o padrão global.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -439,7 +439,7 @@ export function AdminPlatformAiCard() {
           {!data?.isConfigured && !isLoading && (
             <p className="text-sm text-amber-900 dark:text-amber-200">
               Configure pelo menos o provedor padrão com a chave correspondente. Use o roteamento
-              acima para funcionalidades específicas (ex.: receita com Gemini grátis).
+              acima para funcionalidades específicas (ex.: receita com Gemini).
             </p>
           )}
         </CardContent>
