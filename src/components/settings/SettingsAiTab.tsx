@@ -9,6 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SettingsField, SettingsSwitchField } from "@/components/settings/SettingsField";
+import {
+  InboundConversationalModeLegend,
+  OutboundContentModeLegend,
+} from "@/components/settings/InboundConversationalModeLegend";
 import { getAiAvailability } from "@/lib/ai-status";
 import { FEATURE_KEYS } from "@/lib/constants";
 import type { TenantSettings } from "@/types/api";
@@ -141,7 +145,7 @@ export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
 
       <SettingsField
         label="Modo de conteúdo das mensagens"
-        hint="Como lembretes e respostas são gerados. Fora da janela de 24h do WhatsApp, mensagens usam template Meta aprovado."
+        hint="Lembretes, follow-ups e marcos. Fora da janela de 24h do WhatsApp, o envio usa template Meta aprovado (sem IA no corpo)."
       >
         <Select
           value={form.outboundContentMode ?? "TemplateOnly"}
@@ -159,6 +163,8 @@ export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
           </SelectContent>
         </Select>
       </SettingsField>
+
+      <OutboundContentModeLegend />
 
       {(form.outboundContentMode ?? "TemplateOnly") === "Alternate" && (
         <SettingsField
@@ -193,10 +199,12 @@ export function SettingsAiTab({ form, settings, hasFeature, update }: Props) {
         )}
 
         <p className="text-sm text-muted-foreground">
-          Cliques no menu do WhatsApp (botões e listas) continuam com respostas estruturadas (Template). A IA entra
-          em texto livre, respostas ambíguas e desvios nos fluxos configurados — não substitui check-in confirmado
-          (Sim/Não) nem ações diretas do menu.
+          Botões e listas do WhatsApp (Sim/Não, menus) continuam interativos. A timeline pode mostrar{" "}
+          <strong>Template</strong> nesses casos mesmo quando o texto foi reescrito pela IA — veja o badge de
+          origem na mensagem de texto livre e em lembretes personalizados.
         </p>
+
+        <InboundConversationalModeLegend />
 
         <SettingsField
           htmlFor="pharmacyContactPhone"
