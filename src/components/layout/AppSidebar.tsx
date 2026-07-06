@@ -51,7 +51,10 @@ import { APP_VERSION } from "@/lib/version";
 import { tourNavId } from "@/lib/tours";
 import { isNavToActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { resolveTenantSegment } from "@/lib/tenant-modules";
 import { useSidebarScrollDebug } from "@/hooks/useSidebarScrollDebug";
+
+import type { TenantModule, TenantSegment } from "@/types/api";
 
 export type NavItem = {
   to?: string;
@@ -60,6 +63,8 @@ export type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
   feature?: string;
+  module?: TenantModule;
+  segment?: TenantSegment;
   adminOnly?: boolean;
   pickupNav?: boolean;
   children?: NavItem[];
@@ -118,6 +123,26 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
       },
       { to: "/farmacia/tv", label: "Painel TV", icon: Monitor, pickupNav: true },
       { to: "/configuracoes/retirada", label: "Config. retirada", icon: Settings, pickupNav: true },
+      {
+        to: "/configuracoes/saude-publica",
+        label: "Unidades CNES",
+        icon: Building2,
+        pickupNav: true,
+        segment: "PublicHealth",
+      },
+    ],
+  },
+  {
+    title: "Saúde pública",
+    items: [
+      {
+        to: "/saude-publica/painel",
+        label: "Painel SUS",
+        icon: LayoutDashboard,
+        module: "PopulationHealth",
+        feature: FEATURE_KEYS.populationHealthReports,
+        segment: "PublicHealth",
+      },
     ],
   },
   {
@@ -170,6 +195,13 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
             icon: Pill,
             feature: FEATURE_KEYS.reportsCohort,
           },
+          {
+            to: "/relatorios/populacional",
+            label: "Populacional",
+            icon: Users,
+            module: "PopulationHealth",
+            feature: FEATURE_KEYS.populationHealthReports,
+          },
         ],
       },
       {
@@ -177,6 +209,13 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         label: "Programas terapêuticos",
         icon: ClipboardList,
         feature: FEATURE_KEYS.reportsCohort,
+      },
+      {
+        to: "/programas-suporte",
+        label: "Programas PSP",
+        icon: Pill,
+        module: "PatientSupportProgram",
+        feature: FEATURE_KEYS.pspPrograms,
       },
     ],
   },
@@ -333,13 +372,17 @@ function isNavItemVisible(
   hasFeature: (key: string) => boolean,
   isAdmin: boolean,
   pickupAccess: boolean,
+  hasModule: (module: TenantModule) => boolean,
+  tenantSegment: TenantSegment,
 ): boolean {
   if (item.pickupNav && !pickupAccess) return false;
+  if (item.segment && item.segment !== tenantSegment) return false;
+  if (item.module && !hasModule(item.module)) return false;
   if (item.adminOnly && !isAdmin) return false;
   if (item.feature && !hasFeature(item.feature)) return false;
   if (item.children?.length) {
     return item.children.some((child) =>
-      isNavItemVisible(child, hasFeature, isAdmin, pickupAccess),
+      isNavItemVisible(child, hasFeature, isAdmin, pickupAccess, hasModule, tenantSegment),
     );
   }
   return true;
@@ -454,6 +497,8 @@ function NavGroup({
   hasFeature,
   isAdmin,
   pickupAccess,
+  hasModule,
+  tenantSegment,
   onNavigate,
   collapsed,
   pathname,
@@ -462,13 +507,15 @@ function NavGroup({
   hasFeature: (key: string) => boolean;
   isAdmin: boolean;
   pickupAccess?: boolean;
+  hasModule: (module: TenantModule) => boolean;
+  tenantSegment: TenantSegment;
   onNavigate?: () => void;
   collapsed?: boolean;
   pathname: string;
 }) {
   const pickup = pickupAccess === true;
   const visibleChildren = (item.children ?? []).filter((child) =>
-    isNavItemVisible(child, hasFeature, isAdmin, pickup),
+    isNavItemVisible(child, hasFeature, isAdmin, pickup, hasModule, tenantSegment),
   );
   const Icon = item.icon;
   const isGroupActive = visibleChildren.some((child) => {
@@ -563,6 +610,8 @@ function NavSection({
   hasFeature,
   isAdmin,
   pickupAccess,
+  hasModule,
+  tenantSegment,
   onNavigate,
   collapsed,
   hideSection,
@@ -572,6 +621,8 @@ function NavSection({
   hasFeature: (key: string) => boolean;
   isAdmin: boolean;
   pickupAccess?: boolean;
+  hasModule: (module: TenantModule) => boolean;
+  tenantSegment: TenantSegment;
   onNavigate?: () => void;
   collapsed?: boolean;
   hideSection?: boolean;
@@ -580,7 +631,7 @@ function NavSection({
   if (hideSection) return null;
   const pickup = pickupAccess === true;
   const visible = items.filter((item) =>
-    isNavItemVisible(item, hasFeature, isAdmin, pickup),
+    isNavItemVisible(item, hasFeature, isAdmin, pickup, hasModule, tenantSegment),
   );
   if (visible.length === 0) return null;
 
@@ -599,6 +650,8 @@ function NavSection({
             hasFeature={hasFeature}
             isAdmin={isAdmin}
             pickupAccess={pickup}
+            hasModule={hasModule}
+            tenantSegment={tenantSegment}
             onNavigate={onNavigate}
             collapsed={collapsed}
             pathname={pathname}
@@ -650,7 +703,8 @@ export function AppSidebar({
   const { displayName, logout, auth, hasFeature, isPlatform, isTenant, isAdmin, role, avatarUrl } =
     useAuth();
 
-  const { pickupAccess } = useTenantSettings();
+  const { pickupAccess, hasModule, settings } = useTenantSettings();
+  const tenantSegment = resolveTenantSegment(settings);
 
   const email = auth?.user?.email ?? auth?.platformUser?.email;
 
@@ -757,6 +811,8 @@ export function AppSidebar({
                   hasFeature={hasFeature}
                   isAdmin={isAdmin}
                   pickupAccess={pickupAccess}
+                  hasModule={hasModule}
+                  tenantSegment={tenantSegment}
                   onNavigate={onNavigate}
                   collapsed={collapsed}
                   hideSection={section.pickupSection && !pickupAccess}
@@ -770,6 +826,8 @@ export function AppSidebar({
                   items={section.items}
                   hasFeature={() => true}
                   isAdmin
+                  hasModule={() => true}
+                  tenantSegment="RetailPharmacy"
                   onNavigate={onNavigate}
                   collapsed={collapsed}
                 />

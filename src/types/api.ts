@@ -764,6 +764,8 @@ export interface TenantSettings {
   tpbTriggerAfterMisses: number | null;
   tpbCooldownDays: number;
   tpbScaleVersion?: number;
+  tpbRequiredOnOnboarding?: boolean;
+  publicHealthUnits?: PublicHealthUnit[];
   csatPeriodicDays?: number | null;
   onboardingSurveyRandomPickEnabled?: boolean;
   scaleMinDaysBetweenTypes?: number;
@@ -1438,6 +1440,73 @@ export interface TpbPatientRank {
   completedAt: string;
 }
 
+export interface PublicHealthUnit {
+  cnesCode: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface TpbPsychometricsConstruct {
+  construct: string;
+  itemCount: number;
+  assessmentCount: number;
+  cronbachAlpha: number | null;
+}
+
+export interface TpbPsychometricsSection {
+  constructs: TpbPsychometricsConstruct[];
+  hasMultiItemScale: boolean;
+}
+
+export interface PspProgram {
+  id: string;
+  name: string;
+  medication: string | null;
+  brandDisplayName: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PopulationHealthBreakdown {
+  key: string;
+  count: number;
+  avgAdherence30d: number | null;
+}
+
+export interface PopulationHealthRiskDistribution {
+  label: string;
+  count: number;
+}
+
+export interface PopulationHealthReport {
+  totalPatients: number;
+  avgAdherence30d: number;
+  tpbRiskDistribution: PopulationHealthRiskDistribution[];
+  byMedication: PopulationHealthBreakdown[];
+  byClinicalPriorityTier: PopulationHealthBreakdown[];
+  byNeighborhood: PopulationHealthBreakdown[];
+}
+
+export interface PublicHealthPickupQueue {
+  awaitingPickup: number;
+  inQueue: number;
+  completedToday: number;
+}
+
+export interface PublicHealthOds3Metrics {
+  adherenceRateTarget: number;
+  currentAdherenceRate: number;
+  gapToTarget: number;
+}
+
+export interface PublicHealthDashboard {
+  pickupQueue: PublicHealthPickupQueue;
+  avgAdherence30d: number;
+  ods3: PublicHealthOds3Metrics;
+  activePatients: number;
+  unitsConfigured: number;
+}
+
 export interface TpbIntentionAdherenceCohort {
   patientsWithBothMetrics: number;
   avgIntentionBehaviorGap: number;
@@ -1457,6 +1526,7 @@ export interface TpbReport {
   byTrigger: TpbTriggerCount[];
   patientRanking: TpbPatientRank[];
   intentionAdherence: TpbIntentionAdherenceCohort;
+  psychometrics?: TpbPsychometricsSection | null;
 }
 
 export interface TpbRiskDistribution {

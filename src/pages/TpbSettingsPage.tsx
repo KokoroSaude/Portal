@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
 import { SettingsField } from "@/components/settings/SettingsField";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ type TpbTriggers = Pick<
   | "tpbTriggerAfterMisses"
   | "tpbCooldownDays"
   | "tpbScaleVersion"
+  | "tpbRequiredOnOnboarding"
 >;
 
 export function TpbSettingsPage() {
@@ -70,6 +72,7 @@ export function TpbSettingsPage() {
         tpbTriggerAfterMisses: s.tpbTriggerAfterMisses,
         tpbCooldownDays: s.tpbCooldownDays,
         tpbScaleVersion: s.tpbScaleVersion ?? 1,
+        tpbRequiredOnOnboarding: s.tpbRequiredOnOnboarding ?? false,
       });
     }
   }, [settingsQuery.data]);
@@ -102,6 +105,7 @@ export function TpbSettingsPage() {
         tpbTriggerAfterMisses: triggers!.tpbTriggerAfterMisses ?? 0,
         tpbCooldownDays: triggers!.tpbCooldownDays,
         tpbScaleVersion: triggers!.tpbScaleVersion ?? 1,
+        tpbRequiredOnOnboarding: triggers!.tpbRequiredOnOnboarding ?? false,
       }),
     onSuccess: () => {
       toast.success("Gatilhos TCP salvos");
@@ -240,11 +244,26 @@ export function TpbSettingsPage() {
                   <SelectContent>
                     <SelectItem value="1">v1 — 1 item por construto (4 perguntas)</SelectItem>
                     <SelectItem value="2">v2 — multi-item (10 perguntas, maior confiabilidade)</SelectItem>
+                    <SelectItem value="3">v3 — crenças normativas + autoeficácia (12 perguntas)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  A v2 inclui pausa opcional após a 5ª pergunta no WhatsApp. Avaliações anteriores permanecem intactas.
+                  A v2 inclui pausa opcional após a 5ª pergunta no WhatsApp. A v3 separa normas injuntivas/descritivas e controle/autoeficácia.
                 </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="tpb-required-onboarding">TCP obrigatório no onboarding</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Quando ativo, a jornada inicial exige conclusão da TCP antes de prosseguir.
+                  </p>
+                </div>
+                <Switch
+                  id="tpb-required-onboarding"
+                  checked={triggers.tpbRequiredOnOnboarding ?? false}
+                  onCheckedChange={(v) => patchTriggers({ tpbRequiredOnOnboarding: v })}
+                />
               </div>
 
               <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>

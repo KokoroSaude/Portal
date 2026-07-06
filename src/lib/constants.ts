@@ -27,6 +27,8 @@ export const FEATURE_KEYS = {
   whatsappVoice: "whatsapp.voice",
   whatsappPrescription: "whatsapp.prescription",
   pharmacyPickup: "pharmacy.pickup",
+  pspPrograms: "psp.programs",
+  populationHealthReports: "reports.population_health",
 } as const;
 
 export const TENANT_OPERATION_MODE_LABELS: Record<string, string> = {

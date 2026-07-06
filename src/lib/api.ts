@@ -141,6 +141,9 @@ import type {
   GenerateErpCredentialResult,
   ErpConnectionTestResult,
   IntegrationAuditEntry,
+  PspProgram,
+  PopulationHealthReport,
+  PublicHealthDashboard,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -943,6 +946,28 @@ export const api = {
 
   getTpbRiskReport: (token: string) =>
     request<TpbRiskReport>("/api/reports/tpb-risk", { token }),
+
+  listPspPrograms: (token: string) =>
+    request<PspProgram[]>("/api/psp/programs", { token }),
+
+  createPspProgram: (
+    token: string,
+    body: { name: string; medication?: string; brandDisplayName?: string },
+  ) =>
+    request<{ id: string }>("/api/psp/programs", { method: "POST", token, body }),
+
+  updatePspProgram: (
+    token: string,
+    programId: string,
+    body: { name?: string; medication?: string; brandDisplayName?: string; isActive?: boolean },
+  ) =>
+    request<void>(`/api/psp/programs/${programId}`, { method: "PUT", token, body }),
+
+  getPopulationHealthReport: (token: string) =>
+    request<PopulationHealthReport>("/api/reports/population-health", { token }),
+
+  getPublicHealthDashboard: (token: string) =>
+    request<PublicHealthDashboard>("/api/reports/public-health-dashboard", { token }),
 
   getPatientAiBrief: async (token: string, patientId: string, mode: "auto" | "rules" | "ai" = "auto") => {
     const path = `/api/patients/${patientId}/ai-brief${qs({ mode: mode === "auto" ? undefined : mode })}`;

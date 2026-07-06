@@ -226,6 +226,22 @@ const FarmaciaWaitlistPage = lazyPage(
   () => import("@/pages/farmacia/FarmaciaWaitlistPage"),
   "FarmaciaWaitlistPage",
 );
+const SettingsPspPage = lazyPage(
+  () => import("@/pages/SettingsPspPage"),
+  "SettingsPspPage",
+);
+const SettingsPublicHealthPage = lazyPage(
+  () => import("@/pages/SettingsPublicHealthPage"),
+  "SettingsPublicHealthPage",
+);
+const ReportsPopulationPage = lazyPage(
+  () => import("@/pages/reports/ReportsPopulationPage"),
+  "ReportsPopulationPage",
+);
+const PublicHealthDashboardPage = lazyPage(
+  () => import("@/pages/PublicHealthDashboardPage"),
+  "PublicHealthDashboardPage",
+);
 
 function PageLoader() {
   return (
@@ -286,6 +302,7 @@ export default function App() {
                       <Route path="escalas" element={<ReportsScalesPage />} />
                       <Route path="conversacional" element={<ReportsConversationalPage />} />
                       <Route path="programa-medicamento" element={<MedicationProgramPage />} />
+                      <Route path="populacional" element={<ReportsPopulationPage />} />
                     </Route>
                     <Route path="programas" element={<MedicationProgramsPage />} />
                     <Route path="medicamentos" element={<MedicationsPage />} />
@@ -302,6 +319,7 @@ export default function App() {
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
+                    <Route path="configuracoes/saude-publica" element={<SettingsPublicHealthPage />} />
                     <Route path="configuracoes/ia" element={<SettingsAiLayout />}>
                       <Route index element={<Navigate to="geral" replace />} />
                       <Route path="geral" element={<SettingsAiGeneralPage />} />
@@ -322,6 +340,12 @@ export default function App() {
                       <Route path="farmacia/retiradas" element={<FarmaciaRetiradasPage />} />
                       <Route path="farmacia/relatorios" element={<FarmaciaRelatoriosPage />} />
                       <Route path="farmacia/fila-cronica" element={<FarmaciaWaitlistPage />} />
+                    </Route>
+                    <Route element={<RequireModule module="PatientSupportProgram" />}>
+                      <Route path="programas-suporte" element={<SettingsPspPage />} />
+                    </Route>
+                    <Route element={<RequireModule module="PopulationHealth" />}>
+                      <Route path="saude-publica/painel" element={<PublicHealthDashboardPage />} />
                     </Route>
                   </Route>
 

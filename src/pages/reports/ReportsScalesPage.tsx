@@ -232,6 +232,44 @@ export function ReportsScalesPage() {
                 </Card>
               )}
 
+              {tpb.data.psychometrics?.hasMultiItemScale &&
+                tpb.data.psychometrics.constructs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-serif text-lg">Psicometria (Cronbach α)</CardTitle>
+                    <CardDescription>
+                      Confiabilidade interna por construto — escala multi-item v2/v3 (mín. 3 itens)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Construto</TableHead>
+                          <TableHead>Itens</TableHead>
+                          <TableHead>Avaliações</TableHead>
+                          <TableHead>α de Cronbach</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tpb.data.psychometrics.constructs.map((c) => (
+                          <TableRow key={c.construct}>
+                            <TableCell>
+                              {TPB_CONSTRUCT_LABELS[c.construct] ?? c.construct}
+                            </TableCell>
+                            <TableCell>{c.itemCount}</TableCell>
+                            <TableCell>{c.assessmentCount}</TableCell>
+                            <TableCell>
+                              {c.cronbachAlpha != null ? c.cronbachAlpha.toFixed(3) : "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
               {tpb.data.totalAssessments > 0 ? (
                 <>
                   <div className="grid gap-6 lg:grid-cols-2">

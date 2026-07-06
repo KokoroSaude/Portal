@@ -15,6 +15,8 @@ type RawTenantSettings = TenantSettings & {
   DataRetentionDays?: number | null;
   TpbCooldownDays?: number;
   TpbScaleVersion?: number;
+  TpbRequiredOnOnboarding?: boolean;
+  PublicHealthUnits?: Array<{ CnesCode?: string; Name?: string; IsActive?: boolean; cnesCode?: string; name?: string; isActive?: boolean }>;
   CsatPeriodicDays?: number | null;
   OutboundContentMode?: TenantSettings["outboundContentMode"];
   OutboundAlternateStrategy?: TenantSettings["outboundAlternateStrategy"];
@@ -135,6 +137,17 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.pickupBoostPriorityOnLowAdherence ?? raw.PickupBoostPriorityOnLowAdherence ?? true,
     tpbCooldownDays: raw.tpbCooldownDays ?? raw.TpbCooldownDays ?? 30,
     tpbScaleVersion: raw.tpbScaleVersion ?? raw.TpbScaleVersion ?? 1,
+    tpbRequiredOnOnboarding:
+      raw.tpbRequiredOnOnboarding ?? raw.TpbRequiredOnOnboarding ?? false,
+    publicHealthUnits: (
+      (raw.publicHealthUnits ?? raw.PublicHealthUnits ?? []) as Array<
+        Record<string, unknown>
+      >
+    ).map((u) => ({
+      cnesCode: String(u.cnesCode ?? u.CnesCode ?? ""),
+      name: String(u.name ?? u.Name ?? ""),
+      isActive: Boolean(u.isActive ?? u.IsActive ?? true),
+    })),
     csatPeriodicDays: raw.csatPeriodicDays ?? raw.CsatPeriodicDays ?? null,
     pickupCsatEnabled: raw.pickupCsatEnabled ?? raw.PickupCsatEnabled ?? true,
     pickupDefaultWindowHours:
