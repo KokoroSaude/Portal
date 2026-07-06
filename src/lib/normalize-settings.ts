@@ -14,6 +14,7 @@ type RawTenantSettings = TenantSettings & {
   AiEnabled?: boolean;
   DataRetentionDays?: number | null;
   TpbCooldownDays?: number;
+  TpbScaleVersion?: number;
   CsatPeriodicDays?: number | null;
   OutboundContentMode?: TenantSettings["outboundContentMode"];
   OutboundAlternateStrategy?: TenantSettings["outboundAlternateStrategy"];
@@ -133,6 +134,7 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
     pickupBoostPriorityOnLowAdherence:
       raw.pickupBoostPriorityOnLowAdherence ?? raw.PickupBoostPriorityOnLowAdherence ?? true,
     tpbCooldownDays: raw.tpbCooldownDays ?? raw.TpbCooldownDays ?? 30,
+    tpbScaleVersion: raw.tpbScaleVersion ?? raw.TpbScaleVersion ?? 1,
     csatPeriodicDays: raw.csatPeriodicDays ?? raw.CsatPeriodicDays ?? null,
     pickupCsatEnabled: raw.pickupCsatEnabled ?? raw.PickupCsatEnabled ?? true,
     pickupDefaultWindowHours:

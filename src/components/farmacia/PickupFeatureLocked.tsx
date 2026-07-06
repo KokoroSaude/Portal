@@ -4,8 +4,8 @@ import { FeatureLocked } from "@/components/PageHeader";
 export function PickupFeatureLocked() {
   return (
     <FeatureLocked
-      title="Retirada farmácia indisponível"
-      description="Este módulo é exclusivo de organizações cadastradas como farmácia governamental (SUS). O tipo de organização é definido pelo administrador da plataforma."
+      title="Módulo não habilitado"
+      description="A retirada em farmácia não está ativa para sua organização. Peça ao administrador da plataforma para habilitar o módulo Retirada em farmácia."
     />
   );
 }

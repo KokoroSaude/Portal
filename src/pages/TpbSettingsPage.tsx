@@ -20,6 +20,14 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
 import { SettingsField } from "@/components/settings/SettingsField";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiClientError } from "@/lib/api";
 import { TPB_CONSTRUCT_LABELS, FEATURE_KEYS } from "@/lib/constants";
@@ -32,6 +40,7 @@ type TpbTriggers = Pick<
   | "tpbPeriodicDays"
   | "tpbTriggerAfterMisses"
   | "tpbCooldownDays"
+  | "tpbScaleVersion"
 >;
 
 export function TpbSettingsPage() {
@@ -60,6 +69,7 @@ export function TpbSettingsPage() {
         tpbPeriodicDays: s.tpbPeriodicDays,
         tpbTriggerAfterMisses: s.tpbTriggerAfterMisses,
         tpbCooldownDays: s.tpbCooldownDays,
+        tpbScaleVersion: s.tpbScaleVersion ?? 1,
       });
     }
   }, [settingsQuery.data]);
@@ -91,6 +101,7 @@ export function TpbSettingsPage() {
         tpbPeriodicDays: triggers!.tpbPeriodicDays ?? 0,
         tpbTriggerAfterMisses: triggers!.tpbTriggerAfterMisses ?? 0,
         tpbCooldownDays: triggers!.tpbCooldownDays,
+        tpbScaleVersion: triggers!.tpbScaleVersion ?? 1,
       }),
     onSuccess: () => {
       toast.success("Gatilhos TCP salvos");
@@ -159,6 +170,11 @@ export function TpbSettingsPage() {
                 <Badge variant="secondary">Escala personalizada</Badge>
               </span>
             )}
+            {scale?.version != null && scale.version >= 2 && (
+              <span className="ml-2">
+                <Badge variant="outline">Versão {scale.version} (multi-item)</Badge>
+              </span>
+            )}
           </p>
           <Link
             to="/tcp/ciencia"
@@ -211,6 +227,25 @@ export function TpbSettingsPage() {
                   ...(patch.cooldownDays !== undefined && { tpbCooldownDays: patch.cooldownDays }),
                 })}
               />
+
+              <div className="space-y-2">
+                <Label>Versão da escala TCP</Label>
+                <Select
+                  value={String(triggers.tpbScaleVersion ?? 1)}
+                  onValueChange={(v) => patchTriggers({ tpbScaleVersion: Number(v) })}
+                >
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">v1 — 1 item por construto (4 perguntas)</SelectItem>
+                    <SelectItem value="2">v2 — multi-item (10 perguntas, maior confiabilidade)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  A v2 inclui pausa opcional após a 5ª pergunta no WhatsApp. Avaliações anteriores permanecem intactas.
+                </p>
+              </div>
 
               <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
                 <Save className="size-4" />

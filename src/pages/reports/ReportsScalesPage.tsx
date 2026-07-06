@@ -71,6 +71,7 @@ export function ReportsScalesPage() {
   const navItems = [
     { value: "morisky", label: "MMAS-8", hidden: !hasFeature(FEATURE_KEYS.scalesMorisky) },
     { value: "tpb", label: "TCP", hidden: !hasFeature(FEATURE_KEYS.scalesTpb) },
+    { value: "intention-adherence", label: "Intenção → Adesão", hidden: !hasFeature(FEATURE_KEYS.scalesTpb) },
   ];
   const defaultTab = hasFeature(FEATURE_KEYS.scalesMorisky) ? "morisky" : "tpb";
   const activeTab = resolveReportTab(
@@ -293,6 +294,127 @@ export function ReportsScalesPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nenhuma avaliação TCP concluída no período.
+                </p>
+              )}
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {activeTab === "intention-adherence" && hasFeature(FEATURE_KEYS.scalesTpb) && (
+        <div className="space-y-4">
+          {tpb.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : tpb.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Pacientes com intenção + adesão"
+                  value={tpb.data.intentionAdherence?.patientsWithBothMetrics ?? 0}
+                />
+                <MetricCard
+                  title="Lacuna média intenção→adesão"
+                  value={
+                    tpb.data.intentionAdherence?.patientsWithBothMetrics
+                      ? tpb.data.intentionAdherence.avgIntentionBehaviorGap.toFixed(2)
+                      : "—"
+                  }
+                />
+                <MetricCard
+                  title="Correlação intenção × adesão 30d"
+                  value={
+                    tpb.data.intentionAdherence?.patientsWithBothMetrics
+                      ? tpb.data.intentionAdherence.intentionAdherenceCorrelation.toFixed(2)
+                      : "—"
+                  }
+                />
+                <MetricCard
+                  title="Alta lacuna (≥20%)"
+                  value={
+                    tpb.data.intentionAdherence?.patientsWithBothMetrics
+                      ? `${tpb.data.intentionAdherence.highGapCount} (${formatPercent(tpb.data.intentionAdherence.highGapRate)})`
+                      : "—"
+                  }
+                />
+              </div>
+
+              {tpb.data.intentionAdherence?.patientsWithBothMetrics ? (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-serif text-lg">Intenção vs adesão observada</CardTitle>
+                      <CardDescription>
+                        Lacuna = intenção normalizada (0–1) menos taxa de check-ins tomados no período.
+                        Correlação de Pearson entre intenção TCP e adesão 30d por paciente.
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  {tpb.data.patientRanking.filter((r) => r.intentionBehaviorGap != null).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="font-serif text-lg">Pacientes por lacuna</CardTitle>
+                        <CardDescription>Maior lacuna = intenção alta e adesão baixa</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Paciente</TableHead>
+                              <TableHead>Intenção</TableHead>
+                              <TableHead>Adesão check-in</TableHead>
+                              <TableHead>Lacuna</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {[...tpb.data.patientRanking]
+                              .filter((row) => row.intentionBehaviorGap != null)
+                              .sort((a, b) => (b.intentionBehaviorGap ?? 0) - (a.intentionBehaviorGap ?? 0))
+                              .filter((row) =>
+                                matchesGridSearch(
+                                  searchQuery,
+                                  row.patientName,
+                                  row.phone,
+                                  row.intentionScore,
+                                  row.intentionBehaviorGap,
+                                ),
+                              )
+                              .map((row) => (
+                                <TableRow key={`${row.patientId}-gap`}>
+                                  <TableCell>
+                                    <Link
+                                      to={`/pacientes/${row.patientId}`}
+                                      className="font-medium text-primary hover:underline"
+                                    >
+                                      {row.patientName ?? maskPhone(row.phone, row.phoneLast4)}
+                                    </Link>
+                                  </TableCell>
+                                  <TableCell>{row.intentionScore.toFixed(1)}/5</TableCell>
+                                  <TableCell>
+                                    {row.checkinAdherenceRate != null
+                                      ? formatPercent(row.checkinAdherenceRate)
+                                      : "—"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        (row.intentionBehaviorGap ?? 0) >= 0.2 ? "warning" : "secondary"
+                                      }
+                                    >
+                                      {(row.intentionBehaviorGap ?? 0).toFixed(2)}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Dados insuficientes no período — é necessário TCP concluído e check-ins no intervalo.
                 </p>
               )}
             </>

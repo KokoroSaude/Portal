@@ -763,6 +763,7 @@ export interface TenantSettings {
   tpbPeriodicDays: number | null;
   tpbTriggerAfterMisses: number | null;
   tpbCooldownDays: number;
+  tpbScaleVersion?: number;
   csatPeriodicDays?: number | null;
   onboardingSurveyRandomPickEnabled?: boolean;
   scaleMinDaysBetweenTypes?: number;
@@ -1280,6 +1281,7 @@ export interface TpbQuestionDefinition {
 }
 
 export interface TpbScaleDefinition {
+  version?: number;
   introText: string;
   thankYouText: string;
   invalidText: string;
@@ -1432,7 +1434,16 @@ export interface TpbPatientRank {
   intentionScore: number;
   constructScores: Record<string, number>;
   checkinAdherenceRate: number | null;
+  intentionBehaviorGap: number | null;
   completedAt: string;
+}
+
+export interface TpbIntentionAdherenceCohort {
+  patientsWithBothMetrics: number;
+  avgIntentionBehaviorGap: number;
+  intentionAdherenceCorrelation: number;
+  highGapCount: number;
+  highGapRate: number;
 }
 
 export interface TpbReport {
@@ -1445,6 +1456,7 @@ export interface TpbReport {
   trend: TpbTrendPoint[];
   byTrigger: TpbTriggerCount[];
   patientRanking: TpbPatientRank[];
+  intentionAdherence: TpbIntentionAdherenceCohort;
 }
 
 export interface TpbRiskDistribution {
