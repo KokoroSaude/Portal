@@ -110,7 +110,19 @@ export interface TimelineEvent {
   occurredAt: string;
   summary: string;
   status: string | null;
-  meta: Record<string, unknown> | null;
+  meta: TimelineEventMeta | null;
+}
+
+export interface TimelineEventMeta {
+  wam_id?: string | null;
+  content_source?: string | null;
+  template_key?: string | null;
+  content?: string | null;
+  canonical_text?: string | null;
+  personalization_channel?: string | null;
+  audit_content_source?: string | null;
+  audit_template_key?: string | null;
+  [key: string]: unknown;
 }
 
 export type TimelineEventKind =

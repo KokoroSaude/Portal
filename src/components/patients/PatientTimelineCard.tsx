@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { MessageContentSourceBadge } from "@/components/messages/MessageContentSourceBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,49 @@ function loadStoredKinds(): TimelineEventKind[] {
   }
 }
 
+function timelineMetaString(meta: Record<string, unknown> | null | undefined, key: string): string | null {
+  const raw = meta?.[key];
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
+}
+
+function TimelinePersonalizationAudit({
+  meta,
+}: {
+  meta: Record<string, unknown> | null | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const canonical = timelineMetaString(meta, "canonical_text");
+  const content = timelineMetaString(meta, "content");
+
+  if (!canonical) return null;
+
+  return (
+    <div className="mt-2 rounded-md border bg-muted/30">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
+        <span>Original vs IA</span>
+        {open ? <ChevronUp className="size-3.5 shrink-0" /> : <ChevronDown className="size-3.5 shrink-0" />}
+      </button>
+      {open ? (
+        <div className="space-y-3 border-t px-3 py-3 text-sm">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Original</p>
+            <p className="whitespace-pre-wrap rounded-md border bg-background/80 p-2">{canonical}</p>
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Enviado (IA/regras)</p>
+            <p className="whitespace-pre-wrap rounded-md border bg-background/80 p-2">{content ?? "—"}</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type Props = {
   token: string;
   patientId: string;
@@ -106,8 +149,8 @@ export function PatientTimelineCard({ token, patientId }: Props) {
         <div>
           <CardTitle>Timeline</CardTitle>
           <CardDescription>
-            Histórico completo do paciente (sem conteúdo sensível das mensagens). Mensagens enviadas
-            exibem origem: IA, regras ou template.
+            Histórico do paciente. Mensagens enviadas exibem origem (IA, regras ou template) e, quando
+            personalizadas, a comparação Original vs IA.
           </CardDescription>
         </div>
 
@@ -168,6 +211,9 @@ export function PatientTimelineCard({ token, patientId }: Props) {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{ev.summary}</p>
+                    {ev.eventKind === "message_outbound" ? (
+                      <TimelinePersonalizationAudit meta={ev.meta} />
+                    ) : null}
                   </div>
                   <time className="shrink-0 text-xs text-muted-foreground">
                     {formatDateTime(ev.occurredAt)}
