@@ -34,6 +34,40 @@ export const TENANT_OPERATION_MODE_LABELS: Record<string, string> = {
   GovPharmacy: "Farmácia governamental (SUS)",
 };
 
+export const TENANT_SEGMENT_LABELS: Record<string, string> = {
+  RetailPharmacy: "Varejo farmacêutico",
+  PharmaIndustry: "Indústria farmacêutica",
+  HealthPlan: "Operadora de saúde",
+  PublicHealth: "Saúde pública",
+};
+
+export const TENANT_MODULE_LABELS: Record<string, string> = {
+  Adherence: "Adesão",
+  PharmacyPickup: "Retirada em farmácia",
+  CareNetwork: "Rede de cuidado",
+  PatientSupportProgram: "Programa de suporte (PSP)",
+  PopulationHealth: "Gestão populacional",
+};
+
+export const TPB_CONSTRUCT_DESCRIPTIONS = {
+  attitude: {
+    title: "Atitude",
+    body: "Crença sobre os benefícios e importância de seguir o tratamento.",
+  },
+  subjective_norm: {
+    title: "Normas subjetivas",
+    body: "Pressão percebida de médicos, família e pessoas importantes.",
+  },
+  perceived_control: {
+    title: "Controle percebido",
+    body: "Confiança de conseguir tomar o medicamento mesmo com obstáculos.",
+  },
+  intention: {
+    title: "Intenção",
+    body: "Compromisso declarado de aderir ao tratamento nos próximos dias.",
+  },
+} as const;
+
 export const TENANT_PLAN_OPTIONS = [
   { id: "00000000-0000-0000-0001-000000000001", key: "essential", label: "Essential" },
   { id: "00000000-0000-0000-0001-000000000002", key: "professional", label: "Professional" },

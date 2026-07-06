@@ -16,8 +16,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
 import { api, ApiClientError } from "@/lib/api";
-import { TENANT_OPERATION_MODE_LABELS } from "@/lib/constants";
-import { GOV_PHARMACY_DEFAULT_HINTS, isGovPharmacyMode } from "@/lib/gov-pharmacy";
+import { TENANT_SEGMENT_LABELS, TENANT_MODULE_LABELS } from "@/lib/constants";
+import { hasModule, PUBLIC_HEALTH_DEFAULT_HINTS } from "@/lib/tenant-modules";
+
+const GOV_PHARMACY_DEFAULT_HINTS = PUBLIC_HEALTH_DEFAULT_HINTS;
 import { useQuery } from "@tanstack/react-query";
 
 const SETTINGS_TABS = ["operacao", "engajamento", "onboarding", "pesquisas"] as const;
@@ -134,7 +136,7 @@ export function SettingsPage() {
     );
   }
 
-  const govMode = isGovPharmacyMode(form);
+  const pickupMode = hasModule("PharmacyPickup", form);
 
   return (
     <div className="space-y-6">
@@ -154,18 +156,25 @@ export function SettingsPage() {
         <TabsContent value="operacao" className="space-y-4">
           <Card className="border-dashed">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Tipo de organização</CardTitle>
+              <CardTitle className="text-base">Segmento e módulos</CardTitle>
               <CardDescription>
-                Definido pelo administrador da plataforma no cadastro da organização. A equipe não
-                pode alterar este tipo.
+                Definido pelo administrador da plataforma. A equipe não pode alterar segmento ou
+                módulos.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Badge variant={govMode ? "default" : "outline"}>
-                {TENANT_OPERATION_MODE_LABELS[form.tenantOperationMode ?? "AdherenceProgram"] ??
-                  "Programa de adesão"}
+              <Badge variant="outline">
+                {TENANT_SEGMENT_LABELS[form.tenantSegment ?? "RetailPharmacy"] ??
+                  "Varejo farmacêutico"}
               </Badge>
-              {govMode && (
+              <div className="flex flex-wrap gap-1.5">
+                {(form.enabledModules ?? ["Adherence"]).map((m) => (
+                  <Badge key={m} variant="secondary" className="text-xs">
+                    {TENANT_MODULE_LABELS[m] ?? m}
+                  </Badge>
+                ))}
+              </div>
+              {pickupMode && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
                   <p className="font-medium text-foreground">Operação farmácia governamental (SUS)</p>
                   <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
@@ -197,7 +206,7 @@ export function SettingsPage() {
             </CardContent>
           </Card>
 
-          {govMode && (
+          {pickupMode && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Retirada de medicamentos</CardTitle>

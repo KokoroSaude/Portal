@@ -23,8 +23,8 @@ export function RequirePlatform() {
   return <Outlet />;
 }
 
-export function RequireGovPharmacy() {
-  const { pickupAccess, isLoading, isError } = useTenantSettings();
+export function RequireModule({ module }: { module: import("@/types/api").TenantModule }) {
+  const { hasModule, isLoading, isError } = useTenantSettings();
 
   if (isLoading) {
     return (
@@ -34,9 +34,14 @@ export function RequireGovPharmacy() {
     );
   }
 
-  if (isError || !pickupAccess) {
+  if (isError || !hasModule(module)) {
     return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
+}
+
+/** @deprecated Use RequireModule module="PharmacyPickup" */
+export function RequireGovPharmacy() {
+  return <RequireModule module="PharmacyPickup" />;
 }

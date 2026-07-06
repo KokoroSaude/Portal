@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ClipboardList, Save } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, ClipboardList, Save } from "lucide-react";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,14 +150,23 @@ export function TpbSettingsPage() {
       />
 
       <Card className="border-primary/20 bg-primary/[0.03]">
-        <CardContent className="pt-6 text-sm text-muted-foreground">
-          A escala TCP mede atitude, norma subjetiva, controle percebido e intenção de adesão.
-          Configure <strong>quando</strong> a avaliação é enviada aos pacientes.
-          {hasOverride && (
-            <span className="ml-2">
-              <Badge variant="secondary">Escala personalizada</Badge>
-            </span>
-          )}
+        <CardContent className="flex flex-col gap-3 pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            A escala TCP mede atitude, norma subjetiva, controle percebido e intenção de adesão.
+            Configure <strong>quando</strong> a avaliação é enviada aos pacientes.
+            {hasOverride && (
+              <span className="ml-2">
+                <Badge variant="secondary">Escala personalizada</Badge>
+              </span>
+            )}
+          </p>
+          <Link
+            to="/tcp/ciencia"
+            className="inline-flex shrink-0 items-center gap-1 font-medium text-primary hover:underline"
+          >
+            Base científica Ajzen
+            <ArrowRight className="size-4" />
+          </Link>
         </CardContent>
       </Card>
 

@@ -7,7 +7,7 @@ import { PwaInstallProvider } from "@/contexts/PwaInstallContext";
 import { AuthQuerySync } from "@/components/AuthQuerySync";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { GuestRoute, ProtectedRoute } from "@/components/layout/ProtectedRoute";
-import { HomePage, RequireGovPharmacy, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
+import { HomePage, RequireModule, RequirePlatform, RequireTenant } from "@/components/layout/RouteGuards";
 
 function lazyPage(
   loader: () => Promise<Record<string, ComponentType<unknown>>>,
@@ -130,6 +130,10 @@ const MoriskySettingsPage = lazyPage(
 const TpbSettingsPage = lazyPage(
   () => import("@/pages/TpbSettingsPage"),
   "TpbSettingsPage",
+);
+const TpbSciencePage = lazyPage(
+  () => import("@/pages/TpbSciencePage"),
+  "TpbSciencePage",
 );
 const TemplatesPage = lazyPage(() => import("@/pages/TemplatesPage"), "TemplatesPage");
 const KnowledgePage = lazyPage(() => import("@/pages/KnowledgePage"), "KnowledgePage");
@@ -294,6 +298,7 @@ export default function App() {
                     <Route path="whatsapp/configuracao" element={<WhatsappConfigPage />} />
                     <Route path="morisky" element={<MoriskySettingsPage />} />
                     <Route path="tcp" element={<TpbSettingsPage />} />
+                    <Route path="tcp/ciencia" element={<TpbSciencePage />} />
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
@@ -312,7 +317,7 @@ export default function App() {
                     <Route path="configuracoes/simulador" element={<ConversationalSimulatorPage />} />
                     <Route path="configuracoes/usuarios" element={<SettingsUsersPage />} />
                     <Route path="configuracoes" element={<SettingsPage />} />
-                    <Route element={<RequireGovPharmacy />}>
+                    <Route element={<RequireModule module="PharmacyPickup" />}>
                       <Route path="farmacia" element={<FarmaciaDashboardPage />} />
                       <Route path="farmacia/retiradas" element={<FarmaciaRetiradasPage />} />
                       <Route path="farmacia/relatorios" element={<FarmaciaRelatoriosPage />} />

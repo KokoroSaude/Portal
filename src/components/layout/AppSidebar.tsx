@@ -257,6 +257,9 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         icon: ClipboardList,
         adminOnly: true,
         feature: FEATURE_KEYS.scalesTpb,
+        children: [
+          { to: "/tcp/ciencia", label: "Base científica", icon: BookOpen },
+        ],
       },
     ],
   },

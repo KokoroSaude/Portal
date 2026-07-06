@@ -1,34 +1,23 @@
 import type { TenantSettings } from "@/types/api";
+import {
+  canAccessPickup as canAccessPickupModule,
+  hasModule,
+  resolveTenantSegment,
+  PUBLIC_HEALTH_DEFAULT_HINTS,
+} from "@/lib/tenant-modules";
 
+/** @deprecated Use hasModule(settings, user, "PharmacyPickup") */
 export function isGovPharmacyMode(settings?: TenantSettings | null): boolean {
-  return settings?.tenantOperationMode === "GovPharmacy";
+  return hasModule("PharmacyPickup", settings);
 }
 
-/** Módulo /farmacia e retirada SUS — apenas organizações em modo farmácia governamental. */
 export function canAccessPickup(
-  _hasFeature: (key: string) => boolean,
+  hasFeature: (key: string) => boolean,
   settings?: TenantSettings | null,
 ): boolean {
-  return isGovPharmacyMode(settings);
+  return canAccessPickupModule(hasFeature, settings);
 }
 
-export const GOV_PHARMACY_DEFAULT_HINTS: Partial<TenantSettings> = {
-  requirePreRegisteredPatients: true,
-  govPharmacyPickupEnabled: true,
-  pickupQueuePrefix: "A",
-  pickupNotificationLeadDays: 3,
-  pickupMaxNotificationsPerDay: 10,
-  pickupOrderExpiryDays: 7,
-  pickupDefaultDailyDose: 1,
-  pickupNoShowReminderEnabled: true,
-  pickupMaxNoShowReminders: 2,
-  pickupSusRulesEnabled: true,
-  pickupSmartPriorityEnabled: true,
-  pickupRunOutPriorityWeight: 10,
-  pickupEmergencyReservePercent: 20,
-  pickupCriticalWaitlistThreshold: 20,
-  pickupBoostPriorityOnLowAdherence: true,
-  pickupCsatEnabled: true,
-  pickupNotificationRouting: "Both",
-  adherenceNotificationRouting: "Both",
-};
+export const GOV_PHARMACY_DEFAULT_HINTS = PUBLIC_HEALTH_DEFAULT_HINTS;
+
+export { hasModule, resolveTenantSegment };

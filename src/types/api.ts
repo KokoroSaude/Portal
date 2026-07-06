@@ -14,6 +14,8 @@ export interface UserInfo {
   role: string;
   avatarUrl?: string | null;
   tenantOperationMode?: TenantOperationMode;
+  tenantSegment?: TenantSegment;
+  enabledModules?: TenantModule[];
 }
 
 export interface PlatformUserInfo {
@@ -779,6 +781,8 @@ export interface TenantSettings {
   outboundContentMode?: "TemplateOnly" | "AiOnly" | "Alternate";
   outboundAlternateStrategy?: "PerPatient" | "PerMessageKind";
   tenantOperationMode?: TenantOperationMode;
+  tenantSegment?: TenantSegment;
+  enabledModules?: TenantModule[];
   govPharmacyPickupEnabled?: boolean;
   pickupQueuePrefix?: string;
   pickupAutoNotifyOnStockArrival?: boolean;
@@ -860,6 +864,19 @@ export interface IntegrationAuditEntry {
 }
 
 export type TenantOperationMode = "AdherenceProgram" | "GovPharmacy";
+
+export type TenantSegment =
+  | "RetailPharmacy"
+  | "PharmaIndustry"
+  | "HealthPlan"
+  | "PublicHealth";
+
+export type TenantModule =
+  | "Adherence"
+  | "PharmacyPickup"
+  | "CareNetwork"
+  | "PatientSupportProgram"
+  | "PopulationHealth";
 export type ClinicalPriorityTier = "Normal" | "Elderly" | "Pregnant" | "ChronicCritical";
 export type PickupNotificationRouting = "Patient" | "Delegate" | "Both";
 export type AdherenceNotificationRouting = "Patient" | "Delegate" | "Both";
@@ -1380,6 +1397,14 @@ export interface PatientBehavioralProfile {
   primaryBarrier: string | null;
   sources: string[];
   computedAt: string;
+  tpbConstructs?: Record<string, number>;
+  observedBehavior?: {
+    adherenceRate30d: number | null;
+    lastMoriskyScore: number | null;
+    checkinCount30d: number;
+  };
+  intentionBehaviorGap?: number | null;
+  weakestConstruct?: string | null;
 }
 
 export interface TpbConstructAvg {
@@ -1574,6 +1599,8 @@ export interface AdminTenant {
   slug: string;
   planId: string;
   planKey: string;
+  tenantSegment: TenantSegment;
+  enabledModules: TenantModule[];
   tenantOperationMode: TenantOperationMode;
   govPharmacyPickupEnabled: boolean;
   isActive: boolean;

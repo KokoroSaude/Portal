@@ -32,6 +32,7 @@ import { useAdminTenantsList } from "@/hooks/useAdminTenants";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
+import { TENANT_SEGMENT_LABELS } from "@/lib/constants";
 import type { AdminTenant } from "@/types/api";
 
 function planLabel(planKey: string) {
@@ -56,7 +57,8 @@ export function AdminTenantsPage() {
         name: form.name,
         slug: form.slug,
         planId: form.planId,
-        tenantOperationMode: form.tenantOperationMode,
+        tenantSegment: form.tenantSegment,
+        enabledModules: form.enabledModules,
         adminName: form.adminName,
         adminEmail: form.adminEmail,
         adminPassword: form.adminPassword,
@@ -191,6 +193,7 @@ export function AdminTenantsPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Plano</TableHead>
+                  <TableHead>Segmento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>IA</TableHead>
                   <TableHead />
@@ -217,6 +220,11 @@ export function AdminTenantsPage() {
                     <TableCell className="font-mono text-xs">{t.slug}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{planLabel(t.planKey)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {TENANT_SEGMENT_LABELS[t.tenantSegment] ?? t.tenantSegment}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>

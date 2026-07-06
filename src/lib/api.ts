@@ -99,6 +99,8 @@ import type {
   TenantFeature,
   TenantSettings,
   TenantOperationMode,
+  TenantSegment,
+  TenantModule,
   TenantSubscription,
   UpsertTemplateResponse,
   KnowledgeDocument,
@@ -1460,6 +1462,8 @@ export const api = {
       name: string;
       slug: string;
       planId?: string;
+      tenantSegment?: TenantSegment;
+      enabledModules?: TenantModule[];
       tenantOperationMode?: TenantOperationMode;
       adminName: string;
       adminEmail: string;
@@ -1481,7 +1485,8 @@ export const api = {
       name: string;
       slug: string;
       planId: string;
-      tenantOperationMode: TenantOperationMode;
+      tenantSegment: TenantSegment;
+      enabledModules: TenantModule[];
       isActive: boolean;
       aiEnabled: boolean;
     },

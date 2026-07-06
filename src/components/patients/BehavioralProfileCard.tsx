@@ -1,9 +1,9 @@
-import { Brain, ClipboardList, MapPin, Bell } from "lucide-react";
+import { Brain, ClipboardList, MapPin, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { behavioralDimensionLabel } from "@/lib/behavioral-dimensions";
-import { BEHAVIORAL_SOURCE_LABELS, TPB_RISK_LABELS } from "@/lib/constants";
+import { BEHAVIORAL_SOURCE_LABELS, TPB_CONSTRUCT_DESCRIPTIONS, TPB_RISK_LABELS } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
 import type { PatientBehavioralProfile, PatientTpbRisk } from "@/types/api";
 
@@ -66,42 +66,43 @@ export function BehavioralProfileCard({
     profile.computedAt !== "0001-01-01T00:00:00Z" &&
     Object.keys(profile.dimensionScores).length > 0;
 
+  const hasTpbLayer =
+    profile?.tpbConstructs && Object.keys(profile.tpbConstructs).length > 0;
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <ClipboardList className="size-4 text-primary" />
-              1. Perguntas estratégicas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            Estilo de vida, hábitos, emoções, vieses e comorbidades coletados no formulário do
-            portal.
-          </CardContent>
-        </Card>
-        <Card className="border-dashed">
+        <Card className={hasTpbLayer ? "border-primary/30" : "border-dashed"}>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <Brain className="size-4 text-primary" />
-              2. Perfil comportamental
+              1. Construtos TCP (Ajzen)
             </CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
-            TCP + Morisky + avaliação estratégica fundidos em um perfil único com barreira
-            principal.
+            Atitude, normas subjetivas, controle percebido e intenção — medidos na escala TCP.
           </CardContent>
         </Card>
-        <Card className="border-dashed">
+        <Card className={profile?.observedBehavior ? "border-primary/30" : "border-dashed"}>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Bell className="size-4 text-primary" />
-              3. Nudges personalizados
+              <Activity className="size-4 text-primary" />
+              2. Comportamento observado
             </CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
-            Lembretes, alertas de run-out, retirada gov e geo WhatsApp conforme o perfil.
+            Morisky + check-ins dos últimos 30 dias — adesão real, não só intenção.
+          </CardContent>
+        </Card>
+        <Card className={hasProfile ? "border-primary/30" : "border-dashed"}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <ClipboardList className="size-4 text-primary" />
+              3. Barreiras integradas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground">
+            Avaliação estratégica + perfil fundido — barreira principal para nudges.
           </CardContent>
         </Card>
       </div>
@@ -133,6 +134,52 @@ export function BehavioralProfileCard({
               )}
 
               <DimensionBars scores={profile.dimensionScores} />
+
+              {hasTpbLayer && (
+                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Construtos TCP</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(profile.tpbConstructs!).map(([key, score]) => (
+                      <Badge key={key} variant="outline" className="text-xs">
+                        {(TPB_CONSTRUCT_DESCRIPTIONS as Record<string, { title: string }>)[key]
+                          ?.title ?? key}
+                        : {score.toFixed(1)}/5
+                      </Badge>
+                    ))}
+                  </div>
+                  {profile.weakestConstruct && (
+                    <p className="text-xs text-muted-foreground">
+                      Construto mais fraco:{" "}
+                      <strong>
+                        {(TPB_CONSTRUCT_DESCRIPTIONS as Record<string, { title: string }>)[
+                          profile.weakestConstruct
+                        ]?.title ?? profile.weakestConstruct}
+                      </strong>
+                    </p>
+                  )}
+                  {profile.intentionBehaviorGap != null && (
+                    <p className="text-xs text-muted-foreground">
+                      Gap intenção→adesão (30d): {(profile.intentionBehaviorGap * 100).toFixed(0)}%
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {profile.observedBehavior && (
+                <div className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium">Comportamento observado (30d)</p>
+                  {profile.observedBehavior.adherenceRate30d != null && (
+                    <p>
+                      Adesão check-ins:{" "}
+                      {(profile.observedBehavior.adherenceRate30d * 100).toFixed(0)}%
+                    </p>
+                  )}
+                  {profile.observedBehavior.lastMoriskyScore != null && (
+                    <p>Morisky: {profile.observedBehavior.lastMoriskyScore}</p>
+                  )}
+                  <p>Check-ins: {profile.observedBehavior.checkinCount30d}</p>
+                </div>
+              )}
 
               {profile.sources.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">

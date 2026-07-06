@@ -18,8 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { TENANT_PLAN_OPTIONS, TENANT_OPERATION_MODE_LABELS } from "@/lib/constants";
-import type { AdminTenant, TenantOperationMode } from "@/types/api";
+import { TENANT_PLAN_OPTIONS, TENANT_MODULE_LABELS, TENANT_SEGMENT_LABELS } from "@/lib/constants";
+import { SEGMENT_DEFAULT_MODULES } from "@/lib/tenant-modules";
+import type { AdminTenant, TenantModule, TenantSegment } from "@/types/api";
 
 function slugify(value: string) {
   return value
@@ -34,7 +35,8 @@ export type AdminTenantCreateForm = {
   name: string;
   slug: string;
   planId: string;
-  tenantOperationMode: TenantOperationMode;
+  tenantSegment: TenantSegment;
+  enabledModules: TenantModule[];
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -46,7 +48,8 @@ export type AdminTenantEditForm = {
   name: string;
   slug: string;
   planId: string;
-  tenantOperationMode: TenantOperationMode;
+  tenantSegment: TenantSegment;
+  enabledModules: TenantModule[];
   isActive: boolean;
   aiEnabled: boolean;
 };
@@ -57,7 +60,8 @@ const emptyCreate: AdminTenantCreateForm = {
   name: "",
   slug: "",
   planId: defaultPlanId,
-  tenantOperationMode: "AdherenceProgram",
+  tenantSegment: "RetailPharmacy",
+  enabledModules: SEGMENT_DEFAULT_MODULES.RetailPharmacy,
   adminName: "",
   adminEmail: "",
   adminPassword: "",
@@ -70,9 +74,31 @@ function toEditForm(tenant: AdminTenant): AdminTenantEditForm {
     name: tenant.name,
     slug: tenant.slug,
     planId: tenant.planId,
-    tenantOperationMode: tenant.tenantOperationMode ?? "AdherenceProgram",
+    tenantSegment: tenant.tenantSegment ?? "RetailPharmacy",
+    enabledModules:
+      tenant.enabledModules?.length > 0
+        ? tenant.enabledModules
+        : SEGMENT_DEFAULT_MODULES[tenant.tenantSegment ?? "RetailPharmacy"],
     isActive: tenant.isActive,
     aiEnabled: tenant.aiEnabled,
+  };
+}
+
+const ALLOWED_MODULES: Record<TenantSegment, TenantModule[]> = {
+  RetailPharmacy: ["Adherence"],
+  PharmaIndustry: ["Adherence", "PatientSupportProgram"],
+  HealthPlan: ["Adherence", "PopulationHealth"],
+  PublicHealth: ["Adherence", "PharmacyPickup", "CareNetwork", "PopulationHealth"],
+};
+
+function applySegmentChange<T extends AdminTenantCreateForm | AdminTenantEditForm>(
+  form: T,
+  segment: TenantSegment,
+): T {
+  return {
+    ...form,
+    tenantSegment: segment,
+    enabledModules: SEGMENT_DEFAULT_MODULES[segment],
   };
 }
 
@@ -160,30 +186,60 @@ export function AdminTenantFormDialog(props: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label>Tipo de organização</Label>
+            <Label>Segmento GTM</Label>
             <Select
-              value={form.tenantOperationMode}
-              onValueChange={(value) =>
-                mode === "create"
-                  ? updateCreate("tenantOperationMode", value as TenantOperationMode)
-                  : updateEdit("tenantOperationMode", value as TenantOperationMode)
-              }
+              value={form.tenantSegment}
+              onValueChange={(value) => {
+                const segment = value as TenantSegment;
+                if (mode === "create") {
+                  setCreateForm((prev) => applySegmentChange(prev, segment));
+                } else {
+                  setEditForm((prev) => (prev ? applySegmentChange(prev, segment) : prev));
+                }
+              }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
+                <SelectValue placeholder="Selecione o segmento" />
               </SelectTrigger>
               <SelectContent position="popper" className="z-[100]">
-                {Object.entries(TENANT_OPERATION_MODE_LABELS).map(([value, label]) => (
+                {Object.entries(TENANT_SEGMENT_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Programa de adesão comercial ou farmácia governamental (SUS). Só o superadmin define
-              isso no cadastro.
-            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Módulos habilitados</Label>
+            <div className="grid gap-2 rounded-lg border p-3">
+              {ALLOWED_MODULES[form.tenantSegment].map((module) => {
+                const checked = form.enabledModules.includes(module);
+                const locked = module === "Adherence";
+                return (
+                  <label key={module} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border"
+                      checked={checked}
+                      disabled={locked}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...form.enabledModules, module]
+                          : form.enabledModules.filter((m) => m !== module);
+                        if (mode === "create") {
+                          updateCreate("enabledModules", next);
+                        } else {
+                          updateEdit("enabledModules", next);
+                        }
+                      }}
+                    />
+                    <span>{TENANT_MODULE_LABELS[module] ?? module}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">

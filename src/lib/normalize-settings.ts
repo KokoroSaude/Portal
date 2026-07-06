@@ -18,6 +18,8 @@ type RawTenantSettings = TenantSettings & {
   OutboundContentMode?: TenantSettings["outboundContentMode"];
   OutboundAlternateStrategy?: TenantSettings["outboundAlternateStrategy"];
   TenantOperationMode?: TenantSettings["tenantOperationMode"];
+  TenantSegment?: TenantSettings["tenantSegment"];
+  EnabledModules?: TenantSettings["enabledModules"];
   GovPharmacyPickupEnabled?: boolean;
   PickupQueuePrefix?: string;
   PickupAutoNotifyOnStockArrival?: boolean;
@@ -92,6 +94,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
     onboardingSurveyRandomPickEnabled: raw.onboardingSurveyRandomPickEnabled ?? false,
     scaleMinDaysBetweenTypes: raw.scaleMinDaysBetweenTypes ?? 7,
     tenantOperationMode: raw.tenantOperationMode ?? raw.TenantOperationMode ?? "AdherenceProgram",
+    tenantSegment: raw.tenantSegment ?? raw.TenantSegment ?? "RetailPharmacy",
+    enabledModules: raw.enabledModules ?? raw.EnabledModules ?? ["Adherence"],
     govPharmacyPickupEnabled: raw.govPharmacyPickupEnabled ?? raw.GovPharmacyPickupEnabled ?? false,
     pickupQueuePrefix: raw.pickupQueuePrefix ?? raw.PickupQueuePrefix ?? "A",
     pickupAutoNotifyOnStockArrival:
