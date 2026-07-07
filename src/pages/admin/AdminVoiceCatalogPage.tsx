@@ -20,12 +20,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
+import { resolveVoiceCatalogCategory, type VoiceCatalogCategory } from "@/lib/voice-catalog";
 import type { AdminVoiceCatalogEntry } from "@/types/api";
 
 type VoiceAlias = "feminine" | "masculine";
-type VoiceCategory = AdminVoiceCatalogEntry["category"];
 
-const CATEGORY_TABS: { value: VoiceCategory; label: string; description: string }[] = [
+const CATEGORY_TABS: { value: VoiceCatalogCategory; label: string; description: string }[] = [
   {
     value: "geral",
     label: "Geral",
@@ -148,7 +148,7 @@ export function AdminVoiceCatalogPage() {
   const [editing, setEditing] = useState<AdminVoiceCatalogEntry | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editText, setEditText] = useState("");
-  const [activeTab, setActiveTab] = useState<VoiceCategory>("geral");
+  const [activeTab, setActiveTab] = useState<VoiceCatalogCategory>("geral");
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["admin-voice-catalog"],
@@ -157,14 +157,14 @@ export function AdminVoiceCatalogPage() {
   });
 
   const entriesByCategory = useMemo(() => {
-    const grouped: Record<VoiceCategory, AdminVoiceCatalogEntry[]> = {
+    const grouped: Record<VoiceCatalogCategory, AdminVoiceCatalogEntry[]> = {
       geral: [],
       morisky: [],
       tcp: [],
     };
     for (const entry of data?.entries ?? []) {
-      const category = entry.category ?? "geral";
-      grouped[category].push(entry);
+      const category = resolveVoiceCatalogCategory(entry.templateKey, entry.category);
+      grouped[category].push({ ...entry, category });
     }
     return grouped;
   }, [data?.entries]);
@@ -231,7 +231,7 @@ export function AdminVoiceCatalogPage() {
     setEditText(entry.sampleText);
   }
 
-  function warmCategory(category: VoiceCategory, force: boolean) {
+  function warmCategory(category: VoiceCatalogCategory, force: boolean) {
     const entryIds = entriesByCategory[category].map((e) => e.id);
     if (entryIds.length === 0) {
       toast.message("Nenhuma entrada nesta aba para aquecer.");
@@ -240,7 +240,6 @@ export function AdminVoiceCatalogPage() {
     warmMutation.mutate({ entryIds, force });
   }
 
-  const activeMeta = CATEGORY_TABS.find((t) => t.value === activeTab)!;
   const activeEntries = entriesByCategory[activeTab];
   const activeStats = data ? categoryStats(activeEntries, data.voices.length) : null;
 
@@ -289,7 +288,7 @@ export function AdminVoiceCatalogPage() {
         </CardHeader>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as VoiceCategory)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as VoiceCatalogCategory)}>
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           {CATEGORY_TABS.map((tab) => {
             const count = entriesByCategory[tab.value].length;
