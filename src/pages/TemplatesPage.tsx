@@ -25,6 +25,7 @@ export function TemplatesPage() {
   const [tone, setTone] = useState("acolhedor");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [content, setContent] = useState("");
+  const [voiceContent, setVoiceContent] = useState("");
   const [description, setDescription] = useState("");
   const [filter, setFilter] = useState("");
 
@@ -56,6 +57,7 @@ export function TemplatesPage() {
     const t = data?.find((x) => x.templateKey === selectedKey);
     if (t) {
       setContent(t.content);
+      setVoiceContent(t.voiceContent ?? "");
       setDescription(t.description ?? "");
     }
   }, [data, selectedKey]);
@@ -64,7 +66,15 @@ export function TemplatesPage() {
   const canReset = hasFeature(FEATURE_KEYS.templatesCustomReset);
 
   const saveMutation = useMutation({
-    mutationFn: () => api.upsertTemplate(token!, selectedKey!, content, description || undefined, tone),
+    mutationFn: () =>
+      api.upsertTemplate(
+        token!,
+        selectedKey!,
+        content,
+        description || undefined,
+        tone,
+        voiceContent.trim() || null,
+      ),
     onSuccess: (result) => {
       if (result && typeof result === "object" && "warnings" in result && result.warnings?.length) {
         toast.success("Template salvo com avisos de nudge");
@@ -112,6 +122,7 @@ export function TemplatesPage() {
     const t = data?.find((x) => x.templateKey === key);
     setSelectedKey(key);
     setContent(t?.content ?? "");
+    setVoiceContent(t?.voiceContent ?? "");
     setDescription(t?.description ?? "");
   }
 
@@ -119,6 +130,7 @@ export function TemplatesPage() {
     setTone(nextTone);
     setSelectedKey(null);
     setContent("");
+    setVoiceContent("");
     setDescription("");
   }
 
@@ -207,6 +219,20 @@ export function TemplatesPage() {
                       onChange={(e) => setContent(e.target.value)}
                       disabled={!canWrite}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="voice-content">Texto falado no áudio (TTS)</Label>
+                    <Textarea
+                      id="voice-content"
+                      rows={5}
+                      value={voiceContent}
+                      onChange={(e) => setVoiceContent(e.target.value)}
+                      disabled={!canWrite}
+                      placeholder="Opcional — deixe vazio para usar o padrão de voz. Prefira frases curtas, sem emojis."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Usado quando o paciente recebe lembretes em áudio. Suporta {"{nome}"} e {"{medicamento}"}.
+                    </p>
                   </div>
                   <WhatsAppMessagePreview content={content} />
                   <div className="flex gap-2">

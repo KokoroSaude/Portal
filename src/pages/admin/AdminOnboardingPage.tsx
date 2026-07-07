@@ -30,6 +30,7 @@ export function AdminOnboardingPage() {
   const [tone, setTone] = useState("acolhedor");
   const [selectedBaseKey, setSelectedBaseKey] = useState<string | null>(null);
   const [content, setContent] = useState("");
+  const [voiceContent, setVoiceContent] = useState("");
   const [description, setDescription] = useState("");
 
   const { data: templates, isLoading: templatesLoading } = useQuery({
@@ -62,13 +63,21 @@ export function AdminOnboardingPage() {
   useEffect(() => {
     if (selected) {
       setContent(selected.content);
+      setVoiceContent(selected.voiceContent ?? "");
       setDescription(selected.description ?? "");
     }
   }, [selected]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      api.adminUpsertTemplate(token!, selected!.templateKey, content, description || undefined, selected?.locale),
+      api.adminUpsertTemplate(
+        token!,
+        selected!.templateKey,
+        content,
+        description || undefined,
+        selected?.locale,
+        voiceContent.trim() || null,
+      ),
     onSuccess: () => {
       toast.success("Mensagem do onboarding salva");
       queryClient.invalidateQueries({ queryKey: ["admin-templates"] });
@@ -90,6 +99,7 @@ export function AdminOnboardingPage() {
     const template = findByBaseAndTone(templates ?? [], baseKey, tone);
     if (template) {
       setContent(template.content);
+      setVoiceContent(template.voiceContent ?? "");
       setDescription(template.description ?? "");
     }
   }
@@ -100,6 +110,7 @@ export function AdminOnboardingPage() {
       const nextTemplate = findByBaseAndTone(templates ?? [], selectedBaseKey, next);
       if (nextTemplate) {
         setContent(nextTemplate.content);
+        setVoiceContent(nextTemplate.voiceContent ?? "");
         setDescription(nextTemplate.description ?? "");
       }
     }
@@ -237,8 +248,10 @@ export function AdminOnboardingPage() {
             tone={tone}
             selected={selected}
             content={content}
+            voiceContent={voiceContent}
             description={description}
             onContentChange={setContent}
+            onVoiceContentChange={setVoiceContent}
             onDescriptionChange={setDescription}
             onSave={() => saveMutation.mutate()}
             onReset={() => resetMutation.mutate()}

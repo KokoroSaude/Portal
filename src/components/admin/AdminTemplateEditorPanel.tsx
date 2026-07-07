@@ -14,8 +14,10 @@ type AdminTemplateEditorPanelProps = {
   tone: string;
   selected: AdminMessageTemplate | null;
   content: string;
+  voiceContent: string;
   description: string;
   onContentChange: (value: string) => void;
+  onVoiceContentChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onSave: () => void;
   onReset: () => void;
@@ -29,8 +31,10 @@ export function AdminTemplateEditorPanel({
   tone,
   selected,
   content,
+  voiceContent,
   description,
   onContentChange,
+  onVoiceContentChange,
   onDescriptionChange,
   onSave,
   onReset,
@@ -92,6 +96,19 @@ export function AdminTemplateEditorPanel({
                 value={content}
                 onChange={(e) => onContentChange(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-voice-content">Texto falado no áudio (TTS)</Label>
+              <Textarea
+                id="template-voice-content"
+                rows={5}
+                value={voiceContent}
+                onChange={(e) => onVoiceContentChange(e.target.value)}
+                placeholder="Opcional — deixe vazio para usar o catálogo de voz padrão. Prefira frases curtas, sem emojis."
+              />
+              <p className="text-xs text-muted-foreground">
+                Usado só quando o paciente recebe mensagem em áudio. Suporta {"{nome}"} e {"{medicamento}"}.
+              </p>
             </div>
             <WhatsAppMessagePreview content={content} />
             <div className="flex flex-wrap gap-2">

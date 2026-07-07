@@ -1436,11 +1436,18 @@ export const api = {
   getTemplates: (token: string, tone?: string) =>
     request<MessageTemplate[]>(`/api/templates${qs({ tone })}`, { token }),
 
-  upsertTemplate: (token: string, key: string, content: string, description?: string, tone?: string) =>
+  upsertTemplate: (
+    token: string,
+    key: string,
+    content: string,
+    description?: string,
+    tone?: string,
+    voiceContent?: string | null,
+  ) =>
     request<UpsertTemplateResponse | void>(`/api/templates/${encodeURIComponent(key)}`, {
       method: "PUT",
       token,
-      body: { content, description, tone },
+      body: { content, description, tone, voiceContent: voiceContent ?? null },
     }),
 
   resetTemplate: (token: string, key: string, tone?: string) =>
@@ -1808,11 +1815,12 @@ export const api = {
     content: string,
     description?: string,
     locale?: string,
+    voiceContent?: string | null,
   ) =>
     request<void>(`/api/admin/templates/${encodeURIComponent(key)}`, {
       method: "PUT",
       token,
-      body: { content, description, locale },
+      body: { content, description, locale, voiceContent: voiceContent ?? null },
     }),
 
   adminResetTemplate: (token: string, key: string, locale?: string) => {

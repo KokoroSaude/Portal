@@ -1599,6 +1599,7 @@ export interface CreateTenantResponse {
 export interface MessageTemplate {
   templateKey: string;
   content: string;
+  voiceContent: string | null;
   description: string | null;
   isCustom: boolean;
   isActive: boolean;
@@ -1610,6 +1611,7 @@ export interface AdminMessageTemplate {
   tone: string;
   locale: string;
   content: string;
+  voiceContent: string | null;
   description: string | null;
   isCustomized: boolean;
   isActive: boolean;

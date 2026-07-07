@@ -47,6 +47,7 @@ export function AdminTemplatesPage() {
   const [category, setCategory] = useState<TemplateCategoryId>("checkin");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [content, setContent] = useState("");
+  const [voiceContent, setVoiceContent] = useState("");
   const [description, setDescription] = useState("");
   const [filter, setFilter] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -83,7 +84,14 @@ export function AdminTemplatesPage() {
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      api.adminUpsertTemplate(token!, selectedKey!, content, description || undefined, selected?.locale),
+      api.adminUpsertTemplate(
+        token!,
+        selectedKey!,
+        content,
+        description || undefined,
+        selected?.locale,
+        voiceContent.trim() || null,
+      ),
     onSuccess: () => {
       toast.success("Mensagem padrão salva");
       queryClient.invalidateQueries({ queryKey: ["admin-templates"] });
@@ -121,6 +129,7 @@ export function AdminTemplatesPage() {
   function selectTemplate(t: AdminMessageTemplate) {
     setSelectedKey(t.templateKey);
     setContent(t.content);
+    setVoiceContent(t.voiceContent ?? "");
     setDescription(t.description ?? "");
   }
 
@@ -132,6 +141,7 @@ export function AdminTemplatesPage() {
       else {
         setSelectedKey(null);
         setContent("");
+        setVoiceContent("");
         setDescription("");
       }
     }
@@ -323,8 +333,10 @@ export function AdminTemplatesPage() {
             tone={tone}
             selected={selected}
             content={content}
+            voiceContent={voiceContent}
             description={description}
             onContentChange={setContent}
+            onVoiceContentChange={setVoiceContent}
             onDescriptionChange={setDescription}
             onSave={() => saveMutation.mutate()}
             onReset={() => selected && resetMutation.mutate(selected)}
