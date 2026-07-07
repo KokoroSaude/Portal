@@ -1747,6 +1747,8 @@ export interface PatientAiPrompt {
   systemPrompt: string;
   userPayloadDescription: string;
   notes?: string[] | null;
+  isOverridden?: boolean;
+  defaultSystemPrompt?: string | null;
 }
 
 export interface AdminMetaTemplateVariable {

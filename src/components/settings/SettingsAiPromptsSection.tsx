@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
@@ -18,7 +21,22 @@ function categoryLabel(category: string) {
   return CATEGORY_LABELS[category] ?? category;
 }
 
-function PromptCard({ prompt }: { prompt: PatientAiPrompt }) {
+function PromptCard({
+  prompt,
+  editable,
+  onSave,
+  onReset,
+  saving,
+}: {
+  prompt: PatientAiPrompt;
+  editable: boolean;
+  onSave: (id: string, text: string) => void;
+  onReset: (id: string) => void;
+  saving: boolean;
+}) {
+  const [draft, setDraft] = useState(prompt.systemPrompt);
+  const dirty = draft !== prompt.systemPrompt;
+
   return (
     <details className="group rounded-lg border mb-3 last:mb-0 open:shadow-sm">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden">
@@ -29,6 +47,7 @@ function PromptCard({ prompt }: { prompt: PatientAiPrompt }) {
               {prompt.sendsToPatient ? "Vai ao paciente" : "Só backend"}
             </Badge>
             <Badge variant="outline">{prompt.aiUseCaseLabel}</Badge>
+            {prompt.isOverridden ? <Badge variant="secondary">Customizado</Badge> : null}
           </div>
         </div>
         <ChevronDown
@@ -44,9 +63,41 @@ function PromptCard({ prompt }: { prompt: PatientAiPrompt }) {
         </div>
         <div>
           <p className="font-medium text-foreground">System prompt</p>
-          <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap font-mono">
-            {prompt.systemPrompt}
-          </pre>
+          {editable ? (
+            <div className="mt-2 space-y-2">
+              <Textarea
+                className="min-h-48 font-mono text-xs"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  disabled={!dirty || saving || draft.trim().length === 0}
+                  onClick={() => onSave(prompt.id, draft.trim())}
+                >
+                  Salvar override
+                </Button>
+                {prompt.isOverridden || prompt.defaultSystemPrompt ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => {
+                      onReset(prompt.id);
+                      setDraft(prompt.defaultSystemPrompt ?? prompt.systemPrompt);
+                    }}
+                  >
+                    Restaurar padrão
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap font-mono">
+              {prompt.systemPrompt}
+            </pre>
+          )}
         </div>
         <div>
           <p className="font-medium text-foreground">Payload do usuário (contexto enviado ao modelo)</p>
@@ -71,6 +122,8 @@ type Props = {
 
 export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
   const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const editable = scope === "platform";
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["patient-ai-prompts", scope],
@@ -79,6 +132,14 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
         ? api.adminGetPatientAiPrompts(token!)
         : api.getPatientAiPrompts(token!),
     enabled: Boolean(token),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string | null }) =>
+      api.adminUpdatePatientAiPrompt(token!, id, text),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patient-ai-prompts", scope] });
+    },
   });
 
   if (isLoading) {
@@ -108,10 +169,13 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
     <div className="space-y-6">
       <Card className="border-dashed">
         <CardHeader>
-          <CardTitle className="text-base">Referência dos prompts</CardTitle>
+          <CardTitle className="text-base">
+            {editable ? "Prompts editáveis (plataforma)" : "Referência dos prompts"}
+          </CardTitle>
           <CardDescription>
-            Textos exatos enviados ao LLM quando a IA está ativa. Onboarding, Morisky e TCP usam os
-            prompts de personalização ou guidance conforme o modo inbound configurado em Conversação.
+            {editable
+              ? "Overrides de system prompt aplicam-se a todos os tenants. Salve para ativar; restaurar volta ao padrão do código."
+              : "Textos exatos enviados ao LLM quando a IA está ativa. Onboarding, Morisky e TCP usam os prompts de personalização ou guidance conforme o modo inbound configurado em Conversação."}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -119,7 +183,14 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
       <section className="space-y-3">
         <h3 className="text-sm font-semibold">{categoryLabel("texto_outbound")}</h3>
         {outbound.map((prompt) => (
-          <PromptCard key={prompt.id} prompt={prompt} />
+          <PromptCard
+            key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+            prompt={prompt}
+            editable={editable}
+            saving={saveMutation.isPending}
+            onSave={(id, text) => saveMutation.mutate({ id, text })}
+            onReset={(id) => saveMutation.mutate({ id, text: null })}
+          />
         ))}
       </section>
 
@@ -131,7 +202,14 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
             diretamente (exceto quando dispara um template).
           </p>
           {other.map((prompt) => (
-            <PromptCard key={prompt.id} prompt={prompt} />
+            <PromptCard
+              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+              prompt={prompt}
+              editable={editable}
+              saving={saveMutation.isPending}
+              onSave={(id, text) => saveMutation.mutate({ id, text })}
+              onReset={(id) => saveMutation.mutate({ id, text: null })}
+            />
           ))}
         </section>
       ) : null}
