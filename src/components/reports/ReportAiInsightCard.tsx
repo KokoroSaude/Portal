@@ -16,12 +16,18 @@ export type ReportInsightVariant =
   | "senders"
   | "comparison"
   | "morisky"
-  | "tpb";
+  | "tpb"
+  | "conversation-quality"
+  | "retention-churn"
+  | "onboarding-funnel"
+  | "handoffs"
+  | "population-health"
+  | "behavioral-barriers";
 
 type Props = {
   token: string;
-  from: string;
-  to: string;
+  from?: string;
+  to?: string;
   variant?: ReportInsightVariant;
 };
 

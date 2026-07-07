@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { MetricCard } from "@/components/reports/ReportsShared";
+import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useReportApiRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
 import { CLINICAL_PRIORITY_TIER_LABELS, FEATURE_KEYS, TPB_RISK_LABELS } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
@@ -32,6 +34,7 @@ const CHART_COLORS = ["#E85F5F", "#F4A261", "#2A9D8F", "#457B9D", "#9B5DE5"];
 
 export function ReportsPopulationPage() {
   const { token, hasFeature } = useAuth();
+  const { from, to } = useReportApiRange();
 
   const report = useQuery({
     queryKey: ["population-health-report"],
@@ -64,6 +67,9 @@ export function ReportsPopulationPage() {
 
       {report.data && (
         <>
+          {token && (
+            <ReportAiInsightCard token={token} from={from} to={to} variant="population-health" />
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard title="Pacientes ativos" value={report.data.totalPatients} />
             <MetricCard

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { formatDateTime, formatPercent } from "@/lib/utils";
 
 type BehavioralBarriersReportCardProps = {
@@ -32,6 +33,8 @@ export function BehavioralBarriersReportCard({ token }: BehavioralBarriersReport
   }
 
   return (
+    <div className="space-y-4">
+      <ReportAiInsightCard token={token} variant="behavioral-barriers" />
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Barreiras comportamentais</CardTitle>
@@ -63,5 +66,6 @@ export function BehavioralBarriersReportCard({ token }: BehavioralBarriersReport
         </Table>
       </CardContent>
     </Card>
+    </div>
   );
 }

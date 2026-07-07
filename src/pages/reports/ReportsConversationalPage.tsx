@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ReportSectionNav } from "@/components/reports/ReportSectionNav";
+import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api, ApiClientError } from "@/lib/api";
@@ -134,6 +135,9 @@ export function ReportsConversationalPage() {
             <Skeleton className="h-48 w-full" />
           ) : quality.data ? (
             <>
+              {token && (
+                <ReportAiInsightCard token={token} from={from} to={to} variant="conversation-quality" />
+              )}
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="pb-2">
                   <CardDescription>Qualidade conversacional</CardDescription>
@@ -213,6 +217,9 @@ export function ReportsConversationalPage() {
             <Skeleton className="h-48 w-full" />
           ) : retention.data ? (
             <>
+              {token && (
+                <ReportAiInsightCard token={token} from={from} to={to} variant="retention-churn" />
+              )}
               <div className="flex justify-end">
                 <Button
                   variant="outline"
@@ -273,7 +280,11 @@ export function ReportsConversationalPage() {
           ) : funnel.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : funnel.data ? (
-            <Card>
+            <div className="space-y-4">
+              {token && (
+                <ReportAiInsightCard token={token} from={from} to={to} variant="onboarding-funnel" />
+              )}
+              <Card>
               <CardHeader>
                 <CardTitle className="font-serif text-lg">Funil por etapa</CardTitle>
                 <CardDescription>Jornada de onboarding no período</CardDescription>
@@ -309,6 +320,7 @@ export function ReportsConversationalPage() {
                 )}
               </CardContent>
             </Card>
+            </div>
           ) : null}
         </div>
       )}
@@ -321,6 +333,9 @@ export function ReportsConversationalPage() {
               <Skeleton className="h-48 w-full" />
             ) : handoffs.data ? (
               <>
+                {token && (
+                  <ReportAiInsightCard token={token} from={from} to={to} variant="handoffs" />
+                )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <MetricCard title="Solicitados" value={handoffs.data.requested} />
                   <MetricCard title="Micro-CSAT positivo" value={handoffs.data.microCsatPositive} />

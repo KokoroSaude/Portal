@@ -194,7 +194,10 @@ export function ReportsAdherencePage() {
           {token && <ReportAiInsightCard token={token} from={from} to={to} />}
 
           {token && hasFeature(FEATURE_KEYS.behavioralProfile) && (
-            <BehavioralBarriersReportCard token={token} />
+            <>
+              <ReportAiInsightCard token={token} from={from} to={to} variant="behavioral-barriers" />
+              <BehavioralBarriersReportCard token={token} />
+            </>
           )}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
