@@ -2141,6 +2141,7 @@ export interface AdminVoiceCacheState {
 export interface AdminVoiceCatalogEntry {
   id: string;
   templateKey: string | null;
+  category: "geral" | "morisky" | "tcp";
   label: string;
   sampleText: string;
   preparedText: string;

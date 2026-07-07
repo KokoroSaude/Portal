@@ -16,18 +16,127 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import type { AdminVoiceCatalogEntry } from "@/types/api";
 
 type VoiceAlias = "feminine" | "masculine";
+type VoiceCategory = AdminVoiceCatalogEntry["category"];
+
+const CATEGORY_TABS: { value: VoiceCategory; label: string; description: string }[] = [
+  {
+    value: "geral",
+    label: "Geral",
+    description: "Onboarding, check-in, lembretes e mensagens do fluxo principal.",
+  },
+  {
+    value: "morisky",
+    label: "Morisky",
+    description: "Intro, perguntas MMAS-8 e encerramento da escala de adesão.",
+  },
+  {
+    value: "tcp",
+    label: "TCP",
+    description: "Intro, perguntas da Teoria do Comportamento Planejado e intervenções.",
+  },
+];
 
 function cacheBadge(cached: boolean) {
   return cached ? (
     <Badge variant="success">Em cache</Badge>
   ) : (
     <Badge variant="outline">Sem cache</Badge>
+  );
+}
+
+function categoryStats(entries: AdminVoiceCatalogEntry[], voiceCount: number) {
+  const total = entries.length * voiceCount;
+  const cached = entries.reduce((sum, e) => sum + e.voices.filter((v) => v.cached).length, 0);
+  return { total, cached };
+}
+
+type VoiceEntryListProps = {
+  entries: AdminVoiceCatalogEntry[];
+  playingKey: string | null;
+  warmEntryPending: boolean;
+  onEdit: (entry: AdminVoiceCatalogEntry) => void;
+  onPlay: (entryId: string, voice: VoiceAlias) => void;
+  onWarmEntry: (entryId: string) => void;
+};
+
+function VoiceEntryList({
+  entries,
+  playingKey,
+  warmEntryPending,
+  onEdit,
+  onPlay,
+  onWarmEntry,
+}: VoiceEntryListProps) {
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-6 text-center">
+        Nenhuma entrada nesta categoria.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {entries.map((entry) => (
+        <div key={entry.id} className="rounded-lg border p-4 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="font-medium">{entry.label}</p>
+              {entry.templateKey ? (
+                <p className="text-xs text-muted-foreground font-mono">{entry.templateKey}</p>
+              ) : null}
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(entry)}>
+              <Pencil className="mr-1 h-4 w-4" />
+              Editar texto
+            </Button>
+          </div>
+
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.sampleText}</p>
+          {entry.preparedText !== entry.sampleText ? (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">TTS:</span> {entry.preparedText}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-4">
+            {entry.voices.map((voice) => (
+              <div
+                key={voice.alias}
+                className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2"
+              >
+                <span className="text-sm font-medium">{voice.displayName}</span>
+                {cacheBadge(voice.cached)}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={playingKey === `${entry.id}:${voice.alias}`}
+                  onClick={() => onPlay(entry.id, voice.alias as VoiceAlias)}
+                >
+                  <Play className="mr-1 h-3 w-3" />
+                  Ouvir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={warmEntryPending}
+                  onClick={() => onWarmEntry(entry.id)}
+                >
+                  Regerar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -39,6 +148,7 @@ export function AdminVoiceCatalogPage() {
   const [editing, setEditing] = useState<AdminVoiceCatalogEntry | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editText, setEditText] = useState("");
+  const [activeTab, setActiveTab] = useState<VoiceCategory>("geral");
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["admin-voice-catalog"],
@@ -46,9 +156,25 @@ export function AdminVoiceCatalogPage() {
     enabled: !!token,
   });
 
-  const warmAllMutation = useMutation({
-    mutationFn: (force: boolean) =>
-      api.adminWarmVoiceCache(token!, { forceRegenerate: force }),
+  const entriesByCategory = useMemo(() => {
+    const grouped: Record<VoiceCategory, AdminVoiceCatalogEntry[]> = {
+      geral: [],
+      morisky: [],
+      tcp: [],
+    };
+    for (const entry of data?.entries ?? []) {
+      const category = entry.category ?? "geral";
+      grouped[category].push(entry);
+    }
+    return grouped;
+  }, [data?.entries]);
+
+  const warmMutation = useMutation({
+    mutationFn: (payload: { entryIds?: string[]; force: boolean }) =>
+      api.adminWarmVoiceCache(token!, {
+        entryIds: payload.entryIds,
+        forceRegenerate: payload.force,
+      }),
     onSuccess: (result) => {
       toast.success(
         `Cache: ${result.warmed} gerados · ${result.cacheHits} já existiam · ${result.failed} falhas`,
@@ -57,20 +183,6 @@ export function AdminVoiceCatalogPage() {
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao gerar cache"),
-  });
-
-  const warmEntryMutation = useMutation({
-    mutationFn: (payload: { entryId: string; force: boolean }) =>
-      api.adminWarmVoiceCache(token!, {
-        entryIds: [payload.entryId],
-        forceRegenerate: payload.force,
-      }),
-    onSuccess: () => {
-      toast.success("Áudios regerados");
-      queryClient.invalidateQueries({ queryKey: ["admin-voice-catalog"] });
-    },
-    onError: (err) =>
-      toast.error(err instanceof ApiClientError ? err.message : "Erro ao regerar"),
   });
 
   const saveMutation = useMutation({
@@ -88,14 +200,9 @@ export function AdminVoiceCatalogPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar"),
   });
 
-  const stats = useMemo(() => {
+  const globalStats = useMemo(() => {
     if (!data) return null;
-    const total = data.entries.length * data.voices.length;
-    const cached = data.entries.reduce(
-      (sum, e) => sum + e.voices.filter((v) => v.cached).length,
-      0,
-    );
-    return { total, cached };
+    return categoryStats(data.entries, data.voices.length);
   }, [data]);
 
   async function playPreview(entryId: string, voice: VoiceAlias, force = false) {
@@ -124,12 +231,25 @@ export function AdminVoiceCatalogPage() {
     setEditText(entry.sampleText);
   }
 
+  function warmCategory(category: VoiceCategory, force: boolean) {
+    const entryIds = entriesByCategory[category].map((e) => e.id);
+    if (entryIds.length === 0) {
+      toast.message("Nenhuma entrada nesta aba para aquecer.");
+      return;
+    }
+    warmMutation.mutate({ entryIds, force });
+  }
+
+  const activeMeta = CATEGORY_TABS.find((t) => t.value === activeTab)!;
+  const activeEntries = entriesByCategory[activeTab];
+  const activeStats = data ? categoryStats(activeEntries, data.voices.length) : null;
+
   return (
     <div className="space-y-6">
       <audio ref={audioRef} className="hidden" />
       <PageHeader
         title="Catálogo de vozes"
-        description="Ouça, edite o texto e regere o cache TTS para voz feminina e masculina."
+        description="Ouça, edite o texto e regere o cache TTS por fluxo — geral, Morisky e TCP."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
@@ -138,16 +258,16 @@ export function AdminVoiceCatalogPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => warmAllMutation.mutate(false)}
-              disabled={warmAllMutation.isPending}
+              onClick={() => warmMutation.mutate({ force: false })}
+              disabled={warmMutation.isPending}
             >
-              Preencher cache
+              Preencher tudo
             </Button>
             <Button
-              onClick={() => warmAllMutation.mutate(true)}
-              disabled={warmAllMutation.isPending}
+              onClick={() => warmMutation.mutate({ force: true })}
+              disabled={warmMutation.isPending}
             >
-              {warmAllMutation.isPending ? (
+              {warmMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Volume2 className="mr-2 h-4 w-4" />
@@ -164,86 +284,84 @@ export function AdminVoiceCatalogPage() {
           <CardDescription>
             Velocidade da fala: {data?.synthesisSpeed ?? "—"} · TTL do cache:{" "}
             {data?.cacheTtlHours ?? "—"}h
-            {stats ? ` · ${stats.cached}/${stats.total} áudios em cache` : ""}
+            {globalStats ? ` · ${globalStats.cached}/${globalStats.total} áudios em cache` : ""}
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Entradas do catálogo</CardTitle>
-          <CardDescription>
-            O texto editado aqui é o que vai para o Kokoro Voice no pré-cache e nas mensagens em
-            áudio.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : (
-            data?.entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-lg border p-4 space-y-3"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{entry.label}</p>
-                    {entry.templateKey ? (
-                      <p className="text-xs text-muted-foreground font-mono">{entry.templateKey}</p>
-                    ) : null}
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(entry)}>
-                    <Pencil className="mr-1 h-4 w-4" />
-                    Editar texto
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as VoiceCategory)}>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          {CATEGORY_TABS.map((tab) => {
+            const count = entriesByCategory[tab.value].length;
+            const stats = data ? categoryStats(entriesByCategory[tab.value], data.voices.length) : null;
+            return (
+              <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
+                {tab.label}
+                <Badge variant="secondary" className="font-normal">
+                  {count}
+                </Badge>
+                {stats ? (
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    {stats.cached}/{stats.total}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        {CATEGORY_TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4 space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+                <div>
+                  <CardTitle>{tab.label}</CardTitle>
+                  <CardDescription>
+                    {tab.description}
+                    {tab.value === activeTab && activeStats
+                      ? ` · ${activeStats.cached}/${activeStats.total} em cache`
+                      : ""}
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={warmMutation.isPending}
+                    onClick={() => warmCategory(tab.value, false)}
+                  >
+                    Preencher {tab.label}
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={warmMutation.isPending}
+                    onClick={() => warmCategory(tab.value, true)}
+                  >
+                    Regerar {tab.label}
                   </Button>
                 </div>
-
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{entry.sampleText}</p>
-                {entry.preparedText !== entry.sampleText ? (
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium">TTS:</span> {entry.preparedText}
-                  </p>
-                ) : null}
-
-                <div className="flex flex-wrap gap-4">
-                  {entry.voices.map((voice) => (
-                    <div
-                      key={voice.alias}
-                      className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2"
-                    >
-                      <span className="text-sm font-medium">{voice.displayName}</span>
-                      {cacheBadge(voice.cached)}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={playingKey === `${entry.id}:${voice.alias}`}
-                        onClick={() => playPreview(entry.id, voice.alias as VoiceAlias)}
-                      >
-                        <Play className="mr-1 h-3 w-3" />
-                        Ouvir
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={warmEntryMutation.isPending}
-                        onClick={() =>
-                          warmEntryMutation.mutate({ entryId: entry.id, force: true })
-                        }
-                      >
-                        Regerar
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                  </div>
+                ) : (
+                  <VoiceEntryList
+                    entries={entriesByCategory[tab.value]}
+                    playingKey={playingKey}
+                    warmEntryPending={warmMutation.isPending}
+                    onEdit={openEdit}
+                    onPlay={playPreview}
+                    onWarmEntry={(entryId) => warmMutation.mutate({ entryIds: [entryId], force: true })}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-w-lg">
