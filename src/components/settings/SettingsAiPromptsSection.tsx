@@ -19,6 +19,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   classificacao_inbound: "Classificação (não enviada)",
   extracao_dados: "Extração de dados (não enviada)",
   copilot_portal: "Copilot no portal",
+  relatorios_ia: "Insights de relatórios",
 };
 
 const AUDIENCE_TABS: {
@@ -36,6 +37,11 @@ const AUDIENCE_TABS: {
     label: "Operação (portal)",
     description: "Resumo do paciente e sugestões do Assistente Kokoro em /assistente-ia.",
   },
+  {
+    value: "reports",
+    label: "Relatórios",
+    description: "Insights IA dos relatórios (adesão, engajamento, escalas) e resumo da avaliação estratégica.",
+  },
 ];
 
 function categoryLabel(category: string) {
@@ -43,7 +49,10 @@ function categoryLabel(category: string) {
 }
 
 function resolveAudience(prompt: PatientAiPrompt): PromptAudience {
-  if (prompt.audience === "patient" || prompt.audience === "operator") return prompt.audience;
+  if (prompt.audience === "patient" || prompt.audience === "operator" || prompt.audience === "reports")
+    return prompt.audience;
+  if (prompt.category === "relatorios_ia" || prompt.id.startsWith("report_insight_"))
+    return "reports";
   return "patient";
 }
 
@@ -71,11 +80,13 @@ function PromptCard({
           <span className="font-medium text-sm">{prompt.title}</span>
           <div className="flex flex-wrap gap-2">
             <Badge variant={audience === "patient" && prompt.sendsToPatient ? "default" : "secondary"}>
-              {audience === "operator"
-                ? "Equipe / portal"
-                : prompt.sendsToPatient
-                  ? "Vai ao paciente"
-                  : "Só backend"}
+              {audience === "reports"
+                ? "Relatórios / equipe"
+                : audience === "operator"
+                  ? "Equipe / portal"
+                  : prompt.sendsToPatient
+                    ? "Vai ao paciente"
+                    : "Só backend"}
             </Badge>
             <Badge variant="outline">{prompt.aiUseCaseLabel}</Badge>
             {prompt.isOverridden ? <Badge variant="secondary">Customizado</Badge> : null}
@@ -161,8 +172,12 @@ function PromptAudiencePanel({
 }) {
   const outbound = prompts.filter((p) => p.category === "texto_outbound");
   const copilot = prompts.filter((p) => p.category === "copilot_portal");
+  const reports = prompts.filter((p) => p.category === "relatorios_ia");
   const other = prompts.filter(
-    (p) => p.category !== "texto_outbound" && p.category !== "copilot_portal",
+    (p) =>
+      p.category !== "texto_outbound"
+      && p.category !== "copilot_portal"
+      && p.category !== "relatorios_ia",
   );
 
   if (prompts.length === 0) {
@@ -193,6 +208,22 @@ function PromptAudiencePanel({
         <section className="space-y-3">
           <h3 className="text-sm font-semibold">{categoryLabel("copilot_portal")}</h3>
           {copilot.map((prompt) => (
+            <PromptCard
+              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+              prompt={prompt}
+              editable={editable}
+              saving={saving}
+              onSave={onSave}
+              onReset={onReset}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {reports.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold">{categoryLabel("relatorios_ia")}</h3>
+          {reports.map((prompt) => (
             <PromptCard
               key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
               prompt={prompt}
@@ -260,6 +291,7 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
     const grouped: Record<PromptAudience, PatientAiPrompt[]> = {
       patient: [],
       operator: [],
+      reports: [],
     };
     for (const prompt of data ?? []) {
       grouped[resolveAudience(prompt)].push(prompt);
@@ -299,7 +331,7 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
           </CardTitle>
           <CardDescription>
             {editable
-              ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas para separar WhatsApp (paciente) e copilot (equipe)."
+              ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas: WhatsApp, copilot no portal e relatórios."
               : "Textos enviados ao LLM quando a IA está ativa — paciente no WhatsApp e equipe no portal."}
           </CardDescription>
         </CardHeader>
