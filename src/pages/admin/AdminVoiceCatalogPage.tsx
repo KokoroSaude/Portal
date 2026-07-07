@@ -186,14 +186,37 @@ export function AdminVoiceCatalogPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      api.adminUpdateVoiceCatalogEntry(token!, editing!.id, {
-        sampleText: editText,
+    mutationFn: async () => {
+      const updated = await api.adminUpdateVoiceCatalogEntry(token!, editing!.id, {
+        sampleText: editText.trim(),
         label: editLabel.trim() || undefined,
-      }),
-    onSuccess: () => {
-      toast.success("Texto salvo");
+      });
+      try {
+        const warm = await api.adminWarmVoiceCache(token!, {
+          entryIds: [updated.id],
+          forceRegenerate: true,
+        });
+        return { updated, warm };
+      } catch {
+        return { updated, warm: null };
+      }
+    },
+    onSuccess: ({ updated, warm }) => {
+      if (warm) {
+        toast.success(
+          `Texto salvo e áudios regerados (${warm.warmed} vozes · ${warm.failed} falhas)`,
+        );
+      } else {
+        toast.success("Texto salvo. Use Regerar se o áudio não atualizar.");
+      }
       setEditing(null);
+      queryClient.setQueryData(["admin-voice-catalog"], (prev: typeof data) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: prev.entries.map((e) => (e.id === updated.id ? updated : e)),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["admin-voice-catalog"] });
     },
     onError: (err) =>
@@ -366,8 +389,15 @@ export function AdminVoiceCatalogPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar texto da voz</DialogTitle>
+            {editing?.templateKey ? (
+              <p className="text-sm text-muted-foreground font-mono">{editing.templateKey}</p>
+            ) : null}
           </DialogHeader>
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Este texto é o que o paciente <strong>ouve</strong> quando a mensagem vai em áudio no
+              WhatsApp. O texto escrito na conversa pode ser diferente.
+            </p>
             <div className="space-y-2">
               <Label htmlFor="voice-label">Rótulo</Label>
               <Input
@@ -383,11 +413,12 @@ export function AdminVoiceCatalogPage() {
                 rows={6}
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
+                placeholder="Frases curtas, sem emojis nem formatação WhatsApp."
               />
             </div>
-            {editing ? (
-              <p className="text-xs text-muted-foreground">
-                Após salvar, use &quot;Regerar&quot; para atualizar o cache das duas vozes.
+            {editing?.preparedText && editing.preparedText !== editText ? (
+              <p className="text-xs text-muted-foreground rounded-md border bg-muted/30 px-3 py-2">
+                <span className="font-medium">Prévia TTS atual:</span> {editing.preparedText}
               </p>
             ) : null}
           </div>
@@ -399,7 +430,14 @@ export function AdminVoiceCatalogPage() {
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || !editText.trim()}
             >
-              Salvar
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando…
+                </>
+              ) : (
+                "Salvar e regerar áudios"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
