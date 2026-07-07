@@ -186,29 +186,13 @@ export function AdminVoiceCatalogPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      const updated = await api.adminUpdateVoiceCatalogEntry(token!, editing!.id, {
+    mutationFn: () =>
+      api.adminUpdateVoiceCatalogEntry(token!, editing!.id, {
         sampleText: editText.trim(),
         label: editLabel.trim() || undefined,
-      });
-      try {
-        const warm = await api.adminWarmVoiceCache(token!, {
-          entryIds: [updated.id],
-          forceRegenerate: true,
-        });
-        return { updated, warm };
-      } catch {
-        return { updated, warm: null };
-      }
-    },
-    onSuccess: ({ updated, warm }) => {
-      if (warm) {
-        toast.success(
-          `Texto salvo e áudios regerados (${warm.warmed} vozes · ${warm.failed} falhas)`,
-        );
-      } else {
-        toast.success("Texto salvo. Use Regerar se o áudio não atualizar.");
-      }
+      }),
+    onSuccess: (updated) => {
+      toast.success("Texto salvo");
       setEditing(null);
       queryClient.setQueryData(["admin-voice-catalog"], (prev: typeof data) => {
         if (!prev) return prev;
@@ -421,6 +405,10 @@ export function AdminVoiceCatalogPage() {
                 <span className="font-medium">Prévia TTS atual:</span> {editing.preparedText}
               </p>
             ) : null}
+            <p className="text-xs text-muted-foreground">
+              O novo texto vale nos próximos áudios enviados. Use &quot;Regerar&quot; na lista só se
+              quiser atualizar o cache de pré-escuta.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>
@@ -436,7 +424,7 @@ export function AdminVoiceCatalogPage() {
                   Salvando…
                 </>
               ) : (
-                "Salvar e regerar áudios"
+                "Salvar"
               )}
             </Button>
           </DialogFooter>
