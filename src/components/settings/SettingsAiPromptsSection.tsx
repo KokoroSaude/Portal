@@ -1,24 +1,50 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import type { PatientAiPrompt } from "@/types/api";
 
+type PromptAudience = PatientAiPrompt["audience"];
+
 const CATEGORY_LABELS: Record<string, string> = {
   texto_outbound: "Texto enviado ao paciente",
   classificacao_inbound: "Classificação (não enviada)",
   extracao_dados: "Extração de dados (não enviada)",
+  copilot_portal: "Copilot no portal",
 };
+
+const AUDIENCE_TABS: {
+  value: PromptAudience;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "patient",
+    label: "Paciente (WhatsApp)",
+    description: "Onboarding, escalas, lembretes, receitas e mensagens outbound.",
+  },
+  {
+    value: "operator",
+    label: "Operação (portal)",
+    description: "Resumo do paciente e sugestões do Assistente Kokoro em /assistente-ia.",
+  },
+];
 
 function categoryLabel(category: string) {
   return CATEGORY_LABELS[category] ?? category;
+}
+
+function resolveAudience(prompt: PatientAiPrompt): PromptAudience {
+  if (prompt.audience === "patient" || prompt.audience === "operator") return prompt.audience;
+  return "patient";
 }
 
 function PromptCard({
@@ -36,6 +62,7 @@ function PromptCard({
 }) {
   const [draft, setDraft] = useState(prompt.systemPrompt);
   const dirty = draft !== prompt.systemPrompt;
+  const audience = resolveAudience(prompt);
 
   return (
     <details className="group rounded-lg border mb-3 last:mb-0 open:shadow-sm">
@@ -43,8 +70,12 @@ function PromptCard({
         <div className="flex flex-col items-start gap-2 text-left sm:flex-row sm:items-center sm:gap-3">
           <span className="font-medium text-sm">{prompt.title}</span>
           <div className="flex flex-wrap gap-2">
-            <Badge variant={prompt.sendsToPatient ? "default" : "secondary"}>
-              {prompt.sendsToPatient ? "Vai ao paciente" : "Só backend"}
+            <Badge variant={audience === "patient" && prompt.sendsToPatient ? "default" : "secondary"}>
+              {audience === "operator"
+                ? "Equipe / portal"
+                : prompt.sendsToPatient
+                  ? "Vai ao paciente"
+                  : "Só backend"}
             </Badge>
             <Badge variant="outline">{prompt.aiUseCaseLabel}</Badge>
             {prompt.isOverridden ? <Badge variant="secondary">Customizado</Badge> : null}
@@ -115,6 +146,88 @@ function PromptCard({
   );
 }
 
+function PromptAudiencePanel({
+  prompts,
+  editable,
+  saving,
+  onSave,
+  onReset,
+}: {
+  prompts: PatientAiPrompt[];
+  editable: boolean;
+  saving: boolean;
+  onSave: (id: string, text: string) => void;
+  onReset: (id: string) => void;
+}) {
+  const outbound = prompts.filter((p) => p.category === "texto_outbound");
+  const copilot = prompts.filter((p) => p.category === "copilot_portal");
+  const other = prompts.filter(
+    (p) => p.category !== "texto_outbound" && p.category !== "copilot_portal",
+  );
+
+  if (prompts.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-6 text-center">Nenhum prompt nesta aba.</p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {outbound.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold">{categoryLabel("texto_outbound")}</h3>
+          {outbound.map((prompt) => (
+            <PromptCard
+              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+              prompt={prompt}
+              editable={editable}
+              saving={saving}
+              onSave={onSave}
+              onReset={onReset}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {copilot.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold">{categoryLabel("copilot_portal")}</h3>
+          {copilot.map((prompt) => (
+            <PromptCard
+              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+              prompt={prompt}
+              editable={editable}
+              saving={saving}
+              onSave={onSave}
+              onReset={onReset}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {other.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold">Classificação e extração</h3>
+          <p className="text-sm text-muted-foreground">
+            Estes prompts interpretam a mensagem do paciente; o texto retornado não é enviado
+            diretamente (exceto quando dispara um template).
+          </p>
+          {other.map((prompt) => (
+            <PromptCard
+              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
+              prompt={prompt}
+              editable={editable}
+              saving={saving}
+              onSave={onSave}
+              onReset={onReset}
+            />
+          ))}
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 type Props = {
   /** tenant = /api/settings/ai/prompts · platform = /api/admin/platform/ai/prompts */
   scope?: "tenant" | "platform";
@@ -124,6 +237,7 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const editable = scope === "platform";
+  const [activeTab, setActiveTab] = useState<PromptAudience>("patient");
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["patient-ai-prompts", scope],
@@ -141,6 +255,17 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
       queryClient.invalidateQueries({ queryKey: ["patient-ai-prompts", scope] });
     },
   });
+
+  const byAudience = useMemo(() => {
+    const grouped: Record<PromptAudience, PatientAiPrompt[]> = {
+      patient: [],
+      operator: [],
+    };
+    for (const prompt of data ?? []) {
+      grouped[resolveAudience(prompt)].push(prompt);
+    }
+    return grouped;
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -162,8 +287,8 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
     );
   }
 
-  const outbound = data.filter((p) => p.category === "texto_outbound");
-  const other = data.filter((p) => p.category !== "texto_outbound");
+  const onSave = (id: string, text: string) => saveMutation.mutate({ id, text });
+  const onReset = (id: string) => saveMutation.mutate({ id, text: null });
 
   return (
     <div className="space-y-6">
@@ -174,45 +299,37 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
           </CardTitle>
           <CardDescription>
             {editable
-              ? "Overrides de system prompt aplicam-se a todos os tenants. Salve para ativar; restaurar volta ao padrão do código."
-              : "Textos exatos enviados ao LLM quando a IA está ativa. Onboarding, Morisky e TCP usam os prompts de personalização ou guidance conforme o modo inbound configurado em Conversação."}
+              ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas para separar WhatsApp (paciente) e copilot (equipe)."
+              : "Textos enviados ao LLM quando a IA está ativa — paciente no WhatsApp e equipe no portal."}
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold">{categoryLabel("texto_outbound")}</h3>
-        {outbound.map((prompt) => (
-          <PromptCard
-            key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
-            prompt={prompt}
-            editable={editable}
-            saving={saveMutation.isPending}
-            onSave={(id, text) => saveMutation.mutate({ id, text })}
-            onReset={(id) => saveMutation.mutate({ id, text: null })}
-          />
-        ))}
-      </section>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PromptAudience)}>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          {AUDIENCE_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
+              {tab.label}
+              <Badge variant="secondary" className="font-normal">
+                {byAudience[tab.value].length}
+              </Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {other.length > 0 ? (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold">Classificação e extração</h3>
-          <p className="text-sm text-muted-foreground">
-            Estes prompts interpretam a mensagem do paciente; o texto retornado não é enviado
-            diretamente (exceto quando dispara um template).
-          </p>
-          {other.map((prompt) => (
-            <PromptCard
-              key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
-              prompt={prompt}
+        {AUDIENCE_TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">{tab.description}</p>
+            <PromptAudiencePanel
+              prompts={byAudience[tab.value]}
               editable={editable}
               saving={saveMutation.isPending}
-              onSave={(id, text) => saveMutation.mutate({ id, text })}
-              onReset={(id) => saveMutation.mutate({ id, text: null })}
+              onSave={onSave}
+              onReset={onReset}
             />
-          ))}
-        </section>
-      ) : null}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

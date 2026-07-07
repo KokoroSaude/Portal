@@ -1739,6 +1739,7 @@ export interface PlatformAiTestResult {
 export interface PatientAiPrompt {
   id: string;
   title: string;
+  audience: "patient" | "operator";
   category: string;
   aiUseCaseKey: string;
   aiUseCaseLabel: string;
