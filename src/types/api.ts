@@ -819,6 +819,8 @@ export interface TenantSettings {
   pickupErpAllowedIps?: string | null;
   pickupErpSandboxMode?: boolean;
   pharmacyContactPhone?: string | null;
+  ecommerceShopUrl?: string | null;
+  speechToTextEnabled?: boolean;
   activeInboundMode?: InboundConversationalMode;
   onboardingInboundMode?: InboundConversationalMode;
   checkinInboundMode?: InboundConversationalMode;

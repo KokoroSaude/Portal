@@ -56,6 +56,8 @@ type RawTenantSettings = TenantSettings & {
   PickupErpAllowedIps?: string | null;
   PickupErpSandboxMode?: boolean;
   PharmacyContactPhone?: string | null;
+  EcommerceShopUrl?: string | null;
+  SpeechToTextEnabled?: boolean;
   ActiveInboundMode?: TenantSettings["activeInboundMode"];
   OnboardingInboundMode?: TenantSettings["onboardingInboundMode"];
   CheckinInboundMode?: TenantSettings["checkinInboundMode"];
@@ -165,6 +167,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
     pickupErpAllowedIps: raw.pickupErpAllowedIps ?? raw.PickupErpAllowedIps ?? null,
     pickupErpSandboxMode: raw.pickupErpSandboxMode ?? raw.PickupErpSandboxMode ?? false,
     pharmacyContactPhone: raw.pharmacyContactPhone ?? raw.PharmacyContactPhone ?? null,
+    ecommerceShopUrl: raw.ecommerceShopUrl ?? raw.EcommerceShopUrl ?? null,
+    speechToTextEnabled: raw.speechToTextEnabled ?? raw.SpeechToTextEnabled ?? false,
     activeInboundMode: raw.activeInboundMode ?? raw.ActiveInboundMode ?? "AiGuidance",
     onboardingInboundMode: raw.onboardingInboundMode ?? raw.OnboardingInboundMode ?? "AiPersonalize",
     checkinInboundMode: raw.checkinInboundMode ?? raw.CheckinInboundMode ?? "AiPersonalize",

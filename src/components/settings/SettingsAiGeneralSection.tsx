@@ -79,6 +79,14 @@ export function SettingsAiGeneralSection({ form, settings, hasFeature, update }:
             checked={form.voiceMessagesEnabled}
             onCheckedChange={(checked) => update("voiceMessagesEnabled", checked)}
           />
+          <SettingsSwitchField
+            id="speechToTextEnabled"
+            label="Transcrição de áudio recebido (STT)"
+            hint="Converte mensagens de voz do paciente em texto para NLU, lembretes e histórico. Requer IA ativa."
+            checked={form.speechToTextEnabled ?? false}
+            onCheckedChange={(checked) => update("speechToTextEnabled", checked)}
+            disabled={!form.aiEnabled}
+          />
           {form.voiceMessagesEnabled && (
             <SettingsField
               label="Voz da farmácia"

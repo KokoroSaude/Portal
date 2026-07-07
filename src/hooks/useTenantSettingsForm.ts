@@ -56,6 +56,8 @@ function normalizeSettings(settings: TenantSettings): TenantSettings {
     pickupErpAllowedIps: settings.pickupErpAllowedIps ?? "",
     pickupErpSandboxMode: settings.pickupErpSandboxMode ?? false,
     pharmacyContactPhone: settings.pharmacyContactPhone ?? "",
+    ecommerceShopUrl: settings.ecommerceShopUrl ?? "",
+    speechToTextEnabled: settings.speechToTextEnabled ?? false,
     activeInboundMode: settings.activeInboundMode ?? "AiGuidance",
     onboardingInboundMode: settings.onboardingInboundMode ?? "AiPersonalize",
     checkinInboundMode: settings.checkinInboundMode ?? "AiPersonalize",

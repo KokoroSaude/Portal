@@ -29,6 +29,20 @@ export function SettingsAiConversationHandoffSection({ form, update }: Props) {
         />
       </SettingsField>
 
+      <SettingsField
+        htmlFor="ecommerceShopUrl"
+        label="URL da loja online (recompra)"
+        hint="Base HTTPS usada para montar links de recompra de medicamentos enviados ao paciente."
+      >
+        <Input
+          id="ecommerceShopUrl"
+          type="url"
+          placeholder="https://loja.farmacia.com.br/busca"
+          value={form.ecommerceShopUrl ?? ""}
+          onChange={(e) => update("ecommerceShopUrl", e.target.value || null)}
+        />
+      </SettingsField>
+
       <div className="grid gap-2 sm:grid-cols-2">
         <SettingsField
           htmlFor="humanLatencyMinSeconds"
