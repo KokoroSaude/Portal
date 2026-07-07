@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,45 @@ const AUDIENCE_TABS: {
 
 function categoryLabel(category: string) {
   return CATEGORY_LABELS[category] ?? category;
+}
+
+function downloadJsonFile(fileName: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAllPrompts(prompts: PatientAiPrompt[]) {
+  const exportedAt = new Date().toISOString();
+  const payload = {
+    exportedAt,
+    promptCount: prompts.length,
+    prompts: prompts.map((prompt) => ({
+      id: prompt.id,
+      title: prompt.title,
+      audience: resolveAudience(prompt),
+      category: prompt.category,
+      aiUseCaseKey: prompt.aiUseCaseKey,
+      aiUseCaseLabel: prompt.aiUseCaseLabel,
+      sendsToPatient: prompt.sendsToPatient,
+      whenUsed: prompt.whenUsed,
+      systemPrompt: prompt.systemPrompt,
+      defaultSystemPrompt: prompt.defaultSystemPrompt ?? null,
+      isOverridden: prompt.isOverridden ?? false,
+      userPayloadDescription: prompt.userPayloadDescription,
+      notes: prompt.notes ?? [],
+    })),
+  };
+
+  const date = exportedAt.slice(0, 10);
+  downloadJsonFile(`kokoro-prompts-ia-${date}.json`, payload);
+  toast.success(`${prompts.length} prompts exportados`);
 }
 
 function resolveAudience(prompt: PatientAiPrompt): PromptAudience {
@@ -325,15 +365,29 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
   return (
     <div className="space-y-6">
       <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {editable ? "Prompts editáveis (plataforma)" : "Referência dos prompts"}
-          </CardTitle>
-          <CardDescription>
-            {editable
-              ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas: WhatsApp, copilot no portal e relatórios."
-              : "Textos enviados ao LLM quando a IA está ativa — paciente no WhatsApp e equipe no portal."}
-          </CardDescription>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <CardTitle className="text-base">
+              {editable ? "Prompts editáveis (plataforma)" : "Referência dos prompts"}
+            </CardTitle>
+            <CardDescription>
+              {editable
+                ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas: WhatsApp, copilot no portal e relatórios."
+                : "Textos enviados ao LLM quando a IA está ativa — paciente no WhatsApp e equipe no portal."}
+            </CardDescription>
+          </div>
+          {editable ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => exportAllPrompts(data)}
+            >
+              <Download className="mr-2 size-4" />
+              Exportar todos
+            </Button>
+          ) : null}
         </CardHeader>
       </Card>
 
