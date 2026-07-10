@@ -23,6 +23,8 @@ export const FEATURE_KEYS = {
   behavioralProfile: "behavioral.profile",
   aiCopilot: "ai.copilot",
   satisfactionCsat: "satisfaction.csat",
+  engagementReminders: "engagement.reminders",
+  engagementMilestones: "engagement.milestones",
   whatsappConversations: "whatsapp.conversations",
   whatsappVoice: "whatsapp.voice",
   whatsappPrescription: "whatsapp.prescription",

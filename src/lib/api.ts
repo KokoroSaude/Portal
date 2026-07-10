@@ -35,9 +35,11 @@ import type {
   CsatManualTriggerResult,
   MoriskyBulkTriggerResult,
   MoriskyManualTriggerResult,
+  MilestoneManualTriggerResult,
   MoriskyReport,
   OnboardingBulkTriggerResult,
   OnboardingManualTriggerResult,
+  ReminderManualTriggerResult,
   PatientAiBrief,
   PatientAiPrompt,
   PatientAiSuggestions,
@@ -540,6 +542,19 @@ export const api = {
     request<CsatManualTriggerResult>(`/api/patients/${patientId}/csat/trigger`, {
       method: "POST",
       token,
+    }),
+
+  triggerPatientReminder: (token: string, patientId: string) =>
+    request<ReminderManualTriggerResult>(`/api/patients/${patientId}/reminders/trigger`, {
+      method: "POST",
+      token,
+    }),
+
+  triggerPatientMilestone: (token: string, patientId: string, days: 7 | 14 | 30) =>
+    request<MilestoneManualTriggerResult>(`/api/patients/${patientId}/milestones/trigger`, {
+      method: "POST",
+      token,
+      body: { days },
     }),
 
   triggerOnboardingResume: (token: string, patientId: string) =>

@@ -63,6 +63,7 @@ export function PatientDetailPage() {
   const { token, canWrite, hasFeature, isPlatform } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
+  const [milestoneDays, setMilestoneDays] = useState<7 | 14 | 30>(7);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
@@ -146,6 +147,30 @@ export function PatientDetailPage() {
     },
     onError: (err) =>
       toast.error(err instanceof ApiClientError ? err.message : "Erro ao enviar lembrete de cadastro"),
+  });
+
+  const triggerReminderMutation = useMutation({
+    mutationFn: () => api.triggerPatientReminder(token!, id!),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+      void queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
+      void queryClient.invalidateQueries({ queryKey: ["patient-timeline", id] });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar lembrete de teste"),
+  });
+
+  const triggerMilestoneMutation = useMutation({
+    mutationFn: () => api.triggerPatientMilestone(token!, id!, milestoneDays),
+    onSuccess: (result) => {
+      if (result.sent) toast.success(result.message);
+      else toast.warning(result.message);
+      void queryClient.invalidateQueries({ queryKey: ["patient-timeline", id] });
+      void queryClient.invalidateQueries({ queryKey: ["patient-scheduling", id] });
+    },
+    onError: (err) =>
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao disparar marco"),
   });
 
   const pauseMutation = useMutation({
@@ -245,6 +270,10 @@ export function PatientDetailPage() {
   const canPause = patient.status === "Active" || patient.status === "Onboarding";
   const canResume = patient.status === "Paused";
   const canReactivateFromOptOut = patient.status === "OptedOut";
+  const remindersEnabled = hasFeature(FEATURE_KEYS.engagementReminders);
+  const milestonesEnabled = hasFeature(FEATURE_KEYS.engagementMilestones);
+  const showEngagementTriggers =
+    canWrite && patient.status === "Active" && (remindersEnabled || milestonesEnabled);
 
   const showMoreSection =
     id &&
@@ -569,6 +598,17 @@ export function PatientDetailPage() {
         patientId={patient.id}
         patientStatus={patient.status}
         canWrite={canWrite}
+        showEngagementTriggers={showEngagementTriggers}
+        milestoneDays={milestoneDays}
+        onMilestoneDaysChange={setMilestoneDays}
+        onTriggerTestReminder={
+          remindersEnabled ? () => triggerReminderMutation.mutate() : undefined
+        }
+        onTriggerMilestone={
+          milestonesEnabled ? () => triggerMilestoneMutation.mutate() : undefined
+        }
+        isTriggeringReminder={triggerReminderMutation.isPending}
+        isTriggeringMilestone={triggerMilestoneMutation.isPending}
         onPause={canPause ? () => setPauseOpen(true) : undefined}
         onResume={
           canResume || canReactivateFromOptOut ? () => resumeMutation.mutate() : undefined

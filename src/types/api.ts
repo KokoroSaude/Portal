@@ -1194,6 +1194,20 @@ export interface OnboardingManualTriggerResult {
   message: string;
 }
 
+export interface ReminderManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+  reminderId?: string | null;
+}
+
+export interface MilestoneManualTriggerResult {
+  sent: boolean;
+  reason: string;
+  message: string;
+  personalizationSource?: string | null;
+}
+
 export interface CsatBulkSkipItem {
   patientId: string;
   patientName: string | null;

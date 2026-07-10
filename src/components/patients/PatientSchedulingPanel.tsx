@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
-import { CalendarClock, ExternalLink, Pause, Play } from "lucide-react";
+import { BellRing, CalendarClock, ExternalLink, Flag, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONVERSATION_STEP_LABELS } from "@/lib/constants";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -18,6 +25,13 @@ type PatientSchedulingPanelProps = {
   onResume?: () => void;
   isPausing?: boolean;
   isResuming?: boolean;
+  showEngagementTriggers?: boolean;
+  milestoneDays?: 7 | 14 | 30;
+  onMilestoneDaysChange?: (days: 7 | 14 | 30) => void;
+  onTriggerTestReminder?: () => void;
+  onTriggerMilestone?: () => void;
+  isTriggeringReminder?: boolean;
+  isTriggeringMilestone?: boolean;
 };
 
 export function PatientSchedulingPanel({
@@ -31,6 +45,13 @@ export function PatientSchedulingPanel({
   onResume,
   isPausing,
   isResuming,
+  showEngagementTriggers = false,
+  milestoneDays = 7,
+  onMilestoneDaysChange,
+  onTriggerTestReminder,
+  onTriggerMilestone,
+  isTriggeringReminder = false,
+  isTriggeringMilestone = false,
 }: PatientSchedulingPanelProps) {
   if (isLoading) {
     return <Skeleton className="h-48 w-full rounded-xl" />;
@@ -109,7 +130,10 @@ export function PatientSchedulingPanel({
         <p className="text-xs text-muted-foreground">Sem lembretes pendentes.</p>
       )}
 
-      {(showPatientLink || (canWrite && onPause) || (canWrite && onResume)) && (
+      {(showPatientLink ||
+        (canWrite && onPause) ||
+        (canWrite && onResume) ||
+        showEngagementTriggers) && (
         <div className="flex flex-wrap items-center gap-2">
           {showPatientLink && (
             <Button type="button" variant="outline" size="sm" asChild>
@@ -130,6 +154,47 @@ export function PatientSchedulingPanel({
               <Play className="size-3.5" />
               Retomar
             </Button>
+          )}
+          {showEngagementTriggers && onTriggerTestReminder && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isTriggeringReminder}
+              onClick={onTriggerTestReminder}
+            >
+              <BellRing className="size-3.5" />
+              {isTriggeringReminder ? "Enfileirando…" : "Lembrete de teste"}
+            </Button>
+          )}
+          {showEngagementTriggers && onTriggerMilestone && (
+            <div className="flex items-center gap-1.5">
+              {onMilestoneDaysChange ? (
+                <Select
+                  value={String(milestoneDays)}
+                  onValueChange={(v) => onMilestoneDaysChange(Number(v) as 7 | 14 | 30)}
+                >
+                  <SelectTrigger className="h-8 w-[72px] text-xs" aria-label="Marco">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">D7</SelectItem>
+                    <SelectItem value="14">D14</SelectItem>
+                    <SelectItem value="30">D30</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={isTriggeringMilestone}
+                onClick={onTriggerMilestone}
+              >
+                <Flag className="size-3.5" />
+                {isTriggeringMilestone ? "Enviando…" : "Disparar marco"}
+              </Button>
+            </div>
           )}
         </div>
       )}
