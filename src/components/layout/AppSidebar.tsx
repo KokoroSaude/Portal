@@ -29,6 +29,7 @@ import {
   Shield,
   Sparkles,
   Star,
+  Terminal,
   Users,
   ListOrdered,
   Volume2,
@@ -351,6 +352,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     title: "Ferramentas",
     items: [
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
+      { to: "/admin/logs-infra", label: "Logs de infraestrutura", icon: Terminal },
       { to: "/admin/prompts-ia", label: "Prompts IA (paciente)", icon: FileText },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },
     ],

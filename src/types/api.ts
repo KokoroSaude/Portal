@@ -2184,3 +2184,37 @@ export interface AdminVoiceWarmResult {
   totalAttempts: number;
   voiceIds: string[];
 }
+
+export interface InfrastructureLogEntry {
+  timestamp: string | null;
+  message: string;
+  severity: string | null;
+}
+
+export interface InfrastructureLogsServiceStatus {
+  key: string;
+  label: string;
+  configured: boolean;
+  serviceId: string | null;
+  dashboardUrl: string | null;
+}
+
+export interface InfrastructureLogsStatus {
+  configured: boolean;
+  message: string | null;
+  projectId: string | null;
+  environmentId: string | null;
+  projectDashboardUrl: string | null;
+  services: InfrastructureLogsServiceStatus[];
+}
+
+export interface InfrastructureLogsResponse {
+  configured: boolean;
+  service: string;
+  serviceLabel: string;
+  deploymentId: string;
+  deploymentStatus: string | null;
+  dashboardUrl: string | null;
+  fetchedAt: string;
+  logs: InfrastructureLogEntry[];
+}

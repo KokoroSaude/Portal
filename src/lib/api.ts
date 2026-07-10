@@ -146,6 +146,8 @@ import type {
   PspProgram,
   PopulationHealthReport,
   PublicHealthDashboard,
+  InfrastructureLogsStatus,
+  InfrastructureLogsResponse,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -1989,6 +1991,20 @@ export const api = {
       throw new ApiClientError(message, res.status);
     }
     return res.blob();
+  },
+
+  getInfrastructureLogsStatus: (token: string) =>
+    request<InfrastructureLogsStatus>("/api/admin/infrastructure/logs/status", { token }),
+
+  getInfrastructureLogs: (
+    token: string,
+    service: "api" | "worker" | "scheduler",
+    options?: { limit?: number; filter?: string },
+  ) => {
+    const params = new URLSearchParams({ service });
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.filter?.trim()) params.set("filter", options.filter.trim());
+    return request<InfrastructureLogsResponse>(`/api/admin/infrastructure/logs?${params}`, { token });
   },
 };
 
