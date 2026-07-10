@@ -32,10 +32,11 @@ const SERVICES: { key: ServiceKey; label: string }[] = [
 
 const LIMIT_OPTIONS = [50, 100, 200, 500] as const;
 
-function severityVariant(severity: string | null): "destructive" | "secondary" | "outline" {
+function severityVariant(severity: string | null): "warning" | "secondary" | "outline" {
   if (!severity) return "outline";
   const s = severity.toLowerCase();
-  if (s.includes("error") || s.includes("fatal") || s.includes("crit")) return "destructive";
+  if (s.includes("error") || s.includes("fatal") || s.includes("crit")) return "warning";
+  if (s.includes("warn")) return "warning";
   return "secondary";
 }
 
