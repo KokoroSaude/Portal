@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { cn, formatDateTime } from "@/lib/utils";
 import type { CommunicationLogEntry } from "@/types/api";
@@ -217,7 +218,7 @@ function LogDetailsRow({ entry }: { entry: CommunicationLogEntry }) {
 
 export function AdminCommunicationLogsPage() {
   const { token } = useAuth();
-  const [search, setSearch] = useState("");
+  const { input: search, setInput: setSearch, query: searchQuery } = useGridSearch(400);
   const [eventType, setEventType] = useState("");
   const [contentSource, setContentSource] = useState("");
   const [host, setHost] = useState("");
@@ -229,7 +230,7 @@ export function AdminCommunicationLogsPage() {
 
   const filters = useMemo(
     () => ({
-      search: search.trim() || undefined,
+      search: searchQuery.trim() || undefined,
       eventType: eventType || undefined,
       contentSource: contentSource || undefined,
       host: host || undefined,
@@ -238,7 +239,7 @@ export function AdminCommunicationLogsPage() {
       limit,
       offset,
     }),
-    [search, eventType, contentSource, host, severity, patientId, limit, offset],
+    [searchQuery, eventType, contentSource, host, severity, patientId, limit, offset],
   );
 
   const logsQuery = useQuery({
