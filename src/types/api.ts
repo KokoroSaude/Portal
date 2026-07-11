@@ -2185,36 +2185,30 @@ export interface AdminVoiceWarmResult {
   voiceIds: string[];
 }
 
-export interface InfrastructureLogEntry {
-  timestamp: string | null;
-  message: string;
-  severity: string | null;
+export interface CommunicationLogEntry {
+  id: string;
+  occurredAt: string;
+  host: string;
+  category: string;
+  eventType: string;
+  severity: string;
+  tenantId: string | null;
+  patientId: string | null;
+  reminderId: string | null;
+  messageKind: string | null;
+  channel: string | null;
+  contentSource: string | null;
+  templateKey: string | null;
+  summary: string;
+  aiProvider: string | null;
+  aiModel: string | null;
+  properties: string | null;
 }
 
-export interface InfrastructureLogsServiceStatus {
-  key: string;
-  label: string;
-  configured: boolean;
-  serviceId: string | null;
-  dashboardUrl: string | null;
-}
-
-export interface InfrastructureLogsStatus {
-  configured: boolean;
-  message: string | null;
-  projectId: string | null;
-  environmentId: string | null;
-  projectDashboardUrl: string | null;
-  services: InfrastructureLogsServiceStatus[];
-}
-
-export interface InfrastructureLogsResponse {
-  configured: boolean;
-  service: string;
-  serviceLabel: string;
-  deploymentId: string;
-  deploymentStatus: string | null;
-  dashboardUrl: string | null;
-  fetchedAt: string;
-  logs: InfrastructureLogEntry[];
+export interface CommunicationLogsResponse {
+  items: CommunicationLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+  oldestRetainedAt: string | null;
 }

@@ -146,8 +146,7 @@ import type {
   PspProgram,
   PopulationHealthReport,
   PublicHealthDashboard,
-  InfrastructureLogsStatus,
-  InfrastructureLogsResponse,
+  CommunicationLogsResponse,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -1993,18 +1992,39 @@ export const api = {
     return res.blob();
   },
 
-  getInfrastructureLogsStatus: (token: string) =>
-    request<InfrastructureLogsStatus>("/api/admin/infrastructure/logs/status", { token }),
-
-  getInfrastructureLogs: (
+  getCommunicationLogs: (
     token: string,
-    service: "api" | "worker" | "scheduler",
-    options?: { limit?: number; filter?: string },
+    options?: {
+      from?: string;
+      to?: string;
+      tenantIds?: string[];
+      patientId?: string;
+      eventType?: string;
+      contentSource?: string;
+      host?: string;
+      severity?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    },
   ) => {
-    const params = new URLSearchParams({ service });
+    const params = new URLSearchParams();
+    if (options?.from) params.set("from", options.from);
+    if (options?.to) params.set("to", options.to);
+    options?.tenantIds?.forEach((id) => params.append("tenantIds", id));
+    if (options?.patientId) params.set("patientId", options.patientId);
+    if (options?.eventType) params.set("eventType", options.eventType);
+    if (options?.contentSource) params.set("contentSource", options.contentSource);
+    if (options?.host) params.set("host", options.host);
+    if (options?.severity) params.set("severity", options.severity);
+    if (options?.search) params.set("search", options.search);
     if (options?.limit) params.set("limit", String(options.limit));
-    if (options?.filter?.trim()) params.set("filter", options.filter.trim());
-    return request<InfrastructureLogsResponse>(`/api/admin/infrastructure/logs?${params}`, { token });
+    if (options?.offset) params.set("offset", String(options.offset));
+    const qs = params.toString();
+    return request<CommunicationLogsResponse>(
+      `/api/admin/communication/logs${qs ? `?${qs}` : ""}`,
+      { token },
+    );
   },
 };
 
