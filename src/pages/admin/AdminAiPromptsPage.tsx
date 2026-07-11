@@ -6,7 +6,7 @@ export function AdminAiPromptsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Prompts IA"
-        description="System prompts do WhatsApp (paciente) e do copilot no portal (resumo e sugestões em /assistente-ia)."
+        description="Edite os system prompts de lembretes, conquistas, marcos (D7/D30) e demais mensagens WhatsApp. Aba Paciente → texto enviado ao paciente."
       />
       <SettingsAiPromptsSection scope="platform" />
     </div>
