@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Activity,
   BarChart3,
+  Brain,
   Building2,
   ChevronDown,
   ClipboardList,
@@ -23,10 +24,12 @@ import {
   PanelLeft,
   PanelLeftClose,
   Pill,
+  Plug,
   ScrollText,
   Send,
   Settings,
   Shield,
+  SlidersHorizontal,
   Sparkles,
   Star,
   Users,
@@ -63,10 +66,12 @@ export type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
   feature?: string;
+  featureAny?: string[];
   module?: TenantModule;
   segment?: TenantSegment;
   adminOnly?: boolean;
   pickupNav?: boolean;
+  navSection?: string;
   children?: NavItem[];
 };
 
@@ -100,8 +105,8 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           },
           {
             to: "/whatsapp/configuracao",
-            label: "Configuração",
-            icon: Settings,
+            label: "Conexão Meta",
+            icon: Plug,
           },
         ],
       },
@@ -122,12 +127,19 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         feature: FEATURE_KEYS.reportsBasic,
       },
       { to: "/farmacia/tv", label: "Painel TV", icon: Monitor, pickupNav: true },
-      { to: "/configuracoes/retirada", label: "Config. retirada", icon: Settings, pickupNav: true },
       {
-        to: "/configuracoes/saude-publica",
-        label: "Unidades CNES",
-        icon: Building2,
+        label: "Ajustes",
+        icon: SlidersHorizontal,
         pickupNav: true,
+        children: [
+          { to: "/configuracoes/retirada", label: "Config. retirada", icon: Settings, pickupNav: true },
+          {
+            to: "/configuracoes/saude-publica",
+            label: "Unidades CNES",
+            icon: Building2,
+            pickupNav: true,
+          },
+        ],
       },
     ],
   },
@@ -161,59 +173,53 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
             to: "/relatorios/adesao",
             label: "Adesão",
             icon: Activity,
+            navSection: "Operação",
             feature: FEATURE_KEYS.reportsBasic,
           },
           {
             to: "/relatorios/engajamento",
             label: "Engajamento",
             icon: MessageSquare,
+            navSection: "Operação",
             feature: FEATURE_KEYS.reportsAdvanced,
-          },
-          {
-            to: "/relatorios/conversacional",
-            label: "Conversacional",
-            icon: MessageCircle,
-            feature: FEATURE_KEYS.reportsConversationQuality,
           },
           {
             to: "/relatorios/operacao",
             label: "Operação",
             icon: Send,
+            navSection: "Operação",
             feature: FEATURE_KEYS.reportsOperations,
+          },
+          {
+            to: "/relatorios/conversacional",
+            label: "Conversacional",
+            icon: MessageCircle,
+            navSection: "Qualidade",
+            feature: FEATURE_KEYS.reportsConversationQuality,
           },
           {
             to: "/relatorios/escalas",
             label: "Escalas",
             icon: ClipboardList,
-            feature: FEATURE_KEYS.scalesMorisky,
+            navSection: "Clínico",
+            featureAny: [FEATURE_KEYS.scalesMorisky, FEATURE_KEYS.scalesTpb],
           },
           {
             to: "/relatorios/programa-medicamento",
             label: "Por medicamento",
             icon: Pill,
+            navSection: "Clínico",
             feature: FEATURE_KEYS.reportsCohort,
           },
           {
             to: "/relatorios/populacional",
             label: "Populacional",
             icon: Users,
+            navSection: "Populacional",
             module: "PopulationHealth",
             feature: FEATURE_KEYS.populationHealthReports,
           },
         ],
-      },
-      {
-        to: "/programas",
-        label: "Programas terapêuticos",
-        icon: ClipboardList,
-        feature: FEATURE_KEYS.reportsCohort,
-      },
-      {
-        to: "/programas-suporte",
-        label: "Programas PSP",
-        icon: Pill,
-        module: "PatientSupportProgram",
-        feature: FEATURE_KEYS.pspPrograms,
       },
     ],
   },
@@ -231,6 +237,19 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         label: "Templates",
         icon: FileText,
         feature: FEATURE_KEYS.templatesCustomRead,
+      },
+      {
+        to: "/programas",
+        label: "Programas terapêuticos",
+        icon: ClipboardList,
+        feature: FEATURE_KEYS.reportsCohort,
+      },
+      {
+        to: "/programas-suporte",
+        label: "Programas PSP",
+        icon: Pill,
+        module: "PatientSupportProgram",
+        feature: FEATURE_KEYS.pspPrograms,
       },
       {
         to: "/conhecimento",
@@ -252,7 +271,7 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           { to: "/configuracoes?tab=operacao", label: "Operação", icon: Settings },
           { to: "/configuracoes?tab=engajamento", label: "Engajamento", icon: Megaphone },
           { to: "/configuracoes?tab=onboarding", label: "Onboarding", icon: GitBranch },
-          { to: "/configuracoes?tab=pesquisas", label: "Pesquisas", icon: Star },
+          { to: "/configuracoes?tab=pesquisas", label: "CSAT", icon: Star },
           {
             to: "/configuracoes/usuarios",
             label: "Usuários",
@@ -266,13 +285,48 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         icon: Sparkles,
         adminOnly: true,
         children: [
-          { to: "/configuracoes/ia/geral", label: "Geral", icon: Sparkles },
-          { to: "/configuracoes/ia/prompts", label: "Prompts IA", icon: FileText },
-          { to: "/configuracoes/ia/mensagens", label: "Lembretes e marcos", icon: Send },
-          { to: "/configuracoes/ia/conversacao/modos", label: "Modos inbound", icon: MessageCircle },
-          { to: "/configuracoes/ia/conversacao/handoff", label: "Handoff e timing", icon: Clock },
-          { to: "/configuracoes/ia/conversacao/automacao", label: "Automação", icon: Activity },
-          { to: "/configuracoes/simulador", label: "Simulador", icon: GitBranch },
+          {
+            to: "/configuracoes/ia/geral",
+            label: "Geral",
+            icon: Sparkles,
+            navSection: "Configuração",
+          },
+          {
+            to: "/configuracoes/ia/prompts",
+            label: "Prompts IA",
+            icon: FileText,
+            navSection: "Configuração",
+          },
+          {
+            to: "/configuracoes/ia/mensagens",
+            label: "Lembretes e marcos",
+            icon: Send,
+            navSection: "Configuração",
+          },
+          {
+            to: "/configuracoes/ia/conversacao/modos",
+            label: "Modos inbound",
+            icon: MessageCircle,
+            navSection: "Conversação",
+          },
+          {
+            to: "/configuracoes/ia/conversacao/handoff",
+            label: "Handoff e timing",
+            icon: Clock,
+            navSection: "Conversação",
+          },
+          {
+            to: "/configuracoes/ia/conversacao/automacao",
+            label: "Automação",
+            icon: Activity,
+            navSection: "Conversação",
+          },
+          {
+            to: "/configuracoes/simulador",
+            label: "Simulador",
+            icon: GitBranch,
+            navSection: "Conversação",
+          },
         ],
       },
       {
@@ -282,20 +336,28 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
         adminOnly: true,
       },
       {
-        to: "/morisky",
-        label: "MMAS-8 (Morisky)",
+        label: "Escalas",
         icon: ClipboardList,
         adminOnly: true,
-        feature: FEATURE_KEYS.scalesMorisky,
-      },
-      {
-        to: "/tcp",
-        label: "TCP (Comportamento)",
-        icon: ClipboardList,
-        adminOnly: true,
-        feature: FEATURE_KEYS.scalesTpb,
         children: [
-          { to: "/tcp/ciencia", label: "Base científica", icon: BookOpen },
+          {
+            to: "/morisky",
+            label: "MMAS-8",
+            icon: Activity,
+            feature: FEATURE_KEYS.scalesMorisky,
+          },
+          {
+            to: "/tcp",
+            label: "TCP",
+            icon: Brain,
+            feature: FEATURE_KEYS.scalesTpb,
+          },
+          {
+            to: "/tcp/ciencia",
+            label: "Referência científica",
+            icon: BookOpen,
+            feature: FEATURE_KEYS.scalesTpb,
+          },
         ],
       },
     ],
@@ -378,7 +440,11 @@ function isNavItemVisible(
   if (item.segment && item.segment !== tenantSegment) return false;
   if (item.module && !hasModule(item.module)) return false;
   if (item.adminOnly && !isAdmin) return false;
-  if (item.feature && !hasFeature(item.feature)) return false;
+  if (item.featureAny?.length) {
+    if (!item.featureAny.some((key) => hasFeature(key))) return false;
+  } else if (item.feature && !hasFeature(item.feature)) {
+    return false;
+  }
   if (item.children?.length) {
     return item.children.some((child) =>
       isNavItemVisible(child, hasFeature, isAdmin, pickupAccess, hasModule, tenantSegment),
@@ -583,22 +649,33 @@ function NavGroup({
           aria-hidden
         />
       </button>
-      {open &&
-        visibleChildren.map((child) =>
-          child.to ? (
-            <NavLinkItem
-              key={child.to}
-              to={child.to}
-              label={child.label}
-              icon={child.icon}
-              end={child.end}
-              onNavigate={onNavigate}
-              collapsed={collapsed}
-              indent
-              sectionTitle={item.label}
-            />
-          ) : null,
-        )}
+      {open && (() => {
+        let prevSection: string | undefined;
+        return visibleChildren.map((child) => {
+          if (!child.to) return null;
+          const showHeader = child.navSection && child.navSection !== prevSection;
+          if (child.navSection) prevSection = child.navSection;
+          return (
+            <Fragment key={child.to}>
+              {showHeader && (
+                <p className="ml-3 px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/45 first:pt-1">
+                  {child.navSection}
+                </p>
+              )}
+              <NavLinkItem
+                to={child.to}
+                label={child.label}
+                icon={child.icon}
+                end={child.end}
+                onNavigate={onNavigate}
+                collapsed={collapsed}
+                indent
+                sectionTitle={item.label}
+              />
+            </Fragment>
+          );
+        });
+      })()}
     </div>
   );
 }

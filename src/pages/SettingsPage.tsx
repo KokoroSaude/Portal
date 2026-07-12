@@ -150,7 +150,7 @@ export function SettingsPage() {
           <TabsTrigger value="operacao">Operação</TabsTrigger>
           <TabsTrigger value="engajamento">Engajamento</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-          <TabsTrigger value="pesquisas">Pesquisas</TabsTrigger>
+          <TabsTrigger value="pesquisas">CSAT</TabsTrigger>
         </TabsList>
 
         <TabsContent value="operacao" className="space-y-4">

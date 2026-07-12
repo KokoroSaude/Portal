@@ -6,6 +6,21 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-07-12
+
+### Changed
+
+- **Menu lateral — Escalas:** MMAS-8, TCP e Referência científica agrupados em Configuração; página de configuração do TCP volta a ser acessível pelo menu (antes só "Base científica" aparecia)
+- **Menu lateral — Farmácia:** Config. retirada e Unidades CNES movidos para um subgrupo "Ajustes", separados da operação
+- **Menu lateral — WhatsApp:** item "Configuração" renomeado para "Conexão Meta"
+- **Menu lateral — Programa:** "Programas terapêuticos" e "Programas PSP" movidos de Análise para a seção Programa
+- **Menu lateral — Relatórios e IA:** itens subagrupados com cabeçalhos (Operação, Qualidade, Clínico, Populacional; Configuração, Conversação)
+- **Configurações:** aba "Pesquisas" renomeada para "CSAT"
+
+### Fixed
+
+- Relatório de Escalas passa a aparecer para tenants com MMAS-8 **ou** TCP (antes exigia MMAS-8)
+
 ## [1.6.1] - 2026-07-12
 
 ### Fixed
