@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
-import { resolveTenantSegment } from "@/lib/tenant-modules";
+import { hasModule } from "@/lib/tenant-modules";
 import type { PublicHealthUnit } from "@/types/api";
 
 export function SettingsPublicHealthPage() {
   const { isAdmin } = useAuth();
   const { form, update, save, savePending, isLoading } = useTenantSettingsForm();
-  const segment = form ? resolveTenantSegment(form) : "RetailPharmacy";
+  const canManageUnits =
+    !!form &&
+    (hasModule("PharmacyPickup", form) || hasModule("PopulationHealth", form));
 
   if (isLoading || !form) {
     return (
@@ -35,18 +37,19 @@ export function SettingsPublicHealthPage() {
     );
   }
 
-  if (segment !== "PublicHealth") {
+  if (!canManageUnits) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Unidades de saúde (CNES)"
-          description="Cadastro multi-unidade para saúde pública."
+          description="Cadastro multi-unidade para operações com retirada ou gestão populacional."
         />
         <Card>
           <CardHeader>
             <CardTitle>Indisponível</CardTitle>
             <CardDescription>
-              Configuração de unidades CNES está disponível apenas para o segmento Saúde pública.
+              Habilite o módulo <strong>Retirada em farmácia</strong> ou{" "}
+              <strong>Gestão populacional</strong> na organização para configurar unidades CNES.
             </CardDescription>
           </CardHeader>
           <CardContent>

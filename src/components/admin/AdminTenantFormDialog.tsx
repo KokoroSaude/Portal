@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { TENANT_PLAN_OPTIONS, TENANT_MODULE_LABELS, TENANT_SEGMENT_LABELS } from "@/lib/constants";
-import { SEGMENT_DEFAULT_MODULES } from "@/lib/tenant-modules";
+import { TENANT_PLAN_OPTIONS, TENANT_MODULE_LABELS, TENANT_SEGMENT_LABELS, TENANT_SEGMENT_DESCRIPTIONS } from "@/lib/constants";
+import { ALL_TENANT_MODULES, SEGMENT_DEFAULT_MODULES } from "@/lib/tenant-modules";
 import type { AdminTenant, TenantModule, TenantSegment } from "@/types/api";
 
 function slugify(value: string) {
@@ -84,12 +84,7 @@ function toEditForm(tenant: AdminTenant): AdminTenantEditForm {
   };
 }
 
-const ALLOWED_MODULES: Record<TenantSegment, TenantModule[]> = {
-  RetailPharmacy: ["Adherence"],
-  PharmaIndustry: ["Adherence", "PatientSupportProgram"],
-  HealthPlan: ["Adherence", "PopulationHealth"],
-  PublicHealth: ["Adherence", "PharmacyPickup", "CareNetwork", "PopulationHealth"],
-};
+const ALL_MODULES = ALL_TENANT_MODULES;
 
 function applySegmentChange<T extends AdminTenantCreateForm | AdminTenantEditForm>(
   form: T,
@@ -209,12 +204,19 @@ export function AdminTenantFormDialog(props: Props) {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {TENANT_SEGMENT_DESCRIPTIONS[form.tenantSegment]}
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label>Módulos habilitados</Label>
+            <p className="text-xs text-muted-foreground">
+              Qualquer combinação é permitida — o segmento só sugere o pacote inicial ao trocar o
+              perfil.
+            </p>
             <div className="grid gap-2 rounded-lg border p-3">
-              {ALLOWED_MODULES[form.tenantSegment].map((module) => {
+              {ALL_MODULES.map((module) => {
                 const checked = form.enabledModules.includes(module);
                 const locked = module === "Adherence";
                 return (

@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
 import { api, ApiClientError } from "@/lib/api";
-import { TENANT_SEGMENT_LABELS, TENANT_MODULE_LABELS } from "@/lib/constants";
+import { TENANT_SEGMENT_LABELS, TENANT_MODULE_LABELS, TENANT_SEGMENT_DESCRIPTIONS } from "@/lib/constants";
 import { hasModule, PUBLIC_HEALTH_DEFAULT_HINTS } from "@/lib/tenant-modules";
 
 const GOV_PHARMACY_DEFAULT_HINTS = PUBLIC_HEALTH_DEFAULT_HINTS;
@@ -167,6 +167,9 @@ export function SettingsPage() {
                 {TENANT_SEGMENT_LABELS[form.tenantSegment ?? "RetailPharmacy"] ??
                   "Varejo farmacêutico"}
               </Badge>
+              <p className="text-sm text-muted-foreground">
+                {TENANT_SEGMENT_DESCRIPTIONS[form.tenantSegment ?? "RetailPharmacy"]}
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {(form.enabledModules ?? ["Adherence"]).map((m) => (
                   <Badge key={m} variant="secondary" className="text-xs">

@@ -45,6 +45,18 @@ export const TENANT_SEGMENT_LABELS: Record<string, string> = {
   PublicHealth: "Saúde pública",
 };
 
+/** Perfil GTM sugerido — não restringe módulos; a equipe escolhe o que habilitar. */
+export const TENANT_SEGMENT_DESCRIPTIONS: Record<string, string> = {
+  RetailPharmacy:
+    "Farmácias de rua, redes e drogarias. Foco típico: adesão via WhatsApp, lembretes e relacionamento no balcão. Pode habilitar retirada em farmácia, rede de cuidado ou gestão populacional se fizer sentido para o negócio.",
+  PharmaIndustry:
+    "Laboratórios e indústria farmacêutica. Foco típico: programas de suporte ao paciente (PSP) e adesão em tratamentos de alto valor. Todos os módulos ficam disponíveis conforme o contrato.",
+  HealthPlan:
+    "Operadoras e administradoras de benefícios. Foco típico: gestão populacional, indicadores agregados e adesão em carteira. Módulos extras (retirada, PSP, rede) podem ser ligados quando aplicável.",
+  PublicHealth:
+    "Prefeituras, secretarias de saúde e farmácias populares/SUS. Foco típico: retirada de medicamentos, fila, CNES e rede de cuidado. Outros módulos permanecem opcionais.",
+};
+
 export const TENANT_MODULE_LABELS: Record<string, string> = {
   Adherence: "Adesão",
   PharmacyPickup: "Retirada em farmácia",

@@ -9,18 +9,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
-import { resolveTenantSegment } from "@/lib/tenant-modules";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
+import { api } from "@/lib/api";
+import { FEATURE_KEYS } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
 
 export function PublicHealthDashboardPage() {
   const { token, hasFeature } = useAuth();
-  const { settings } = useTenantSettings();
-  const segment = resolveTenantSegment(settings);
+  const { hasModule } = useTenantSettings();
 
   const dashboard = useQuery({
     queryKey: ["public-health-dashboard"],
     queryFn: () => api.getPublicHealthDashboard(token!),
-    enabled: !!token && hasFeature(FEATURE_KEYS.populationHealthReports),
+    enabled:
+      !!token &&
+      hasFeature(FEATURE_KEYS.populationHealthReports) &&
+      hasModule("PopulationHealth"),
   });
 
   if (!hasFeature(FEATURE_KEYS.populationHealthReports)) {
@@ -32,18 +36,19 @@ export function PublicHealthDashboardPage() {
     );
   }
 
-  if (segment !== "PublicHealth") {
+  if (!hasModule("PopulationHealth")) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Painel saúde pública"
-          description="Indicadores agregados para unidades SUS e metas ODS 3."
+          description="Indicadores agregados para unidades e metas ODS 3."
         />
         <Card>
           <CardHeader>
-            <CardTitle>Segmento incompatível</CardTitle>
+            <CardTitle>Módulo não habilitado</CardTitle>
             <CardDescription>
-              Este painel é destinado a organizações no segmento Saúde pública (SUS).
+              Peça ao administrador da plataforma para habilitar o módulo{" "}
+              <strong>Gestão populacional</strong> nesta organização.
             </CardDescription>
           </CardHeader>
         </Card>

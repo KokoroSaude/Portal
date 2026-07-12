@@ -52,6 +52,15 @@ export const SEGMENT_DEFAULT_MODULES: Record<TenantSegment, TenantModule[]> = {
   PublicHealth: ["Adherence", "PharmacyPickup", "CareNetwork"],
 };
 
+/** Todos os módulos podem ser habilitados em qualquer segmento. */
+export const ALL_TENANT_MODULES: TenantModule[] = [
+  "Adherence",
+  "PharmacyPickup",
+  "CareNetwork",
+  "PatientSupportProgram",
+  "PopulationHealth",
+];
+
 export const PUBLIC_HEALTH_DEFAULT_HINTS: Partial<TenantSettings> = {
   requirePreRegisteredPatients: true,
   govPharmacyPickupEnabled: true,
