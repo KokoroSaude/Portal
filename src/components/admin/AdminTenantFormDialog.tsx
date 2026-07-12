@@ -18,9 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { TENANT_PLAN_OPTIONS, TENANT_MODULE_LABELS, TENANT_SEGMENT_LABELS, TENANT_SEGMENT_DESCRIPTIONS } from "@/lib/constants";
-import { ALL_TENANT_MODULES, SEGMENT_DEFAULT_MODULES } from "@/lib/tenant-modules";
-import type { AdminTenant, TenantModule, TenantSegment } from "@/types/api";
+import {
+  TENANT_PLAN_OPTIONS,
+  TENANT_MODULE_LABELS,
+  TENANT_MODULE_DESCRIPTIONS,
+} from "@/lib/constants";
+import { ALL_TENANT_MODULES } from "@/lib/tenant-modules";
+import type { AdminTenant, TenantModule } from "@/types/api";
 
 function slugify(value: string) {
   return value
@@ -35,7 +39,6 @@ export type AdminTenantCreateForm = {
   name: string;
   slug: string;
   planId: string;
-  tenantSegment: TenantSegment;
   enabledModules: TenantModule[];
   adminName: string;
   adminEmail: string;
@@ -48,7 +51,6 @@ export type AdminTenantEditForm = {
   name: string;
   slug: string;
   planId: string;
-  tenantSegment: TenantSegment;
   enabledModules: TenantModule[];
   isActive: boolean;
   aiEnabled: boolean;
@@ -60,8 +62,7 @@ const emptyCreate: AdminTenantCreateForm = {
   name: "",
   slug: "",
   planId: defaultPlanId,
-  tenantSegment: "RetailPharmacy",
-  enabledModules: SEGMENT_DEFAULT_MODULES.RetailPharmacy,
+  enabledModules: ["Adherence"],
   adminName: "",
   adminEmail: "",
   adminPassword: "",
@@ -74,26 +75,10 @@ function toEditForm(tenant: AdminTenant): AdminTenantEditForm {
     name: tenant.name,
     slug: tenant.slug,
     planId: tenant.planId,
-    tenantSegment: tenant.tenantSegment ?? "RetailPharmacy",
     enabledModules:
-      tenant.enabledModules?.length > 0
-        ? tenant.enabledModules
-        : SEGMENT_DEFAULT_MODULES[tenant.tenantSegment ?? "RetailPharmacy"],
+      tenant.enabledModules?.length > 0 ? tenant.enabledModules : ["Adherence"],
     isActive: tenant.isActive,
     aiEnabled: tenant.aiEnabled,
-  };
-}
-
-const ALL_MODULES = ALL_TENANT_MODULES;
-
-function applySegmentChange<T extends AdminTenantCreateForm | AdminTenantEditForm>(
-  form: T,
-  segment: TenantSegment,
-): T {
-  return {
-    ...form,
-    tenantSegment: segment,
-    enabledModules: SEGMENT_DEFAULT_MODULES[segment],
   };
 }
 
@@ -152,8 +137,8 @@ export function AdminTenantFormDialog(props: Props) {
   const title = mode === "create" ? "Nova organização" : "Editar organização";
   const description =
     mode === "create"
-      ? "Cria a farmácia/clínica e o primeiro usuário administrador."
-      : "Atualiza nome, slug, plano, tipo de operação e status da organização.";
+      ? "Cria a organização, escolhe os módulos e o primeiro administrador."
+      : "Atualiza nome, slug, plano, módulos e status da organização.";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,184 +150,170 @@ export function AdminTenantFormDialog(props: Props) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-2">
           <div className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="tenant-name">Nome</Label>
-            <Input
-              id="tenant-name"
-              value={form.name}
-              onChange={(e) =>
-                mode === "create"
-                  ? updateCreate("name", e.target.value)
-                  : updateEdit("name", e.target.value)
-              }
-              placeholder="Farmácia Municipal Centro"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Segmento GTM</Label>
-            <Select
-              value={form.tenantSegment}
-              onValueChange={(value) => {
-                const segment = value as TenantSegment;
-                if (mode === "create") {
-                  setCreateForm((prev) => applySegmentChange(prev, segment));
-                } else {
-                  setEditForm((prev) => (prev ? applySegmentChange(prev, segment) : prev));
+            <div className="space-y-2">
+              <Label htmlFor="tenant-name">Nome</Label>
+              <Input
+                id="tenant-name"
+                value={form.name}
+                onChange={(e) =>
+                  mode === "create"
+                    ? updateCreate("name", e.target.value)
+                    : updateEdit("name", e.target.value)
                 }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o segmento" />
-              </SelectTrigger>
-              <SelectContent position="popper" className="z-[100]">
-                {Object.entries(TENANT_SEGMENT_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {TENANT_SEGMENT_DESCRIPTIONS[form.tenantSegment]}
-            </p>
-          </div>
+                placeholder="Farmácia Municipal Centro"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>Módulos habilitados</Label>
-            <p className="text-xs text-muted-foreground">
-              Qualquer combinação é permitida — o segmento só sugere o pacote inicial ao trocar o
-              perfil.
-            </p>
-            <div className="grid gap-2 rounded-lg border p-3">
-              {ALL_MODULES.map((module) => {
-                const checked = form.enabledModules.includes(module);
-                const locked = module === "Adherence";
-                return (
-                  <label key={module} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="size-4 rounded border"
-                      checked={checked}
-                      disabled={locked}
-                      onChange={(e) => {
-                        const next = e.target.checked
-                          ? [...form.enabledModules, module]
-                          : form.enabledModules.filter((m) => m !== module);
-                        if (mode === "create") {
-                          updateCreate("enabledModules", next);
-                        } else {
-                          updateEdit("enabledModules", next);
-                        }
-                      }}
+            <div className="space-y-2">
+              <Label>Módulos</Label>
+              <p className="text-xs text-muted-foreground">
+                Marque o que esta organização vai usar. Qualquer combinação é válida (Adesão é
+                obrigatório).
+              </p>
+              <div className="grid gap-3 rounded-lg border p-3">
+                {ALL_TENANT_MODULES.map((module) => {
+                  const checked = form.enabledModules.includes(module);
+                  const locked = module === "Adherence";
+                  return (
+                    <label key={module} className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-4 shrink-0 rounded border"
+                        checked={checked}
+                        disabled={locked}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...form.enabledModules, module]
+                            : form.enabledModules.filter((m) => m !== module);
+                          if (mode === "create") {
+                            updateCreate("enabledModules", next);
+                          } else {
+                            updateEdit("enabledModules", next);
+                          }
+                        }}
+                      />
+                      <span>
+                        <span className="font-medium">
+                          {TENANT_MODULE_LABELS[module] ?? module}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {TENANT_MODULE_DESCRIPTIONS[module]}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tenant-slug">Slug</Label>
+              <Input
+                id="tenant-slug"
+                value={form.slug}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  const slug = slugify(e.target.value);
+                  mode === "create" ? updateCreate("slug", slug) : updateEdit("slug", slug);
+                }}
+                placeholder="farmacia-municipal-centro"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Identificador único (letras minúsculas e hífens).
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Plano</Label>
+              <Select
+                value={form.planId}
+                onValueChange={(value) =>
+                  mode === "create" ? updateCreate("planId", value) : updateEdit("planId", value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TENANT_PLAN_OPTIONS.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {mode === "create" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-name">Nome do administrador</Label>
+                  <Input
+                    id="admin-name"
+                    value={createForm.adminName}
+                    onChange={(e) => updateCreate("adminName", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-email">E-mail admin</Label>
+                    <Input
+                      id="admin-email"
+                      type="email"
+                      value={createForm.adminEmail}
+                      onChange={(e) => updateCreate("adminEmail", e.target.value)}
+                      required
                     />
-                    <span>{TENANT_MODULE_LABELS[module] ?? module}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tenant-slug">Slug</Label>
-            <Input
-              id="tenant-slug"
-              value={form.slug}
-              onChange={(e) => {
-                setSlugTouched(true);
-                const slug = slugify(e.target.value);
-                mode === "create" ? updateCreate("slug", slug) : updateEdit("slug", slug);
-              }}
-              placeholder="farmacia-municipal-centro"
-              required
-            />
-            <p className="text-xs text-muted-foreground">Identificador único (letras minúsculas e hífens).</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Plano</Label>
-            <Select
-              value={form.planId}
-              onValueChange={(value) =>
-                mode === "create" ? updateCreate("planId", value) : updateEdit("planId", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o plano" />
-              </SelectTrigger>
-              <SelectContent>
-                {TENANT_PLAN_OPTIONS.map((plan) => (
-                  <SelectItem key={plan.id} value={plan.id}>
-                    {plan.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {mode === "create" && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="admin-name">Nome do administrador</Label>
-                <Input
-                  id="admin-name"
-                  value={createForm.adminName}
-                  onChange={(e) => updateCreate("adminName", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">E-mail admin</Label>
-                  <Input
-                    id="admin-email"
-                    type="email"
-                    value={createForm.adminEmail}
-                    onChange={(e) => updateCreate("adminEmail", e.target.value)}
-                    required
-                  />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-password">Senha inicial</Label>
+                    <Input
+                      id="admin-password"
+                      type="password"
+                      minLength={8}
+                      value={createForm.adminPassword}
+                      onChange={(e) => updateCreate("adminPassword", e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password">Senha inicial</Label>
-                  <Input
-                    id="admin-password"
-                    type="password"
-                    minLength={8}
-                    value={createForm.adminPassword}
-                    onChange={(e) => updateCreate("adminPassword", e.target.value)}
-                    required
-                  />
-                </div>
+              </>
+            )}
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Organização ativa</p>
+                <p className="text-xs text-muted-foreground">Inativa bloqueia acesso da equipe.</p>
               </div>
-            </>
-          )}
-
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <p className="text-sm font-medium">Organização ativa</p>
-              <p className="text-xs text-muted-foreground">Inativa bloqueia acesso da equipe.</p>
+              <Switch
+                checked={form.isActive}
+                onCheckedChange={(checked) =>
+                  mode === "create"
+                    ? updateCreate("isActive", checked)
+                    : updateEdit("isActive", checked)
+                }
+              />
             </div>
-            <Switch
-              checked={form.isActive}
-              onCheckedChange={(checked) =>
-                mode === "create" ? updateCreate("isActive", checked) : updateEdit("isActive", checked)
-              }
-            />
-          </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <p className="text-sm font-medium">IA habilitada</p>
-              <p className="text-xs text-muted-foreground">Copilot e personalização por organização.</p>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">IA habilitada</p>
+                <p className="text-xs text-muted-foreground">
+                  Copilot e personalização por organização.
+                </p>
+              </div>
+              <Switch
+                checked={form.aiEnabled}
+                onCheckedChange={(checked) =>
+                  mode === "create"
+                    ? updateCreate("aiEnabled", checked)
+                    : updateEdit("aiEnabled", checked)
+                }
+              />
             </div>
-            <Switch
-              checked={form.aiEnabled}
-              onCheckedChange={(checked) =>
-                mode === "create" ? updateCreate("aiEnabled", checked) : updateEdit("aiEnabled", checked)
-              }
-            />
-          </div>
           </div>
         </div>
 

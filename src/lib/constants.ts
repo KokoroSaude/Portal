@@ -65,6 +65,14 @@ export const TENANT_MODULE_LABELS: Record<string, string> = {
   PopulationHealth: "Gestão populacional",
 };
 
+export const TENANT_MODULE_DESCRIPTIONS: Record<string, string> = {
+  Adherence: "Lembretes WhatsApp, check-in e onboarding — obrigatório",
+  PharmacyPickup: "Fila de retirada, painel TV, integração ERP e regras SUS",
+  CareNetwork: "Delegados (família/cuidador) nos avisos e apoio",
+  PatientSupportProgram: "Programas terapêuticos da indústria (PSP)",
+  PopulationHealth: "Relatórios populacionais, painel ODS 3 e unidades CNES",
+};
+
 export const TPB_CONSTRUCT_DESCRIPTIONS = {
   attitude: {
     title: "Atitude",

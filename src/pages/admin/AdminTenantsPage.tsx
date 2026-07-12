@@ -32,7 +32,7 @@ import { useAdminTenantsList } from "@/hooks/useAdminTenants";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
-import { TENANT_SEGMENT_LABELS } from "@/lib/constants";
+import { TENANT_MODULE_LABELS } from "@/lib/constants";
 import type { AdminTenant } from "@/types/api";
 
 function planLabel(planKey: string) {
@@ -57,7 +57,6 @@ export function AdminTenantsPage() {
         name: form.name,
         slug: form.slug,
         planId: form.planId,
-        tenantSegment: form.tenantSegment,
         enabledModules: form.enabledModules,
         adminName: form.adminName,
         adminEmail: form.adminEmail,
@@ -193,7 +192,7 @@ export function AdminTenantsPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead>Plano</TableHead>
-                  <TableHead>Segmento</TableHead>
+                  <TableHead>Módulos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>IA</TableHead>
                   <TableHead />
@@ -222,9 +221,13 @@ export function AdminTenantsPage() {
                       <Badge variant="outline">{planLabel(t.planKey)}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {TENANT_SEGMENT_LABELS[t.tenantSegment] ?? t.tenantSegment}
-                      </Badge>
+                      <div className="flex max-w-[220px] flex-wrap gap-1">
+                        {(t.enabledModules ?? ["Adherence"]).map((m) => (
+                          <Badge key={m} variant="secondary" className="text-[10px]">
+                            {TENANT_MODULE_LABELS[m] ?? m}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={t.isActive ? "success" : "muted"}>

@@ -1540,7 +1540,7 @@ export const api = {
       name: string;
       slug: string;
       planId: string;
-      tenantSegment: TenantSegment;
+      tenantSegment?: TenantSegment;
       enabledModules: TenantModule[];
       isActive: boolean;
       aiEnabled: boolean;
