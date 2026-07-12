@@ -7,7 +7,7 @@ alwaysApply: true
 
 Sempre que alterar código no repositório **portal**, incremente a versão antes de commitar:
 
-1. Rode `npm version patch --no-git-tag-version` (correções/UI pequena) ou `minor` (nova funcionalidade compatível).
+1. Rode `npm version patch --no-git-tag-version` (correções/UI pequena) ou `minor` (nova funcionalidade compatível). **Não edite `package-lock.json` à mão** — o comando atualiza só a versão do pacote raiz.
 2. Documente em `CHANGELOG.md` na seção `[Unreleased]` e mova para `[X.Y.Z] - data` no release.
 3. A versão oficial é `package.json`; o rodapé do menu usa `APP_VERSION` via build (`vite.config.ts`).
 
