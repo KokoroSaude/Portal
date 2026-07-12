@@ -9,9 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
-import { useTenantSettings } from "@/hooks/useTenantSettings";
-import { api } from "@/lib/api";
-import { FEATURE_KEYS } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";
 
 export function PublicHealthDashboardPage() {

@@ -6,6 +6,12 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-07-12
+
+### Fixed
+
+- Build Vercel: imports duplicados em `PublicHealthDashboardPage.tsx`
+
 ## [1.6.0] - 2026-07-12
 
 ### Changed
