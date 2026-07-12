@@ -6,6 +6,14 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-07-12
+
+### Changed
+
+- **SuperAdmin — organizações:** configuração somente por módulos; removido seletor de segmento GTM
+- Lista de tenants e configurações da org exibem módulos habilitados em vez de segmento
+- Todos os módulos disponíveis para qualquer organização, com descrição em cada checkbox
+
 ## [1.3.2] - 2026-06-22
 
 ### Added
