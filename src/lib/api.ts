@@ -32,6 +32,7 @@ import type {
   AdminVoiceWarmResult,
   AdherenceReport,
   CsatBulkTriggerResult,
+  PeriodicSurveyStatus,
   CsatManualTriggerResult,
   MoriskyBulkTriggerResult,
   MoriskyManualTriggerResult,
@@ -1238,6 +1239,20 @@ export const api = {
 
   getSettings: async (token: string) =>
     normalizeTenantSettings(await request<TenantSettings>("/api/settings", { token })),
+
+  getPeriodicSurveyStatus: (
+    token: string,
+    params?: { patientId?: string; limit?: number },
+  ) => {
+    const qs = new URLSearchParams();
+    if (params?.patientId) qs.set("patientId", params.patientId);
+    if (params?.limit != null) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return request<PeriodicSurveyStatus>(
+      `/api/settings/surveys/periodic-status${query ? `?${query}` : ""}`,
+      { token },
+    );
+  },
 
   getPatientAiPrompts: (token: string) =>
     request<PatientAiPrompt[]>("/api/settings/ai/prompts", { token }),

@@ -99,14 +99,14 @@ function resolveAudience(prompt: PatientAiPrompt): PromptAudience {
 function PromptCard({
   prompt,
   editable,
+  showNotes,
   onSave,
-  onReset,
   saving,
 }: {
   prompt: PatientAiPrompt;
   editable: boolean;
+  showNotes: boolean;
   onSave: (id: string, text: string) => void;
-  onReset: (id: string) => void;
   saving: boolean;
 }) {
   const [draft, setDraft] = useState(prompt.systemPrompt);
@@ -158,21 +158,8 @@ function PromptCard({
                   disabled={!dirty || saving || draft.trim().length === 0}
                   onClick={() => onSave(prompt.id, draft.trim())}
                 >
-                  Salvar override
+                  Salvar
                 </Button>
-                {prompt.isOverridden || prompt.defaultSystemPrompt ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={saving}
-                    onClick={() => {
-                      onReset(prompt.id);
-                      setDraft(prompt.defaultSystemPrompt ?? prompt.systemPrompt);
-                    }}
-                  >
-                    Restaurar padrão
-                  </Button>
-                ) : null}
               </div>
             </div>
           ) : (
@@ -185,12 +172,15 @@ function PromptCard({
           <p className="font-medium text-foreground">Payload do usuário (contexto enviado ao modelo)</p>
           <p className="mt-1 font-mono text-xs text-muted-foreground">{prompt.userPayloadDescription}</p>
         </div>
-        {prompt.notes && prompt.notes.length > 0 ? (
-          <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-            {prompt.notes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
+        {showNotes && prompt.notes && prompt.notes.length > 0 ? (
+          <div>
+            <p className="font-medium text-foreground">Notas da plataforma</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
+              {prompt.notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </div>
     </details>
@@ -200,15 +190,15 @@ function PromptCard({
 function PromptAudiencePanel({
   prompts,
   editable,
+  showNotes,
   saving,
   onSave,
-  onReset,
 }: {
   prompts: PatientAiPrompt[];
   editable: boolean;
+  showNotes: boolean;
   saving: boolean;
   onSave: (id: string, text: string) => void;
-  onReset: (id: string) => void;
 }) {
   const outbound = prompts.filter((p) => p.category === "texto_outbound");
   const copilot = prompts.filter((p) => p.category === "copilot_portal");
@@ -236,9 +226,9 @@ function PromptAudiencePanel({
               key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
               prompt={prompt}
               editable={editable}
+              showNotes={showNotes}
               saving={saving}
               onSave={onSave}
-              onReset={onReset}
             />
           ))}
         </section>
@@ -252,9 +242,9 @@ function PromptAudiencePanel({
               key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
               prompt={prompt}
               editable={editable}
+              showNotes={showNotes}
               saving={saving}
               onSave={onSave}
-              onReset={onReset}
             />
           ))}
         </section>
@@ -268,9 +258,9 @@ function PromptAudiencePanel({
               key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
               prompt={prompt}
               editable={editable}
+              showNotes={showNotes}
               saving={saving}
               onSave={onSave}
-              onReset={onReset}
             />
           ))}
         </section>
@@ -288,9 +278,9 @@ function PromptAudiencePanel({
               key={`${prompt.id}-${prompt.isOverridden ? "custom" : "default"}`}
               prompt={prompt}
               editable={editable}
+              showNotes={showNotes}
               saving={saving}
               onSave={onSave}
-              onReset={onReset}
             />
           ))}
         </section>
@@ -360,7 +350,6 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
   }
 
   const onSave = (id: string, text: string) => saveMutation.mutate({ id, text });
-  const onReset = (id: string) => saveMutation.mutate({ id, text: null });
 
   return (
     <div className="space-y-6">
@@ -372,8 +361,8 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
             </CardTitle>
             <CardDescription>
               {editable
-                ? "Overrides de system prompt aplicam-se a todos os tenants. Use as abas: WhatsApp, copilot no portal e relatórios."
-                : "Textos enviados ao LLM quando a IA está ativa — paciente no WhatsApp e equipe no portal."}
+                ? "Overrides de system prompt aplicam-se a todos os tenants. Regras de tom e tamanho ficam no texto do prompt — notas abaixo são só comportamento do Kokoro."
+                : "Referência read-only dos prompts ativos na plataforma. Edição em Admin → Prompts IA."}
             </CardDescription>
           </div>
           {editable ? (
@@ -409,9 +398,9 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
             <PromptAudiencePanel
               prompts={byAudience[tab.value]}
               editable={editable}
+              showNotes={editable}
               saving={saveMutation.isPending}
               onSave={onSave}
-              onReset={onReset}
             />
           </TabsContent>
         ))}

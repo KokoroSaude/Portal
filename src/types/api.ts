@@ -1221,6 +1221,45 @@ export interface CsatBulkTriggerResult {
   skippedSamples: CsatBulkSkipItem[];
 }
 
+export interface PeriodicSurveyTypeSummary {
+  configured: boolean;
+  featureEnabled: boolean;
+  periodicDays?: number | null;
+  readyNowCount: number;
+  waitingSlotCount: number;
+  blockedCount: number;
+  disabledReason?: string | null;
+}
+
+export interface PeriodicSurveyPatientCell {
+  surveyType: "csat" | "morisky" | "tpb" | string;
+  status: "ready" | "waiting_slot" | "blocked" | "disabled" | string;
+  skipReason?: string | null;
+  skipReasonCode?: string | null;
+  lastSentAtUtc?: string | null;
+  nextEligibleAtUtc?: string | null;
+  dailySendSlotLocal?: string | null;
+  isPatientTurnNow: boolean;
+}
+
+export interface PeriodicSurveyPatientRow {
+  patientId: string;
+  patientName: string;
+  surveys: PeriodicSurveyPatientCell[];
+}
+
+export interface PeriodicSurveyStatus {
+  generatedAtUtc: string;
+  sendWindowStart: string;
+  sendWindowEnd: string;
+  withinSendWindowNow: boolean;
+  schedulerIntervalMinutes: number;
+  csat: PeriodicSurveyTypeSummary;
+  morisky: PeriodicSurveyTypeSummary;
+  tpb: PeriodicSurveyTypeSummary;
+  patients: PeriodicSurveyPatientRow[];
+}
+
 export interface MoriskyLevelCount {
   level: string;
   count: number;

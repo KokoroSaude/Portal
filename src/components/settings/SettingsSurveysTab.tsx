@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SettingsField } from "@/components/settings/SettingsField";
+import { SettingsPeriodicSurveysStatusPanel } from "@/components/settings/SettingsPeriodicSurveysStatusPanel";
 import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import type { TenantSettings } from "@/types/api";
 
@@ -89,6 +90,8 @@ export function SettingsSurveysTab({
           </DialogContent>
         </Dialog>
       </SettingsField>
+
+      <SettingsPeriodicSurveysStatusPanel surveyFilter="csat" />
     </div>
   );
 }

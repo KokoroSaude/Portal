@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
+import { SettingsPeriodicSurveysStatusPanel } from "@/components/settings/SettingsPeriodicSurveysStatusPanel";
 import { SettingsField } from "@/components/settings/SettingsField";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -272,6 +273,8 @@ export function TpbSettingsPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <SettingsPeriodicSurveysStatusPanel surveyFilter="tpb" className="mt-4" />
         </TabsContent>
 
         <TabsContent value="manual">

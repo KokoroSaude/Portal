@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScaleTriggersForm } from "@/components/settings/ScaleTriggersForm";
+import { SettingsPeriodicSurveysStatusPanel } from "@/components/settings/SettingsPeriodicSurveysStatusPanel";
 import { SettingsField } from "@/components/settings/SettingsField";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, ApiClientError } from "@/lib/api";
@@ -199,6 +200,8 @@ export function MoriskySettingsPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <SettingsPeriodicSurveysStatusPanel surveyFilter="morisky" className="mt-4" />
         </TabsContent>
 
         <TabsContent value="manual">

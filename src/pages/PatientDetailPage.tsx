@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
 import { PatientTimelineCard } from "@/components/patients/PatientTimelineCard";
 import { PatientSchedulingPanel } from "@/components/patients/PatientSchedulingPanel";
+import { SettingsPeriodicSurveysStatusPanel } from "@/components/settings/SettingsPeriodicSurveysStatusPanel";
 import {
   PatientWhatsAppWindowBanner,
 } from "@/components/patients/PatientWhatsAppWindowBanner";
@@ -60,7 +61,7 @@ import type { ClinicalPriorityTier } from "@/types/api";
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, canWrite, hasFeature, isPlatform } = useAuth();
+  const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [pauseReason, setPauseReason] = useState("");
   const [milestoneDays, setMilestoneDays] = useState<7 | 14 | 30>(7);
@@ -616,6 +617,14 @@ export function PatientDetailPage() {
         isPausing={pauseMutation.isPending}
         isResuming={resumeMutation.isPending}
       />
+
+      {patient.status === "Active" && isAdmin ? (
+        <SettingsPeriodicSurveysStatusPanel
+          patientId={patient.id}
+          limit={1}
+          compact
+        />
+      ) : null}
 
       {achievements && achievements.items.some((a) => a.unlocked) && (
         <Card>
