@@ -919,7 +919,7 @@ export function AppSidebar({
           )}
         >
             {collapsed ? (
-                <div className="flex flex-col items-center gap-2">
+              <div className="flex w-full flex-col items-center gap-1.5 overflow-x-hidden">
                 <SidebarCollapsedFlyout
                   collapsed
                   label={displayName}
@@ -940,7 +940,8 @@ export function AppSidebar({
                     />
                   </NavLink>
                 </SidebarCollapsedFlyout>
-                <div className="flex items-center justify-center gap-1">
+                {/* Em w-16, ícones lado a lado estouram — empilhar verticalmente. */}
+                <div className="flex w-full flex-col items-center gap-1">
                   <PwaInstallButton variant="sidebar" collapsed />
                   <ThemeToggle collapsed />
                   <SidebarCollapsedFlyout collapsed label="Sair">
