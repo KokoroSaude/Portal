@@ -23,6 +23,7 @@ import { SettingsPeriodicSurveysStatusPanel } from "@/components/settings/Settin
 import {
   PatientWhatsAppWindowBanner,
 } from "@/components/patients/PatientWhatsAppWindowBanner";
+import { DocsHelpButton } from "@/components/DocsHelpButton";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
@@ -446,7 +447,8 @@ export function PatientDetailPage() {
             )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <DocsHelpButton />
           {canWrite && patient.status === "Onboarding" && (
             <Button
               size="sm"

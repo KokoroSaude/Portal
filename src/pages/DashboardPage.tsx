@@ -85,15 +85,17 @@ export function DashboardPage() {
     <div className="space-y-8">
       <GettingStartedCard />
 
-      <div>
-        <h1 className="font-serif text-3xl">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Últimos 30 dias ·{" "}
-          <Link to="/relatorios" className="text-primary hover:underline">
-            ver relatórios completos
-          </Link>
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description={
+          <>
+            Últimos 30 dias ·{" "}
+            <Link to="/relatorios" className="text-primary hover:underline">
+              ver relatórios completos
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

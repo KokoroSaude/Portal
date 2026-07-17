@@ -5,6 +5,7 @@ import { Brain, ClipboardList, Download, MessageCircle, Plus, RefreshCw, Star, U
 import { toast } from "sonner";
 import { GridEmptyRow } from "@/components/grid/GridEmptyRow";
 import { GridSearchBar } from "@/components/grid/GridSearchBar";
+import { DocsHelpButton } from "@/components/DocsHelpButton";
 import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { QueryErrorState } from "@/components/QueryErrorState";
 import { Badge } from "@/components/ui/badge";
@@ -322,6 +323,8 @@ export function PatientsPage() {
               : "Gerencie e acompanhe pacientes do programa"}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <DocsHelpButton />
         {canWrite && (
           <div className="flex flex-wrap gap-2">
             {govMode && (
@@ -531,6 +534,7 @@ export function PatientsPage() {
           </Dialog>
           </div>
         )}
+        </div>
       </div>
 
       <Card className="border-primary/20 bg-primary/[0.03]">

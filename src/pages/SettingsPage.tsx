@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { DocsHelpButton } from "@/components/DocsHelpButton";
 import { SettingsOperationTab } from "@/components/settings/SettingsOperationTab";
 import { SettingsEngagementTab } from "@/components/settings/SettingsEngagementTab";
 import { SettingsOnboardingTab } from "@/components/settings/SettingsOnboardingTab";
@@ -115,9 +116,12 @@ export function SettingsPage() {
   if (!isAdmin) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="font-serif text-3xl">Configurações</h1>
-          <p className="text-muted-foreground">Preferências da organização</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-3xl">Configurações</h1>
+            <p className="text-muted-foreground">Preferências da organização</p>
+          </div>
+          <DocsHelpButton />
         </div>
         <Card>
           <CardHeader>
@@ -140,9 +144,12 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl">Configurações</h1>
-        <p className="text-muted-foreground">Preferências operacionais da organização</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl">Configurações</h1>
+          <p className="text-muted-foreground">Preferências operacionais da organização</p>
+        </div>
+        <DocsHelpButton />
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SettingsTab)}>

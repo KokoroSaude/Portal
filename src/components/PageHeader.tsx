@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Lock } from "lucide-react";
+import { DocsHelpButton } from "@/components/DocsHelpButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -8,10 +9,16 @@ export function PageHeader({
   title,
   description,
   actions,
+  docsPath,
+  hideDocs,
 }: {
   title: string;
-  description?: string;
+  description?: ReactNode;
   actions?: ReactNode;
+  /** Path MkDocs explícito; se omitido, resolve pela rota atual. */
+  docsPath?: string;
+  /** Oculta o botão automático de documentação. */
+  hideDocs?: boolean;
 }) {
   return (
     <div className="mb-6 border-b border-border/60 pb-4 sm:mb-8 sm:pb-6">
@@ -22,7 +29,10 @@ export function PageHeader({
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
           )}
         </div>
-        {actions && <div className="shrink-0">{actions}</div>}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {!hideDocs && <DocsHelpButton docsPath={docsPath} />}
+          {actions}
+        </div>
       </div>
     </div>
   );
