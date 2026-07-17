@@ -21,16 +21,23 @@ export const FEATURE_KEYS = {
   scalesMorisky: "scales.morisky",
   scalesTpb: "scales.tpb",
   behavioralProfile: "behavioral.profile",
+  behavioralGoals: "behavioral.goals",
+  behavioralSelectiveSkip: "behavioral.selective_skip",
   aiCopilot: "ai.copilot",
   satisfactionCsat: "satisfaction.csat",
   engagementReminders: "engagement.reminders",
   engagementMilestones: "engagement.milestones",
+  engagementAwayMode: "engagement.away_mode",
+  engagementIndicationCards: "engagement.indication_cards",
+  engagementCaregiver: "engagement.caregiver",
   whatsappConversations: "whatsapp.conversations",
   whatsappVoice: "whatsapp.voice",
   whatsappPrescription: "whatsapp.prescription",
   pharmacyPickup: "pharmacy.pickup",
   pspPrograms: "psp.programs",
   populationHealthReports: "reports.population_health",
+  integrationsFhir: "integrations.fhir",
+  integrationsFhirBulk: "integrations.fhir_bulk",
 } as const;
 
 export const TENANT_OPERATION_MODE_LABELS: Record<string, string> = {

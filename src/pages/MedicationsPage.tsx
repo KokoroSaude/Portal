@@ -20,9 +20,9 @@ export function MedicationsPage() {
   const [aliases, setAliases] = useState("");
   const [catmatCode, setCatmatCode] = useState("");
   const [clinicalPriorityBoost, setClinicalPriorityBoost] = useState("0");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editCatmat, setEditCatmat] = useState("");
-  const [editBoost, setEditBoost] = useState("0");
+  const [editIndication, setEditIndication] = useState("");
+  const [editWhyNotSkip, setEditWhyNotSkip] = useState("");
+  const [editPharmacistCta, setEditPharmacistCta] = useState(false);
 
   const medications = useQuery({
     queryKey: ["medications-catalog"],
@@ -60,6 +60,9 @@ export function MedicationsPage() {
       api.updateMedication(token!, med.id, {
         catmatCode: govMode ? editCatmat.trim() || undefined : undefined,
         clinicalPriorityBoost: govMode ? Number(editBoost) || 0 : undefined,
+        indicationSummary: editIndication.trim() || null,
+        whyNotSkip: editWhyNotSkip.trim() || null,
+        pharmacistCtaEnabled: editPharmacistCta,
       }),
     onSuccess: () => {
       toast.success("Medicamento atualizado");
@@ -83,6 +86,9 @@ export function MedicationsPage() {
     setEditingId(med.id);
     setEditCatmat(med.catmatCode ?? "");
     setEditBoost(String(med.clinicalPriorityBoost ?? 0));
+    setEditIndication(med.indicationSummary ?? "");
+    setEditWhyNotSkip(med.whyNotSkip ?? "");
+    setEditPharmacistCta(med.pharmacistCtaEnabled ?? false);
   }
 
   if (!isAdmin) {
@@ -187,24 +193,62 @@ export function MedicationsPage() {
                     </p>
                   )}
                   {editingId === med.id ? (
-                    govMode ? (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-3 grid gap-3">
+                      {govMode && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">CATMAT</Label>
+                            <Input value={editCatmat} onChange={(e) => setEditCatmat(e.target.value)} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Boost prioridade</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={editBoost}
+                              onChange={(e) => setEditBoost(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-1">
-                        <Label className="text-xs">CATMAT</Label>
-                        <Input value={editCatmat} onChange={(e) => setEditCatmat(e.target.value)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Boost prioridade</Label>
+                        <Label className="text-xs">Indicação (curada — card WhatsApp)</Label>
                         <Input
-                          type="number"
-                          min={0}
-                          value={editBoost}
-                          onChange={(e) => setEditBoost(e.target.value)}
+                          value={editIndication}
+                          onChange={(e) => setEditIndication(e.target.value)}
+                          placeholder="Ex.: controla a glicose e previne complicações"
+                          maxLength={500}
                         />
                       </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Por que não pular</Label>
+                        <Input
+                          value={editWhyNotSkip}
+                          onChange={(e) => setEditWhyNotSkip(e.target.value)}
+                          placeholder="Ex.: sem o remédio a pressão sobe e o risco de AVC aumenta"
+                          maxLength={500}
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={editPharmacistCta}
+                          onChange={(e) => setEditPharmacistCta(e.target.checked)}
+                        />
+                        CTA farmacêutico no card
+                      </label>
+                      {editIndication.trim() && (
+                        <div className="rounded-md bg-muted/40 p-3 text-xs">
+                          <p className="mb-1 font-medium">Preview WhatsApp</p>
+                          <p>
+                            💊 *{med.canonicalName}*: {editIndication.trim()}
+                            {editWhyNotSkip.trim() ? ` ${editWhyNotSkip.trim()}` : ""}
+                          </p>
+                        </div>
+                      )}
                       <Button
                         size="sm"
-                        className="sm:col-span-2 w-fit"
+                        className="w-fit"
                         onClick={() => updateMutation.mutate(med)}
                         disabled={updateMutation.isPending}
                       >
@@ -212,14 +256,22 @@ export function MedicationsPage() {
                         Salvar
                       </Button>
                     </div>
-                    ) : null
-                  ) : govMode ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      CATMAT: {med.catmatCode ?? "—"} · Boost: {med.clinicalPriorityBoost ?? 0}
-                    </p>
-                  ) : null}
+                  ) : (
+                    <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                      {govMode && (
+                        <p>
+                          CATMAT: {med.catmatCode ?? "—"} · Boost: {med.clinicalPriorityBoost ?? 0}
+                        </p>
+                      )}
+                      {med.indicationSummary ? (
+                        <p>Card: {med.indicationSummary}</p>
+                      ) : (
+                        <p>Sem card de indicação curado</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {govMode && editingId !== med.id && (
+                {editingId !== med.id && (
                   <Button variant="ghost" size="icon" onClick={() => startEdit(med)}>
                     <Pencil className="size-4" />
                   </Button>

@@ -51,7 +51,7 @@ export function ReportAiInsightCard({ token, from, to, variant = "adherence" }: 
             Resumo inteligente
           </CardTitle>
           <CardDescription>
-            Análise do período em linguagem natural — funciona sem API key (modo regras).
+            Análise do período em linguagem natural
           </CardDescription>
         </div>
         <Button

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -60,6 +60,8 @@ import type { ClinicalPriorityTier } from "@/types/api";
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const smartLaunch = searchParams.get("smart") === "1";
   const navigate = useNavigate();
   const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -286,6 +288,11 @@ export function PatientDetailPage() {
 
   return (
     <div className="space-y-6">
+      {smartLaunch && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Sessão aberta via SMART EHR Launch — contexto restrito a este paciente.
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link to="/pacientes" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -297,6 +304,25 @@ export function PatientDetailPage() {
             <PatientStatusBadge status={patient.status} />
             {patient.preferredMessageChannel === "Audio" && (
               <Badge variant="secondary">Canal: áudio</Badge>
+            )}
+            {patient.awayModeUntil && new Date(patient.awayModeUntil) > new Date() && (
+              <Badge variant="outline" className="border-sky-300 text-sky-800">
+                Fora de rotina até{" "}
+                {new Date(patient.awayModeUntil).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                })}
+              </Badge>
+            )}
+            {patient.hasSelectiveSkipSignal && (
+              <Badge variant="outline" className="border-amber-300 text-amber-800">
+                Skip seletivo
+              </Badge>
+            )}
+            {patient.isAtHighRiskOfAbandonment && (
+              <Badge variant="outline" className="border-red-300 text-red-800">
+                Risco alto abandono
+              </Badge>
             )}
             {aiEnabled && (
               <PatientAiAvailabilityBadge

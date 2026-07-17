@@ -53,6 +53,11 @@ import type {
   StrategicAssessmentScaleViewResponse,
   SubmitStrategicAssessmentResult,
   PatientBehavioralProfile,
+  PatientBehaviourGoal,
+  PatientCaregiver,
+  PatientSelectiveSkipSignal,
+  UpsertPatientCaregiverPayload,
+  BctPackDto,
   TpbBulkTriggerResult,
   TpbManualTriggerResult,
   TpbReport,
@@ -447,8 +452,17 @@ export const api = {
     });
   },
 
-  getPatients: (token: string, params: { page?: number; pageSize?: number; status?: string; search?: string }) =>
-    request<PagedResult<Patient>>(`/api/patients${qs(params)}`, { token }),
+  getPatients: (token: string, params: { page?: number; pageSize?: number; status?: string; search?: string; highRiskAbandonment?: boolean }) =>
+    request<PagedResult<Patient>>(
+      `/api/patients${qs({
+        page: params.page,
+        pageSize: params.pageSize,
+        status: params.status,
+        search: params.search,
+        highRiskAbandonment: params.highRiskAbandonment === true ? "true" : undefined,
+      })}`,
+      { token },
+    ),
 
   createPatient: (
     token: string,
@@ -746,6 +760,9 @@ export const api = {
       clinicalPriorityBoost?: number;
       isActive?: boolean;
       aliases?: string[];
+      indicationSummary?: string | null;
+      whyNotSkip?: string | null;
+      pharmacistCtaEnabled?: boolean;
     },
   ) => request<void>(`/api/medications/${medicationId}`, { method: "PUT", token, body: payload }),
 
@@ -957,6 +974,71 @@ export const api = {
 
   getPatientBehavioralProfile: (token: string, patientId: string) =>
     request<PatientBehavioralProfile>(`/api/patients/${patientId}/behavioral-profile`, { token }),
+
+  updatePatientAnchorHabit: (token: string, patientId: string, anchorHabit: string | null) =>
+    request<void>(`/api/patients/${patientId}/behavioral-profile/anchor-habit`, {
+      method: "PUT",
+      token,
+      body: { anchorHabit },
+    }),
+
+  getPatientBehaviourGoal: (token: string, patientId: string) =>
+    request<PatientBehaviourGoal | null>(`/api/patients/${patientId}/behaviour-goal`, { token }),
+
+  updatePatientBehaviourGoal: (
+    token: string,
+    patientId: string,
+    payload: {
+      targetDosesPerWeek?: number;
+      anchorHabit?: string | null;
+      whenWhereText?: string | null;
+      active?: boolean;
+    },
+  ) =>
+    request<PatientBehaviourGoal>(`/api/patients/${patientId}/behaviour-goal`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  updatePatientAwayMode: (
+    token: string,
+    patientId: string,
+    payload: { until: string | null; reason?: string | null },
+  ) =>
+    request<void>(`/api/patients/${patientId}/away-mode`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  listPatientCaregivers: (token: string, patientId: string) =>
+    request<PatientCaregiver[]>(`/api/patients/${patientId}/caregivers`, { token }),
+
+  upsertPatientCaregiver: (
+    token: string,
+    patientId: string,
+    payload: UpsertPatientCaregiverPayload,
+  ) =>
+    request<PatientCaregiver>(`/api/patients/${patientId}/caregivers`, {
+      method: "PUT",
+      token,
+      body: payload,
+    }),
+
+  revokePatientCaregiver: (token: string, patientId: string, caregiverId: string) =>
+    request<void>(`/api/patients/${patientId}/caregivers/${caregiverId}`, {
+      method: "DELETE",
+      token,
+    }),
+
+  getPatientSelectiveSkip: (token: string, patientId: string) =>
+    request<PatientSelectiveSkipSignal | null>(
+      `/api/patients/${patientId}/selective-skip`,
+      { token },
+    ),
+
+  getBctPack: (token: string) => request<BctPackDto>("/api/tenants/me/bct-pack", { token }),
 
   getTpbReport: (token: string, from?: string, to?: string) =>
     request<TpbReport>(`/api/reports/tpb${qs({ from, to })}`, { token }),

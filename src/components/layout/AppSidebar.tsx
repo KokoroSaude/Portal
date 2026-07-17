@@ -273,10 +273,22 @@ export const TENANT_NAV_SECTIONS: NavSectionConfig[] = [
           { to: "/configuracoes?tab=onboarding", label: "Onboarding", icon: GitBranch },
           { to: "/configuracoes?tab=pesquisas", label: "CSAT", icon: Star },
           {
+            to: "/configuracoes/bct",
+            label: "Pack BCT",
+            icon: Brain,
+            feature: FEATURE_KEYS.behavioralProfile,
+          },
+          {
             to: "/configuracoes/usuarios",
             label: "Usuários",
             icon: Users,
             feature: FEATURE_KEYS.usersManage,
+          },
+          {
+            to: "/configuracoes/fhir",
+            label: "FHIR / SMART",
+            icon: Activity,
+            feature: FEATURE_KEYS.integrationsFhir,
           },
         ],
       },

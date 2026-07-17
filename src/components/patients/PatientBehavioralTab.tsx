@@ -1,4 +1,5 @@
 import { BehavioralProfileCard } from "@/components/patients/BehavioralProfileCard";
+import { PatientGoalAnchorEditor } from "@/components/patients/PatientGoalAnchorEditor";
 import { StrategicAssessmentForm } from "@/components/patients/StrategicAssessmentForm";
 import type { PatientBehavioralProfile, PatientTpbRisk } from "@/types/api";
 
@@ -28,6 +29,12 @@ export function PatientBehavioralTab({
         tpbRisk={tpbRisk}
         isLoading={profileLoading}
         riskLoading={tpbRiskLoading}
+      />
+      <PatientGoalAnchorEditor
+        token={token}
+        patientId={patientId}
+        canWrite={canWrite}
+        profile={profile}
       />
       <StrategicAssessmentForm token={token} patientId={patientId} canWrite={canWrite} />
     </div>

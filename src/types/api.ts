@@ -78,6 +78,10 @@ export interface Patient {
   medication: string | null;
   preferredMessageChannel?: "Text" | "Audio";
   consecutiveMissedCheckins?: number;
+  isAtHighRiskOfAbandonment?: boolean;
+  awayModeUntil?: string | null;
+  awayModeReason?: string | null;
+  hasSelectiveSkipSignal?: boolean;
   lastCheckinAt: string | null;
   createdAt: string;
 }
@@ -487,6 +491,9 @@ export interface MedicationCatalogItem {
   clinicalPriorityBoost?: number;
   isActive: boolean;
   aliases: string[];
+  indicationSummary?: string | null;
+  whyNotSkip?: string | null;
+  pharmacistCtaEnabled?: boolean;
 }
 
 export interface MedicationProgramListItem {
@@ -831,6 +838,93 @@ export interface TenantSettings {
   humanLatencyMaxSeconds?: number;
   selfServicePauseEnabled?: boolean;
   weeklyDigestEnabled?: boolean;
+  reminderSnoozeEnabled?: boolean;
+  reminderSnoozeHours?: number;
+  reminderMaxSnoozesPerDose?: number;
+  snoozeFatigueWeeklyThreshold?: number;
+  hibernationEnabled?: boolean;
+  maxMissesBeforeActiveHibernation?: number | null;
+  hibernationReengagementDays?: number;
+  enableHabitStacking?: boolean;
+  enableActiveCommitment?: boolean;
+  lossAversionStreakThreshold?: number;
+  abandonmentLatencySpikeRatio?: number;
+  abandonmentLatencySampleWindow?: number;
+  /** Pack BCT (Patton) — defaults OFF */
+  behaviourGoalsEnabled?: boolean;
+  behaviourGoalReviewDays?: number;
+  awayModeEnabled?: boolean;
+  awayModeMaxDays?: number;
+  indicationCardsEnabled?: boolean;
+  indicationCardCooldownDays?: number;
+  caregiverEscalationEnabled?: boolean;
+  caregiverMissThreshold?: number;
+  selectiveSkipEnabled?: boolean;
+  bctPackNotesJson?: string | null;
+}
+
+export type BctPackStatus = "on" | "partial" | "off";
+
+export interface BctPackItem {
+  bctKey: string;
+  bctName: string;
+  kokoroCapability: string;
+  status: BctPackStatus;
+  settingsPath?: string | null;
+  patientSees?: string | null;
+  featureKey?: string | null;
+}
+
+export interface BctPackDto {
+  items: BctPackItem[];
+  notesJson?: string | null;
+}
+
+export interface PatientBehaviourGoal {
+  patientId: string;
+  targetDosesPerWeek: number;
+  anchorHabit: string | null;
+  whenWhereText: string | null;
+  source: string;
+  active: boolean;
+  lastReviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface PatientCaregiver {
+  id: string;
+  patientId: string;
+  name: string;
+  phone: string;
+  phoneLast4?: string | null;
+  relationship: string;
+  notifyOnMiss: boolean;
+  notifyOnHighRiskAbandonment: boolean;
+  consentCapturedAt: string;
+  consentChannel: string;
+  revokedAt: string | null;
+  isActive: boolean;
+}
+
+export interface UpsertPatientCaregiverPayload {
+  id?: string;
+  name: string;
+  phone: string;
+  relationship: string;
+  notifyOnMiss?: boolean;
+  notifyOnHighRiskAbandonment?: boolean;
+}
+
+export interface PatientSelectiveSkipSignal {
+  patientId: string;
+  detectedAt: string;
+  clearedAt: string | null;
+  meds: Array<{
+    carePlanId: string;
+    medication: string;
+    adherenceRate: number;
+    checkinCount: number;
+  }>;
 }
 
 export interface ErpCredential {
@@ -1464,6 +1558,19 @@ export interface PatientBehavioralProfile {
   };
   intentionBehaviorGap?: number | null;
   weakestConstruct?: string | null;
+  anchorHabit?: string | null;
+  snoozeEventsLast7d?: number;
+  isSnoozeFatigue?: boolean;
+  isAtHighRiskOfAbandonment?: boolean;
+  averageResponseLatencyMinutes?: number | null;
+  baselineResponseLatencyMinutes?: number | null;
+  responseLatencySamples?: number[] | null;
+  currentStreak?: number;
+  monthlyAdherenceRate?: number | null;
+  totalSuccessfulDoses?: number;
+  targetDosesPerWeek?: number | null;
+  whenWhereText?: string | null;
+  goalLastReviewedAt?: string | null;
 }
 
 export interface TpbConstructAvg {

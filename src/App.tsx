@@ -78,10 +78,15 @@ const MedicationProgramsPage = lazyPage(
   "MedicationProgramsPage",
 );
 const MedicationsPage = lazyPage(() => import("@/pages/MedicationsPage"), "MedicationsPage");
+const BctPackPage = lazyPage(() => import("@/pages/BctPackPage"), "BctPackPage");
 const SettingsPage = lazyPage(() => import("@/pages/SettingsPage"), "SettingsPage");
 const SettingsPickupPage = lazyPage(
   () => import("@/pages/SettingsPickupPage"),
   "SettingsPickupPage",
+);
+const SettingsFhirPage = lazyPage(
+  () => import("@/pages/SettingsFhirPage"),
+  "SettingsFhirPage",
 );
 const SettingsAiLayout = lazyPage(
   () => import("@/pages/settings/SettingsAiLayout"),
@@ -321,8 +326,10 @@ export default function App() {
                     <Route path="tcp" element={<TpbSettingsPage />} />
                     <Route path="tcp/ciencia" element={<TpbSciencePage />} />
                     <Route path="tpb" element={<Navigate to="/tcp" replace />} />
+                    <Route path="configuracoes/bct" element={<BctPackPage />} />
                     <Route path="configuracoes/morisky" element={<Navigate to="/morisky" replace />} />
                     <Route path="configuracoes/retirada" element={<SettingsPickupPage />} />
+                    <Route path="configuracoes/fhir" element={<SettingsFhirPage />} />
                     <Route path="configuracoes/saude-publica" element={<SettingsPublicHealthPage />} />
                     <Route path="configuracoes/ia" element={<SettingsAiLayout />}>
                       <Route index element={<Navigate to="geral" replace />} />

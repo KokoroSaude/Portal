@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
+import { PatientCaregiversSection } from "@/components/patients/PatientCaregiversSection";
 import { PatientSubPageShell } from "@/components/patients/PatientSubPageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
@@ -24,13 +25,21 @@ export function PatientCareNetworkPage() {
       patientLoading={patientLoading}
       notFound={!patient}
       title="Rede de cuidado"
-      description="Delegados autorizados a retirar medicamentos e receber notificações."
-      locked={!govMode}
-      lockedTitle="Rede de cuidado não disponível"
-      lockedDescription="Este recurso está disponível apenas para operações de farmácia governamental."
+      description="Cuidadores de adesão (retail) e delegados de retirada (gov)."
+      locked={false}
     >
       {token && id && (
-        <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
+        <div className="space-y-6">
+          <PatientCaregiversSection patientId={id} token={token} canWrite={canWrite} />
+          {govMode ? (
+            <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Delegados de retirada SUS ficam disponíveis quando o módulo de farmácia governamental
+              está ativo.
+            </p>
+          )}
+        </div>
       )}
     </PatientSubPageShell>
   );

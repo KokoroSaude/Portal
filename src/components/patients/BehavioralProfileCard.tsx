@@ -181,6 +181,55 @@ export function BehavioralProfileCard({
                 </div>
               )}
 
+              {(profile.isAtHighRiskOfAbandonment
+                || profile.averageResponseLatencyMinutes != null
+                || (profile.currentStreak != null && profile.currentStreak > 0)
+                || profile.monthlyAdherenceRate != null) && (
+                <div className="rounded-lg border bg-muted/20 p-3 text-xs space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-muted-foreground">Risco operacional e consistência</p>
+                    {profile.isAtHighRiskOfAbandonment && (
+                      <Badge variant="warning">Alto risco de abandono</Badge>
+                    )}
+                    {profile.isSnoozeFatigue && (
+                      <Badge variant="secondary">Fadiga de soneca</Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">
+                    Fadiga silenciosa — resposta mais lenta ao lembrete pode preceder o miss.
+                  </p>
+                  <div className="grid gap-1 text-muted-foreground sm:grid-cols-2">
+                    {profile.averageResponseLatencyMinutes != null && (
+                      <p>Latência média: {profile.averageResponseLatencyMinutes.toFixed(1)} min</p>
+                    )}
+                    {profile.baselineResponseLatencyMinutes != null && (
+                      <p>Baseline: {profile.baselineResponseLatencyMinutes.toFixed(1)} min</p>
+                    )}
+                    {profile.currentStreak != null && (
+                      <p>Streak atual: {profile.currentStreak} dia(s)</p>
+                    )}
+                    {profile.monthlyAdherenceRate != null && (
+                      <p>Adesão do mês: {(profile.monthlyAdherenceRate * 100).toFixed(0)}%</p>
+                    )}
+                    {profile.totalSuccessfulDoses != null && (
+                      <p>Doses tomadas (total): {profile.totalSuccessfulDoses}</p>
+                    )}
+                    {profile.anchorHabit && <p>Hábito âncora: {profile.anchorHabit}</p>}
+                  </div>
+                  {profile.responseLatencySamples && profile.responseLatencySamples.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Últimas latências (min)</p>
+                      <p className="font-mono text-[10px] text-muted-foreground break-all">
+                        {profile.responseLatencySamples
+                          .slice(-12)
+                          .map((m) => m.toFixed(0))
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {profile.sources.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {profile.sources.map((s) => (

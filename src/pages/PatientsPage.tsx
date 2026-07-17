@@ -62,6 +62,7 @@ export function PatientsPage() {
   const [page, setPage] = useState(1);
   const { input: searchInput, setInput: setSearchInput, query: search } = useGridSearch();
   const [status, setStatus] = useState("");
+  const [highRiskOnly, setHighRiskOnly] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -90,16 +91,17 @@ export function PatientsPage() {
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
-  }, [search, status]);
+  }, [search, status, highRiskOnly]);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["patients", page, search, status],
+    queryKey: ["patients", page, search, status, highRiskOnly],
     queryFn: () =>
       api.getPatients(token!, {
         page,
         pageSize: 20,
         search: search || undefined,
         status: status || undefined,
+        highRiskAbandonment: highRiskOnly || undefined,
       }),
     enabled: !!token,
   });
@@ -623,6 +625,15 @@ export function PatientsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {hasFeature(FEATURE_KEYS.behavioralProfile) && (
+                <Button
+                  variant={highRiskOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setHighRiskOnly((v) => !v)}
+                >
+                  Risco abandono
+                </Button>
+              )}
               {hasFeature(FEATURE_KEYS.reportsBasic) && (
                 <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
                   <Download className="size-4" />
@@ -818,9 +829,16 @@ export function PatientsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <Link to={`/pacientes/${p.id}`} className="font-medium text-primary hover:underline">
-                          {p.name ?? "Sem nome"}
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link to={`/pacientes/${p.id}`} className="font-medium text-primary hover:underline">
+                            {p.name ?? "Sem nome"}
+                          </Link>
+                          {p.isAtHighRiskOfAbandonment && (
+                            <Badge variant="warning" className="text-[10px]">
+                              Risco abandono
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{maskPhone(p.phone, p.phoneLast4)}</TableCell>
                       <TableCell className="font-mono text-sm">
