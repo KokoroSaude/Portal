@@ -20,6 +20,9 @@ export function MedicationsPage() {
   const [aliases, setAliases] = useState("");
   const [catmatCode, setCatmatCode] = useState("");
   const [clinicalPriorityBoost, setClinicalPriorityBoost] = useState("0");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCatmat, setEditCatmat] = useState("");
+  const [editBoost, setEditBoost] = useState("0");
   const [editIndication, setEditIndication] = useState("");
   const [editWhyNotSkip, setEditWhyNotSkip] = useState("");
   const [editPharmacistCta, setEditPharmacistCta] = useState(false);
