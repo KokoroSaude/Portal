@@ -135,7 +135,8 @@ export function BctPackPage() {
           <CardHeader>
             <CardTitle className="text-lg">Toggles do pack (opt-in)</CardTitle>
             <CardDescription>
-              Defaults OFF. Também exige override de feature no plano/tenant quando aplicável.
+              Defaults OFF (WhatsApp). No plano Enterprise a feature já vem liberada — ligue aqui
+              para ativar no paciente. Depois, faça logout/login se o menu não atualizar.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
