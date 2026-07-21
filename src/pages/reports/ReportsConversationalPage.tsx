@@ -638,12 +638,13 @@ export function ReportsConversationalPage() {
                       <TableBody>
                         {satisfaction.data.items
                           .filter((row) =>
-                            matchesGridSearch(searchQuery, [
+                            matchesGridSearch(
+                              searchQuery,
                               row.patientName,
                               row.comment,
                               row.context,
-                              String(row.score),
-                            ]),
+                              row.score,
+                            ),
                           )
                           .map((row) => (
                             <TableRow key={row.id}>
