@@ -1910,6 +1910,22 @@ export interface ConversationLabPersona {
   provocations: string[];
 }
 
+export interface UpsertConversationLabPersonaPayload {
+  slug?: string | null;
+  displayName: string;
+  shortBio: string;
+  portalName: string;
+  preferredName: string;
+  age: number;
+  digitalLiteracy: string;
+  conditions?: string[];
+  medications?: string[];
+  speechTraits?: string[];
+  suggestedOpeners?: string[];
+  provocations?: string[];
+  isActive?: boolean;
+}
+
 export interface ConversationLabBubble {
   kind: string;
   text: string;
@@ -1957,6 +1973,19 @@ export interface ConversationLabTurn {
   debug: ConversationLabDebugInfo;
   outbound: ConversationLabBubble[];
   transcript: ConversationLabMessage[];
+}
+
+export interface ConversationLabExample {
+  id: string;
+  question: string;
+  idealReply: string;
+  personaId?: string | null;
+  scenario?: string | null;
+  tags: string;
+  isActive: boolean;
+  sourceSessionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminDeletedTenant {

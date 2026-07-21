@@ -154,8 +154,10 @@ import type {
   PopulationHealthReport,
   PublicHealthDashboard,
   CommunicationLogsResponse,
+  ConversationLabExample,
   ConversationLabPersona,
   ConversationLabPersonaSummary,
+  UpsertConversationLabPersonaPayload,
   ConversationLabSession,
   ConversationLabTurn,
 } from "@/types/api";
@@ -2112,13 +2114,44 @@ export const api = {
     return res.blob();
   },
 
-  adminListConversationLabPersonas: (token: string) =>
-    request<ConversationLabPersonaSummary[]>("/api/admin/conversation-lab/personas", { token }),
+  adminListConversationLabPersonas: (token: string, activeOnly?: boolean) => {
+    const qs = activeOnly === false ? "?activeOnly=false" : "";
+    return request<ConversationLabPersonaSummary[]>(
+      `/api/admin/conversation-lab/personas${qs}`,
+      { token },
+    );
+  },
 
   adminGetConversationLabPersona: (token: string, personaId: string) =>
     request<ConversationLabPersona>(
       `/api/admin/conversation-lab/personas/${encodeURIComponent(personaId)}`,
       { token },
+    ),
+
+  adminUpsertConversationLabPersona: (
+    token: string,
+    payload: UpsertConversationLabPersonaPayload,
+  ) =>
+    request<ConversationLabPersona>("/api/admin/conversation-lab/personas", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  adminUpdateConversationLabPersona: (
+    token: string,
+    personaId: string,
+    payload: UpsertConversationLabPersonaPayload,
+  ) =>
+    request<ConversationLabPersona>(
+      `/api/admin/conversation-lab/personas/${encodeURIComponent(personaId)}`,
+      { method: "PUT", token, body: payload },
+    ),
+
+  adminDeleteConversationLabPersona: (token: string, personaId: string) =>
+    request<void>(
+      `/api/admin/conversation-lab/personas/${encodeURIComponent(personaId)}`,
+      { method: "DELETE", token },
     ),
 
   adminStartConversationLabSession: (
@@ -2152,6 +2185,36 @@ export const api = {
       `/api/admin/conversation-lab/sessions/${sessionId}?tenantId=${encodeURIComponent(tenantId)}`,
       { method: "DELETE", token },
     ),
+
+  adminListConversationLabExamples: (token: string, activeOnly?: boolean) => {
+    const qs = activeOnly ? "?activeOnly=true" : "";
+    return request<ConversationLabExample[]>(
+      `/api/admin/conversation-lab/examples${qs}`,
+      { token },
+    );
+  },
+
+  adminPromoteConversationLabExample: (
+    token: string,
+    sessionId: string,
+    payload: {
+      tenantId: string;
+      question: string;
+      idealReply: string;
+      scenario?: string | null;
+      tags?: string | null;
+    },
+  ) =>
+    request<ConversationLabExample>(
+      `/api/admin/conversation-lab/sessions/${sessionId}/promote-example`,
+      { method: "POST", token, body: payload },
+    ),
+
+  adminDeleteConversationLabExample: (token: string, id: string) =>
+    request<void>(`/api/admin/conversation-lab/examples/${id}`, {
+      method: "DELETE",
+      token,
+    }),
 
   getCommunicationLogs: (
     token: string,
