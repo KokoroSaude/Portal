@@ -1926,11 +1926,17 @@ export interface UpsertConversationLabPersonaPayload {
   isActive?: boolean;
 }
 
+export interface ConversationLabBubbleButton {
+  id: string;
+  title: string;
+}
+
 export interface ConversationLabBubble {
   kind: string;
   text: string;
   templateKey?: string | null;
   buttonLabels?: string[] | null;
+  buttons?: ConversationLabBubbleButton[] | null;
 }
 
 export interface ConversationLabDebugInfo {

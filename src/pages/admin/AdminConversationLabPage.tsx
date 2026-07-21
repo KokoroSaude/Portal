@@ -1,11 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookPlus, Loader2, Pencil, Plus, Send, Sparkles, Trash2 } from "lucide-react";
+import { BookPlus, Loader2, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +27,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type {
+  ConversationLabBubble,
+  ConversationLabBubbleButton,
   ConversationLabMessage,
   ConversationLabPersona,
   UpsertConversationLabPersonaPayload,
@@ -91,6 +92,16 @@ function personaToForm(p: ConversationLabPersona): PersonaFormState {
   };
 }
 
+function extractButtons(bubbles: ConversationLabBubble[]): ConversationLabBubbleButton[] {
+  for (const b of [...bubbles].reverse()) {
+    if (b.buttons?.length) return [...b.buttons];
+    if (b.buttonLabels?.length) {
+      return b.buttonLabels.map((title) => ({ id: title, title }));
+    }
+  }
+  return [];
+}
+
 export function AdminConversationLabPage() {
   const { token } = useAuth();
   const [tenantId, setTenantId] = useState("");
@@ -98,6 +109,7 @@ export function AdminConversationLabPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [patientId, setPatientId] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<ConversationLabMessage[]>([]);
+  const [pendingButtons, setPendingButtons] = useState<ConversationLabBubbleButton[]>([]);
   const [debugStep, setDebugStep] = useState<string>("—");
   const [debugMeds, setDebugMeds] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -106,6 +118,7 @@ export function AdminConversationLabPage() {
   const [personaFormMode, setPersonaFormMode] = useState<"create" | "edit">("create");
   const [personaForm, setPersonaForm] = useState<PersonaFormState>(emptyPersonaForm);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const tenantsQuery = useQuery({
     queryKey: ["admin-tenants-lab"],
@@ -135,7 +148,7 @@ export function AdminConversationLabPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [transcript]);
+  }, [transcript, pendingButtons]);
 
   const startSession = useMutation({
     mutationFn: () =>
@@ -144,6 +157,7 @@ export function AdminConversationLabPage() {
       setSessionId(session.sessionId);
       setPatientId(session.patientId);
       setTranscript(session.transcript);
+      setPendingButtons(extractButtons(session.lastOutbound));
       setDebugStep(session.debug.currentStep);
       setDebugMeds(session.debug.activeMedications ?? []);
       toast.success(`Sessão com ${session.personaDisplayName} — zero WhatsApp`);
@@ -158,6 +172,7 @@ export function AdminConversationLabPage() {
       api.adminSendConversationLabMessage(token!, sessionId!, { tenantId, text }),
     onSuccess: (turn, text) => {
       setTranscript(turn.transcript);
+      setPendingButtons(extractButtons(turn.outbound));
       setDebugStep(turn.debug.currentStep);
       setDebugMeds(turn.debug.activeMedications ?? []);
       const reply =
@@ -168,6 +183,7 @@ export function AdminConversationLabPage() {
         "";
       if (text.trim() && reply.trim()) setLastPair({ q: text.trim(), a: reply.trim() });
       setMessage("");
+      composerRef.current?.focus();
     },
     onError: (err) => {
       toast.error(err instanceof ApiClientError ? err.message : "Falha ao enviar");
@@ -265,6 +281,7 @@ export function AdminConversationLabPage() {
       setSessionId(null);
       setPatientId(null);
       setTranscript([]);
+      setPendingButtons([]);
       setLastPair(null);
       setDebugStep("—");
       setDebugMeds([]);
@@ -294,234 +311,253 @@ export function AdminConversationLabPage() {
     setPersonaDialogOpen(true);
   };
 
+  const submitText = (text: string) => {
+    const t = text.trim();
+    if (!t || !sessionId || sendMessage.isPending) return;
+    sendMessage.mutate(t);
+  };
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col gap-3 p-4 md:p-6">
       <PageHeader
         title="Conversation Lab"
-        description="Teste personas no pipeline real — sem WhatsApp. Crie personas e salve Q&A para few-shot da IA."
+        description="Sandbox estilo WhatsApp — personas, botões e few-shot sem Meta."
       />
 
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr_280px]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Setup</CardTitle>
-            <CardDescription>Tenant sandbox + persona</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Tenant</Label>
-              <Select value={tenantId} onValueChange={setTenantId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tenant" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(tenantsQuery.data ?? [])
-                    .filter((t) => t.isActive)
-                    .map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Setup horizontal */}
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3">
+        <div className="min-w-[160px] flex-1 space-y-1">
+          <Label className="text-xs">Tenant</Label>
+          <Select value={tenantId} onValueChange={setTenantId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Tenant" />
+            </SelectTrigger>
+            <SelectContent>
+              {(tenantsQuery.data ?? [])
+                .filter((t) => t.isActive)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label>Persona</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={openCreatePersona}
+        <div className="min-w-[180px] flex-1 space-y-1">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Persona</Label>
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={openCreatePersona}
+            >
+              + Nova
+            </button>
+          </div>
+          <Select value={personaId} onValueChange={setPersonaId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Persona" />
+            </SelectTrigger>
+            <SelectContent>
+              {(personasQuery.data ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {persona && (
+          <div className="hidden max-w-xs flex-1 text-xs text-muted-foreground lg:block">
+            <p className="line-clamp-2">{persona.shortBio}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {persona && (
+            <>
+              <Button type="button" size="sm" variant="outline" onClick={openEditPersona}>
+                <Pencil className="mr-1 h-3 w-3" />
+                Editar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                disabled={deletePersona.isPending}
+                onClick={() => {
+                  if (confirm(`Remover/desativar ${persona.id}?`)) deletePersona.mutate();
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
+          {!sessionId ? (
+            <Button size="sm" disabled={!canStart} onClick={() => startSession.mutate()}>
+              {startSession.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Iniciar
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={closeSession.isPending}
+              onClick={() => closeSession.mutate()}
+            >
+              Encerrar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Chat horizontal + sidebar */}
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_260px]">
+        {/* WhatsApp-like pane */}
+        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-[#c5d0c2] bg-[#efeae2] shadow-sm dark:border-border dark:bg-muted/40">
+          <div className="flex items-center gap-3 border-b border-[#d1d7db] bg-[#f0f2f5] px-4 py-2.5 dark:border-border dark:bg-card">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+              {(persona?.preferredName ?? "K").slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {persona?.displayName ?? "Conversation Lab"}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {sessionId
+                  ? `${debugStep} · ${sessionId.slice(0, 8)}…`
+                  : "Inicie uma sessão para conversar"}
+              </p>
+            </div>
+            <Badge variant="outline" className="shrink-0 text-[10px]">
+              Meta off
+            </Badge>
+          </div>
+
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-4 md:px-6">
+            {transcript.length === 0 && (
+              <p className="mx-auto max-w-sm rounded-lg bg-amber-50 px-3 py-2 text-center text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                O bot abre com o welcome do onboarding. Use os botões abaixo ou digite como no
+                WhatsApp.
+              </p>
+            )}
+            {transcript.map((m) => {
+              const inbound = m.direction.toLowerCase() === "inbound";
+              return (
+                <div
+                  key={m.id}
+                  className={cn("flex", inbound ? "justify-end" : "justify-start")}
                 >
-                  <Plus className="mr-1 h-3 w-3" />
-                  Nova
-                </Button>
-              </div>
-              <Select value={personaId} onValueChange={setPersonaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha a persona" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(personasQuery.data ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.displayName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {persona && (
-              <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed">
-                <p className="font-medium">{persona.displayName}</p>
-                <p className="text-muted-foreground">{persona.shortBio}</p>
-                <p>
-                  <Badge variant="secondary">{persona.digitalLiteracy}</Badge>
-                  <Badge variant="outline" className="ml-1 font-mono">
-                    {persona.id}
-                  </Badge>
-                </p>
-                <p className="text-muted-foreground">
-                  Cadastro: {persona.portalName} → prefere {persona.preferredName}
-                </p>
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    onClick={openEditPersona}
+                  <div
+                    className={cn(
+                      "max-w-[min(85%,28rem)] rounded-lg px-3 py-1.5 text-sm shadow-sm whitespace-pre-wrap",
+                      inbound
+                        ? "rounded-tr-none bg-[#d9fdd3] text-foreground dark:bg-emerald-900/50"
+                        : "rounded-tl-none bg-white text-foreground dark:bg-card",
+                    )}
                   >
-                    <Pencil className="mr-1 h-3 w-3" />
-                    Editar
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-destructive"
-                    disabled={deletePersona.isPending}
-                    onClick={() => {
-                      if (confirm(`Remover/desativar persona ${persona.id}?`)) {
-                        deletePersona.mutate();
-                      }
-                    }}
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Remover
-                  </Button>
+                    {m.content}
+                    <div className="mt-0.5 flex items-center justify-end gap-2">
+                      {m.templateKey && (
+                        <span className="text-[9px] text-muted-foreground/70">{m.templateKey}</span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground/80">
+                        {new Date(m.createdAt).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Composer fixo no rodapé do chat */}
+          <div className="shrink-0 border-t border-[#d1d7db] bg-[#f0f2f5] p-2 dark:border-border dark:bg-card">
+            {pendingButtons.length > 0 && sessionId && (
+              <div className="mb-2 flex flex-wrap gap-2 px-1">
+                {pendingButtons.map((btn) => (
+                  <button
+                    key={`${btn.id}-${btn.title}`}
+                    type="button"
+                    disabled={sendMessage.isPending}
+                    className="rounded-full border border-emerald-600/40 bg-white px-3 py-1.5 text-xs font-medium text-emerald-800 shadow-sm hover:bg-emerald-50 disabled:opacity-50 dark:bg-background dark:text-emerald-300"
+                    onClick={() => submitText(btn.id)}
+                  >
+                    {btn.title}
+                  </button>
+                ))}
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
-              <Button
-                disabled={!canStart}
-                onClick={() => startSession.mutate()}
-              >
-                {startSession.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Iniciar sessão
-              </Button>
-              {sessionId && (
-                <Button
-                  variant="outline"
-                  disabled={closeSession.isPending}
-                  onClick={() => closeSession.mutate()}
-                >
-                  Encerrar sessão
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="flex min-h-[520px] flex-col">
-          <CardHeader className="border-b">
-            <CardTitle className="text-base">Chat (sandbox)</CardTitle>
-            <CardDescription>
-              {sessionId
-                ? `Sessão ${sessionId.slice(0, 8)}… · paciente ${patientId?.slice(0, 8)}…`
-                : "Inicie uma sessão para conversar"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3 p-4">
-            <div className="flex-1 space-y-3 overflow-y-auto rounded-lg border bg-muted/20 p-3">
-              {transcript.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma mensagem ainda. O bot abre com o welcome do onboarding.
-                </p>
-              )}
-              {transcript.map((m) => {
-                const inbound = m.direction.toLowerCase() === "inbound";
-                return (
-                  <div
-                    key={m.id}
-                    className={cn("flex", inbound ? "justify-end" : "justify-start")}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap",
-                        inbound
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background border",
-                      )}
-                    >
-                      {m.content}
-                      {m.templateKey && (
-                        <p className="mt-1 text-[10px] opacity-70">{m.templateKey}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={bottomRef} />
-            </div>
-
             {chips.length > 0 && sessionId && (
-              <div className="flex flex-wrap gap-2">
-                {chips.slice(0, 8).map((chip) => (
+              <div className="mb-2 flex gap-1.5 overflow-x-auto px-1 pb-1">
+                {chips.slice(0, 10).map((chip) => (
                   <button
                     key={chip}
                     type="button"
-                    className="rounded-full border bg-background px-3 py-1 text-left text-xs hover:bg-muted"
+                    className="shrink-0 rounded-full border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
                     onClick={() => setMessage(chip)}
                   >
-                    {chip.length > 72 ? `${chip.slice(0, 72)}…` : chip}
+                    {chip.length > 42 ? `${chip.slice(0, 42)}…` : chip}
                   </button>
                 ))}
               </div>
             )}
 
             {lastPair && sessionId && (
-              <div className="rounded-lg border border-dashed p-3 text-xs space-y-2">
-                <p className="font-medium">Último turno — salvar como few-shot?</p>
-                <p className="text-muted-foreground line-clamp-2">
+              <div className="mb-2 flex items-center gap-2 rounded-lg border border-dashed bg-background/80 px-2 py-1.5 text-[11px]">
+                <p className="min-w-0 flex-1 truncate text-muted-foreground">
                   <strong>Q:</strong> {lastPair.q}
-                </p>
-                <p className="text-muted-foreground line-clamp-3">
-                  <strong>A:</strong> {lastPair.a}
                 </p>
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="h-7 shrink-0 text-xs"
                   disabled={promoteExample.isPending}
                   onClick={() => promoteExample.mutate()}
                 >
                   {promoteExample.isPending ? (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <BookPlus className="mr-2 h-3 w-3" />
+                    <BookPlus className="mr-1 h-3 w-3" />
                   )}
-                  Salvar exemplo para a IA
+                  Few-shot
                 </Button>
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex items-end gap-2">
               <Textarea
+                ref={composerRef}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Fale como a persona…"
-                rows={2}
+                placeholder={sessionId ? "Mensagem" : "Inicie a sessão…"}
+                rows={1}
                 disabled={!sessionId}
+                className="min-h-[42px] max-h-28 resize-none rounded-3xl border-0 bg-white px-4 py-2.5 shadow-sm focus-visible:ring-1 dark:bg-background"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey && canSend) {
                     e.preventDefault();
-                    sendMessage.mutate(message.trim());
+                    submitText(message);
                   }
                 }}
               />
               <Button
-                className="shrink-0 self-end"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-full bg-emerald-600 hover:bg-emerald-700"
                 disabled={!canSend}
-                onClick={() => sendMessage.mutate(message.trim())}
+                onClick={() => submitText(message)}
               >
                 {sendMessage.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -530,68 +566,73 @@ export function AdminConversationLabPage() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Debug + exemplos</CardTitle>
-            <CardDescription>Pipeline e Q&A curados</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div>
-              <p className="text-muted-foreground text-xs">Current step</p>
-              <p className="font-mono text-xs">{debugStep}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Care plans</p>
-              {debugMeds.length === 0 ? (
-                <p className="text-xs">—</p>
-              ) : (
-                <ul className="list-inside list-disc text-xs">
-                  {debugMeds.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {persona && (
-              <div>
-                <p className="text-muted-foreground text-xs mb-1">Polifarmácia da persona</p>
-                <ul className="list-inside list-disc text-xs text-muted-foreground">
-                  {persona.medications.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <Badge variant="outline">Meta: off · Lab capture</Badge>
-
-            <div className="border-t pt-3 space-y-2">
-              <p className="text-xs font-medium">
-                Exemplos ativos ({examplesQuery.data?.length ?? 0})
-              </p>
-              <div className="max-h-48 space-y-2 overflow-y-auto">
-                {(examplesQuery.data ?? []).slice(0, 12).map((ex) => (
-                  <div key={ex.id} className="rounded border p-2 text-[11px] leading-snug">
-                    <div className="flex items-start justify-between gap-1">
-                      <p className="font-medium line-clamp-2">{ex.question}</p>
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteExample.mutate(ex.id)}
-                        aria-label="Remover exemplo"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                    <p className="text-muted-foreground line-clamp-2 mt-1">{ex.idealReply}</p>
-                  </div>
+        {/* Debug sidebar */}
+        <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-xl border bg-card p-3 text-sm">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Step
+            </p>
+            <p className="font-mono text-xs">{debugStep}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Care plans
+            </p>
+            {debugMeds.length === 0 ? (
+              <p className="text-xs text-muted-foreground">—</p>
+            ) : (
+              <ul className="list-inside list-disc text-xs">
+                {debugMeds.map((m) => (
+                  <li key={m}>{m}</li>
                 ))}
-              </div>
+              </ul>
+            )}
+          </div>
+          {persona && (
+            <div>
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Meds da persona
+              </p>
+              <ul className="list-inside list-disc text-xs text-muted-foreground">
+                {persona.medications.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
             </div>
-          </CardContent>
-        </Card>
+          )}
+          {patientId && (
+            <p className="text-[10px] text-muted-foreground">
+              Paciente {patientId.slice(0, 8)}…
+            </p>
+          )}
+
+          <div className="border-t pt-3">
+            <p className="mb-2 text-xs font-medium">
+              Exemplos ({examplesQuery.data?.length ?? 0})
+            </p>
+            <div className="max-h-56 space-y-2 overflow-y-auto">
+              {(examplesQuery.data ?? []).slice(0, 12).map((ex) => (
+                <div key={ex.id} className="rounded border p-2 text-[11px] leading-snug">
+                  <div className="flex items-start justify-between gap-1">
+                    <p className="line-clamp-2 font-medium">{ex.question}</p>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteExample.mutate(ex.id)}
+                      aria-label="Remover exemplo"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-muted-foreground">{ex.idealReply}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
 
       <Dialog open={personaDialogOpen} onOpenChange={setPersonaDialogOpen}>
