@@ -6,6 +6,14 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-21
+
+### Added
+
+- **SuperAdmin — Conversation Lab:** playground sem WhatsApp para testar personas no pipeline real
+- **Conversation Lab — personas:** criar, editar e remover personas persistidas (além das built-in)
+- **Conversation Lab — few-shot:** salvar turnos bons como Q&A curado para a API injetar na IA
+
 ## [1.7.0] - 2026-07-12
 
 ### Changed
