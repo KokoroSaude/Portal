@@ -227,7 +227,7 @@ export function AdminReportsOperationsPage() {
             <Skeleton className="h-48" />
           ) : satisfaction.data ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <MetricCard
                   title="Nota média (CSAT)"
                   value={satisfaction.data.avgScore.toFixed(1)}
@@ -238,6 +238,10 @@ export function AdminReportsOperationsPage() {
                 />
                 <MetricCard title="Prompts enviados" value={satisfaction.data.totalPrompts} />
                 <MetricCard title="Respostas" value={satisfaction.data.totalResponses} />
+                <MetricCard
+                  title="Com comentário"
+                  value={satisfaction.data.responsesWithComment}
+                />
               </div>
               <SimpleBarChart
                 title="Nota média por tempo de resposta"
@@ -254,6 +258,52 @@ export function AdminReportsOperationsPage() {
                   value: b.count,
                 }))}
               />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Respostas recentes</CardTitle>
+                  <CardDescription>
+                    Notas e comentários escritos pelos pacientes (comentários primeiro).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {satisfaction.data.recentResponses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma resposta no período.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Tenant</TableHead>
+                          <TableHead>Paciente</TableHead>
+                          <TableHead>Nota</TableHead>
+                          <TableHead>Comentário</TableHead>
+                          <TableHead>Contexto</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {satisfaction.data.recentResponses.map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {new Date(row.createdAt).toLocaleString("pt-BR")}
+                            </TableCell>
+                            <TableCell className="text-sm">{row.tenantName ?? "—"}</TableCell>
+                            <TableCell className="text-sm">{row.patientName ?? "—"}</TableCell>
+                            <TableCell className="font-medium">{row.score}</TableCell>
+                            <TableCell className="max-w-md text-sm">
+                              {row.comment?.trim() ? row.comment : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {row.context ?? "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
             </>
           ) : null}
         </TabsContent>

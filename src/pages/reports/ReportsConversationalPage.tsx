@@ -51,8 +51,9 @@ export function ReportsConversationalPage() {
   const hasFunnel = hasFeature(FEATURE_KEYS.reportsOnboardingFunnel);
   const hasHandoffs = hasFeature(FEATURE_KEYS.reportsHandoffs);
   const hasMessageSources = hasFeature(FEATURE_KEYS.reportsBasic);
+  const hasCsat = hasFeature(FEATURE_KEYS.satisfactionCsat);
 
-  const hasAny = hasQuality || hasRetention || hasFunnel || hasHandoffs || hasMessageSources;
+  const hasAny = hasQuality || hasRetention || hasFunnel || hasHandoffs || hasMessageSources || hasCsat;
 
   const quality = useQuery({
     queryKey: ["conversation-quality-report", from, to],
@@ -90,6 +91,12 @@ export function ReportsConversationalPage() {
     enabled: !!token && hasMessageSources,
   });
 
+  const satisfaction = useQuery({
+    queryKey: ["satisfaction-responses-report", from, to],
+    queryFn: () => api.getSatisfactionResponses(token!, from, to, 50, false),
+    enabled: !!token && hasCsat,
+  });
+
   if (!hasAny) {
     return (
       <FeatureLocked
@@ -107,7 +114,9 @@ export function ReportsConversationalPage() {
         ? "retention"
         : hasFunnel
           ? "funnel"
-          : "handoffs";
+          : hasCsat
+            ? "satisfaction"
+            : "handoffs";
 
   const navItems = [
     { value: "quality", label: "Scorecard", hidden: !hasQuality },
@@ -116,6 +125,7 @@ export function ReportsConversationalPage() {
     { value: "handoffs", label: "Handoffs", hidden: !hasHandoffs },
     { value: "incidents", label: "Incidentes", hidden: !hasHandoffs },
     { value: "message-sources", label: "Origem IA", hidden: !hasMessageSources },
+    { value: "satisfaction", label: "Satisfação", hidden: !hasCsat },
   ];
   const activeTab = resolveReportTab(
     tab,
@@ -579,6 +589,97 @@ export function ReportsConversationalPage() {
                   </CardContent>
                 </Card>
               )}
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {activeTab === "satisfaction" && hasCsat && (
+        <div className="space-y-4">
+          {satisfaction.isError ? (
+            <ReportError error={satisfaction.error} />
+          ) : satisfaction.isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : satisfaction.data ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <MetricCard title="Respostas" value={satisfaction.data.total} />
+                <MetricCard title="Com comentário" value={satisfaction.data.withComment} />
+                <MetricCard
+                  title="% com texto"
+                  value={formatPercent(
+                    satisfaction.data.total === 0
+                      ? 0
+                      : satisfaction.data.withComment / satisfaction.data.total,
+                  )}
+                />
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-lg">Notas e comentários</CardTitle>
+                  <CardDescription>
+                    Feedback escrito enviado pelos pacientes após a nota CSAT.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {satisfaction.data.items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma resposta no período.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Paciente</TableHead>
+                          <TableHead>Nota</TableHead>
+                          <TableHead>Comentário</TableHead>
+                          <TableHead>Contexto</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {satisfaction.data.items
+                          .filter((row) =>
+                            matchesGridSearch(searchQuery, [
+                              row.patientName,
+                              row.comment,
+                              row.context,
+                              String(row.score),
+                            ]),
+                          )
+                          .map((row) => (
+                            <TableRow key={row.id}>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {formatDateTime(row.createdAt)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {row.patientId ? (
+                                  <Link
+                                    to={`/patients/${row.patientId}`}
+                                    className="text-primary underline-offset-4 hover:underline"
+                                  >
+                                    {row.patientName ?? "Paciente"}
+                                  </Link>
+                                ) : (
+                                  "—"
+                                )}
+                              </TableCell>
+                              <TableCell className="font-medium">{row.score}</TableCell>
+                              <TableCell className="max-w-md text-sm">
+                                {row.comment?.trim() ? (
+                                  row.comment
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {row.context ?? "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
             </>
           ) : null}
         </div>

@@ -20,6 +20,7 @@ import type {
   AdminPeriodComparison,
   AdminMessageVolumeMetrics,
   AdminSatisfactionMetrics,
+  SatisfactionResponsesReport,
   AdminOperationalLatencyMetrics,
   AdminAuditLogResult,
   AdminInteractionEventsResult,
@@ -1750,6 +1751,24 @@ export const api = {
       `/api/admin/metrics/satisfaction${adminReportQs({ from, to }, tenantIds)}`,
       { token },
     ),
+
+  getSatisfactionResponses: (
+    token: string,
+    from?: string,
+    to?: string,
+    limit = 50,
+    commentsOnly = false,
+  ) => {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    q.set("limit", String(limit));
+    if (commentsOnly) q.set("commentsOnly", "true");
+    const qs = q.toString();
+    return request<SatisfactionResponsesReport>(`/api/reports/satisfaction${qs ? `?${qs}` : ""}`, {
+      token,
+    });
+  },
 
   adminGetOperationalLatencyMetrics: (token: string, from?: string, to?: string, tenantIds?: string[]) =>
     request<AdminOperationalLatencyMetrics>(

@@ -645,6 +645,19 @@ export interface SatisfactionDelayBucket {
   avgScore: number;
 }
 
+export interface AdminSatisfactionResponse {
+  id: string;
+  tenantId: string;
+  tenantName: string | null;
+  patientId: string | null;
+  patientName: string | null;
+  score: number;
+  comment: string | null;
+  context: string | null;
+  channel: string;
+  createdAt: string;
+}
+
 export interface AdminSatisfactionMetrics {
   from: string;
   to: string;
@@ -653,7 +666,26 @@ export interface AdminSatisfactionMetrics {
   responseRate: number;
   totalPrompts: number;
   totalResponses: number;
+  responsesWithComment: number;
   byDelayBucket: SatisfactionDelayBucket[];
+  recentResponses: AdminSatisfactionResponse[];
+}
+
+export interface SatisfactionResponsesReport {
+  from: string;
+  to: string;
+  total: number;
+  withComment: number;
+  items: Array<{
+    id: string;
+    patientId: string | null;
+    patientName: string | null;
+    score: number;
+    comment: string | null;
+    context: string | null;
+    channel: string;
+    createdAt: string;
+  }>;
 }
 
 export interface LatencyByTenant {
