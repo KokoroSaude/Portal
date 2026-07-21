@@ -154,6 +154,10 @@ import type {
   PopulationHealthReport,
   PublicHealthDashboard,
   CommunicationLogsResponse,
+  ConversationLabPersona,
+  ConversationLabPersonaSummary,
+  ConversationLabSession,
+  ConversationLabTurn,
 } from "@/types/api";
 import { API_BASE } from "@/lib/config";
 import { normalizeTenantSettings } from "@/lib/normalize-settings";
@@ -2107,6 +2111,47 @@ export const api = {
     }
     return res.blob();
   },
+
+  adminListConversationLabPersonas: (token: string) =>
+    request<ConversationLabPersonaSummary[]>("/api/admin/conversation-lab/personas", { token }),
+
+  adminGetConversationLabPersona: (token: string, personaId: string) =>
+    request<ConversationLabPersona>(
+      `/api/admin/conversation-lab/personas/${encodeURIComponent(personaId)}`,
+      { token },
+    ),
+
+  adminStartConversationLabSession: (
+    token: string,
+    payload: { tenantId: string; personaId: string },
+  ) =>
+    request<ConversationLabSession>("/api/admin/conversation-lab/sessions", {
+      method: "POST",
+      token,
+      body: payload,
+    }),
+
+  adminGetConversationLabSession: (token: string, tenantId: string, sessionId: string) =>
+    request<ConversationLabSession>(
+      `/api/admin/conversation-lab/sessions/${sessionId}?tenantId=${encodeURIComponent(tenantId)}`,
+      { token },
+    ),
+
+  adminSendConversationLabMessage: (
+    token: string,
+    sessionId: string,
+    payload: { tenantId: string; text: string },
+  ) =>
+    request<ConversationLabTurn>(
+      `/api/admin/conversation-lab/sessions/${sessionId}/messages`,
+      { method: "POST", token, body: payload },
+    ),
+
+  adminCloseConversationLabSession: (token: string, tenantId: string, sessionId: string) =>
+    request<void>(
+      `/api/admin/conversation-lab/sessions/${sessionId}?tenantId=${encodeURIComponent(tenantId)}`,
+      { method: "DELETE", token },
+    ),
 
   getCommunicationLogs: (
     token: string,

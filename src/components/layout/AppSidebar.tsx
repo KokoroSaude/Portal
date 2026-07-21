@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Clock,
   FileText,
+  FlaskConical,
   GitBranch,
   GitCompare,
   BookOpen,
@@ -423,6 +424,7 @@ export const PLATFORM_NAV_SECTIONS: NavSectionConfig[] = [
     title: "Ferramentas",
     items: [
       { to: "/admin/configuracao", label: "Configuração da plataforma", icon: Settings },
+      { to: "/admin/conversation-lab", label: "Conversation Lab", icon: FlaskConical },
       { to: "/admin/logs-comunicacao", label: "Logs de comunicação", icon: ScrollText },
       { to: "/admin/prompts-ia", label: "Prompts IA (paciente)", icon: FileText },
       { to: "/admin/assinatura", label: "Assinatura de e-mail", icon: Mail },

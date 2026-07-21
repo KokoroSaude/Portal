@@ -1886,6 +1886,79 @@ export interface AdminTenant {
   createdAt: string;
 }
 
+export interface ConversationLabPersonaSummary {
+  id: string;
+  displayName: string;
+  shortBio: string;
+  digitalLiteracy: string;
+  medicationCount: number;
+  provocationCount: number;
+}
+
+export interface ConversationLabPersona {
+  id: string;
+  displayName: string;
+  shortBio: string;
+  portalName: string;
+  preferredName: string;
+  age: number;
+  digitalLiteracy: string;
+  conditions: string[];
+  medications: string[];
+  speechTraits: string[];
+  suggestedOpeners: string[];
+  provocations: string[];
+}
+
+export interface ConversationLabBubble {
+  kind: string;
+  text: string;
+  templateKey?: string | null;
+  buttonLabels?: string[] | null;
+}
+
+export interface ConversationLabDebugInfo {
+  currentStep: string;
+  eventType?: string | null;
+  patientStatus?: string | null;
+  patientName?: string | null;
+  notes?: string | null;
+  activeMedications: string[];
+  usedLabCapture: boolean;
+  capturedBubbleCount: number;
+}
+
+export interface ConversationLabMessage {
+  id: string;
+  direction: string;
+  content: string;
+  templateKey?: string | null;
+  contentSource?: string | null;
+  createdAt: string;
+}
+
+export interface ConversationLabSession {
+  sessionId: string;
+  tenantId: string;
+  patientId: string;
+  personaId: string;
+  personaDisplayName: string;
+  phone: string;
+  debug: ConversationLabDebugInfo;
+  transcript: ConversationLabMessage[];
+  lastOutbound: ConversationLabBubble[];
+}
+
+export interface ConversationLabTurn {
+  sessionId: string;
+  patientId: string;
+  eventType?: string | null;
+  processed: boolean;
+  debug: ConversationLabDebugInfo;
+  outbound: ConversationLabBubble[];
+  transcript: ConversationLabMessage[];
+}
+
 export interface AdminDeletedTenant {
   id: string;
   name: string;
