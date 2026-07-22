@@ -34,7 +34,7 @@ import {
   TPB_CONSTRUCT_LABELS,
   TPB_RISK_LABELS,
 } from "@/lib/constants";
-import { formatPercent, maskPhone } from "@/lib/utils";
+import { formatDate, formatPercent, maskPhone } from "@/lib/utils";
 
 export function ReportsScalesPage() {
   const { token, hasFeature } = useAuth();
@@ -160,7 +160,7 @@ export function ReportsScalesPage() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                  {new Date(row.completedAt).toLocaleDateString("pt-BR")}
+                                  {formatDate(row.completedAt)}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -319,7 +319,7 @@ export function ReportsScalesPage() {
                                     .join(" · ")}
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                  {new Date(row.completedAt).toLocaleDateString("pt-BR")}
+                                  {formatDate(row.completedAt)}
                                 </TableCell>
                               </TableRow>
                             ))}

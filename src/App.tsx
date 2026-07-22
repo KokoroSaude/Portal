@@ -16,6 +16,7 @@ function lazyPage(
   return lazy(() => loader().then((module) => ({ default: module[name] as ComponentType<unknown> })));
 }
 
+const NotFoundPage = lazyPage(() => import("@/pages/NotFoundPage"), "NotFoundPage");
 const GuidePage = lazyPage(() => import("@/pages/GuidePage"), "GuidePage");
 const JourneyPage = lazyPage(() => import("@/pages/JourneyPage"), "JourneyPage");
 const PromoCampaignsPage = lazyPage(
@@ -389,6 +390,8 @@ export default function App() {
                     <Route path="admin/conversation-lab" element={<AdminConversationLabPage />} />
                     <Route path="admin/prompts-ia" element={<AdminAiPromptsPage />} />
                   </Route>
+
+                  <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Route>
 

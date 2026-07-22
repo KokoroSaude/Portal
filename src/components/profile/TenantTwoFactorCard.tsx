@@ -162,6 +162,7 @@ export function TenantTwoFactorCard() {
                   type="button"
                   size="icon"
                   variant="outline"
+                  aria-label="Copiar chave"
                   onClick={() => void copyText(setupSecret, "Chave")}
                 >
                   <Copy className="size-4" />

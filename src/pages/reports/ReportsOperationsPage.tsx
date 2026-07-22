@@ -4,6 +4,7 @@ import { SimpleBarChart } from "@/components/reports/ReportCharts";
 import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { ReportSectionNav } from "@/components/reports/ReportSectionNav";
 import { MetricCard, SendersPerformanceTable } from "@/components/reports/ReportsShared";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
@@ -57,6 +58,12 @@ export function ReportsOperationsPage() {
         <>
           {operations.isLoading ? (
             <Skeleton className="h-48" />
+          ) : operations.isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar o relatório operacional."
+              error={operations.error}
+              onRetry={() => operations.refetch()}
+            />
           ) : operations.data ? (
             <div className="space-y-4">
               {token && (

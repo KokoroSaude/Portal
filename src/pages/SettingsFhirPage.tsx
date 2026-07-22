@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { formatDateTime } from "@/lib/utils";
 import { ApiClientError, fhirGatewayApi } from "@/lib/fhir-gateway-api";
 import { toast } from "sonner";
 
@@ -333,7 +334,7 @@ export function SettingsFhirPage() {
                       {c.clientId} · {c.tokenEndpointAuthMethod ?? "client_secret_post"} ·{" "}
                       {c.isActive ? "ativo" : "revogado"}
                       {c.launchEnabled ? " · launch" : ""}
-                      {c.lastUsedAt ? ` · último uso ${new Date(c.lastUsedAt).toLocaleString("pt-BR")}` : ""}
+                      {c.lastUsedAt ? ` · último uso ${formatDateTime(c.lastUsedAt)}` : ""}
                     </p>
                     {c.jwksUri && (
                       <p className="text-[10px] text-muted-foreground break-all">JWKS: {c.jwksUri}</p>

@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { api, ApiClientError } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -142,7 +143,7 @@ export function KnowledgePage() {
                     <TableCell className="font-medium">{doc.title}</TableCell>
                     <TableCell className="text-muted-foreground">{doc.fileName}</TableCell>
                     <TableCell>{formatBytes(doc.fileSizeBytes)}</TableCell>
-                    <TableCell>{new Date(doc.updatedAt).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{formatDate(doc.updatedAt)}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"

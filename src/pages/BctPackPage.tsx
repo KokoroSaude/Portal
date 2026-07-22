@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, BookOpen, CheckCircle2, CircleDashed, PauseCircle } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,10 @@ import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
 import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import type { BctPackItem, BctPackStatus } from "@/types/api";
+import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useState } from "react";
+
+const TOGGLES_ID = "bct-toggles";
 
 const STATUS_META: Record<
   BctPackStatus,
@@ -34,9 +39,48 @@ const STATUS_META: Record<
   },
 };
 
-function BctRow({ item }: { item: BctPackItem }) {
+/** Paths that point back to this page (API historically linked Configurar → /configuracoes/bct). */
+function isBctPackSelfPath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  const bare = path.split("?")[0]?.split("#")[0] ?? path;
+  return bare === "/configuracoes/bct" || bare.endsWith("/configuracoes/bct");
+}
+
+function featureToToggleKey(featureKey: string | null | undefined): string | null {
+  switch (featureKey) {
+    case FEATURE_KEYS.behavioralGoals:
+      return "behaviourGoalsEnabled";
+    case FEATURE_KEYS.engagementAwayMode:
+      return "awayModeEnabled";
+    case FEATURE_KEYS.engagementIndicationCards:
+      return "indicationCardsEnabled";
+    case FEATURE_KEYS.engagementCaregiver:
+      return "caregiverEscalationEnabled";
+    case FEATURE_KEYS.behavioralSelectiveSkip:
+      return "selectiveSkipEnabled";
+    default:
+      return null;
+  }
+}
+
+function BctRow({
+  item,
+  canEditToggles,
+  onConfigureHere,
+}: {
+  item: BctPackItem;
+  canEditToggles: boolean;
+  onConfigureHere: (featureKey: string | null | undefined) => void;
+}) {
+  const location = useLocation();
   const meta = STATUS_META[item.status];
   const Icon = meta.icon;
+  const selfPath = isBctPackSelfPath(item.settingsPath);
+  const samePage =
+    selfPath &&
+    (location.pathname === "/configuracoes/bct" ||
+      location.pathname.endsWith("/configuracoes/bct"));
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1">
@@ -55,28 +99,65 @@ function BctRow({ item }: { item: BctPackItem }) {
           </p>
         )}
       </div>
-      {item.settingsPath && (
-        <Button asChild variant="outline" size="sm" className="shrink-0">
-          <Link to={item.settingsPath}>
-            Configurar
+      {item.settingsPath &&
+        (samePage || selfPath ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              if (!canEditToggles) {
+                toast.message("Somente administradores podem ligar os toggles do pack BCT.");
+                return;
+              }
+              onConfigureHere(item.featureKey);
+            }}
+          >
+            {canEditToggles ? "Ativar abaixo" : "Configurar"}
             <ArrowRight className="ml-1 size-3.5" />
-          </Link>
-        </Button>
-      )}
+          </Button>
+        ) : (
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link to={item.settingsPath}>
+              Configurar
+              <ArrowRight className="ml-1 size-3.5" />
+            </Link>
+          </Button>
+        ))}
     </div>
   );
 }
 
 export function BctPackPage() {
   const { token, isAdmin, hasFeature } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { form, update, save, savePending, isLoading: settingsLoading } = useTenantSettingsForm();
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
 
   const pack = useQuery({
     queryKey: ["bct-pack"],
     queryFn: () => api.getBctPack(token!),
     enabled: !!token && (hasFeature(FEATURE_KEYS.behavioralProfile) || isAdmin),
   });
+
+  const scrollToToggles = useCallback((featureKey?: string | null) => {
+    const toggleKey = featureToToggleKey(featureKey);
+    if (toggleKey) {
+      setHighlightKey(toggleKey);
+      window.setTimeout(() => setHighlightKey(null), 2500);
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(TOGGLES_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (location.hash === "#toggles" || location.hash === `#${TOGGLES_ID}`) {
+      scrollToToggles(null);
+    }
+  }, [location.hash, scrollToToggles]);
 
   if (!isAdmin && !hasFeature(FEATURE_KEYS.behavioralProfile)) {
     return (
@@ -120,7 +201,12 @@ export function BctPackPage() {
             </>
           )}
           {pack.data?.items.map((item) => (
-            <BctRow key={item.bctKey} item={item} />
+            <BctRow
+              key={item.bctKey}
+              item={item}
+              canEditToggles={Boolean(isAdmin && form)}
+              onConfigureHere={scrollToToggles}
+            />
           ))}
           {pack.isError && (
             <p className="text-sm text-muted-foreground">
@@ -131,7 +217,7 @@ export function BctPackPage() {
       </Card>
 
       {isAdmin && form && (
-        <Card>
+        <Card id={TOGGLES_ID} className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-lg">Toggles do pack (opt-in)</CardTitle>
             <CardDescription>
@@ -149,7 +235,14 @@ export function BctPackPage() {
                 ["selectiveSkipEnabled", "Detector de skip seletivo", "behavioral.selective_skip"],
               ] as const
             ).map(([key, label, feature]) => (
-              <div key={key} className="flex items-center justify-between gap-4 rounded-lg border p-3">
+              <div
+                key={key}
+                data-toggle-key={key}
+                className={cn(
+                  "flex items-center justify-between gap-4 rounded-lg border p-3 transition-colors",
+                  highlightKey === key && "border-primary bg-primary/5 ring-2 ring-primary/30",
+                )}
+              >
                 <div>
                   <p className="text-sm font-medium">{label}</p>
                   <p className="text-xs text-muted-foreground">{feature}</p>

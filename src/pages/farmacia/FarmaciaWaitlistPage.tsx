@@ -273,6 +273,7 @@ export function FarmaciaWaitlistPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Remover da fila"
                               onClick={() => removeMutation.mutate(entry.id)}
                               disabled={removeMutation.isPending}
                             >

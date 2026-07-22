@@ -5,14 +5,29 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
 import { isGovPharmacyMode } from "@/lib/gov-pharmacy";
 
 export function SettingsPickupPage() {
   const { isAdmin } = useAuth();
-  const { form, update, save, savePending, isLoading } = useTenantSettingsForm();
+  const { form, update, save, savePending, isLoading, isError, error, refetch } =
+    useTenantSettingsForm();
   const govMode = form ? isGovPharmacyMode(form) : false;
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-3xl">Retirada de medicamentos</h1>
+        <QueryErrorState
+          message="Não foi possível carregar as configurações."
+          error={error}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
 
   if (isLoading || !form) {
     return (

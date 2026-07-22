@@ -12,6 +12,7 @@ import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { ReportSectionHeader } from "@/components/reports/ReportSectionNav";
 import { BehavioralBarriersReportCard } from "@/components/reports/BehavioralBarriersReportCard";
 import { MetricCard } from "@/components/reports/ReportsShared";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -189,6 +190,12 @@ export function ReportsAdherencePage() {
 
       {adherence.isLoading ? (
         <Skeleton className="h-48 w-full" />
+      ) : adherence.isError ? (
+        <QueryErrorState
+          message="Não foi possível carregar o relatório de adesão."
+          error={adherence.error}
+          onRetry={() => adherence.refetch()}
+        />
       ) : adherence.data ? (
         <>
           {token && <ReportAiInsightCard token={token} from={from} to={to} />}

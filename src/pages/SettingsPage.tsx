@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
@@ -38,7 +39,8 @@ export function SettingsPage() {
   const [bulkOnboardingOpen, setBulkOnboardingOpen] = useState(false);
   const tabParam = searchParams.get("tab");
 
-  const { form, update, save, savePending, isLoading } = useTenantSettingsForm();
+  const { form, update, save, savePending, isLoading, isError, error, refetch } =
+    useTenantSettingsForm();
 
   const { data: locales } = useQuery({
     queryKey: ["locales"],
@@ -102,6 +104,19 @@ export function SettingsPage() {
     } else {
       setSearchParams({ tab }, { replace: true });
     }
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-3xl">Configurações</h1>
+        <QueryErrorState
+          message="Não foi possível carregar as configurações."
+          error={error}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
   }
 
   if (isLoading || !form) {

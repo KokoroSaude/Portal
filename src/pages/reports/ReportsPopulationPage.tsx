@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { PageHeader, FeatureLocked } from "@/components/PageHeader";
 import { MetricCard } from "@/components/reports/ReportsShared";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { ReportAiInsightCard } from "@/components/reports/ReportAiInsightCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,6 +65,14 @@ export function ReportsPopulationPage() {
       />
 
       {report.isLoading && <Skeleton className="h-48 w-full" />}
+
+      {report.isError && (
+        <QueryErrorState
+          message="Não foi possível carregar o relatório populacional."
+          error={report.error}
+          onRetry={() => report.refetch()}
+        />
+      )}
 
       {report.data && (
         <>

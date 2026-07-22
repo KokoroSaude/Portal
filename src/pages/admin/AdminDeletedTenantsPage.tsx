@@ -23,15 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
 import { matchesGridSearch } from "@/lib/gridSearch";
+import { formatDate } from "@/lib/utils";
 import type { AdminDeletedTenant } from "@/types/api";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function AdminDeletedTenantsPage() {
   const { token } = useAuth();

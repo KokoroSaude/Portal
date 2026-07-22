@@ -4,6 +4,7 @@ import { SettingsSaveButton } from "@/components/settings/SettingsSaveButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantSettingsForm } from "@/hooks/useTenantSettingsForm";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,21 @@ const AI_SETTINGS_TABS = [
 export function SettingsAiLayout() {
   const { isAdmin } = useAuth();
   const { pathname } = useLocation();
-  const { settings, form, update, save, savePending, isLoading } = useTenantSettingsForm();
+  const { settings, form, update, save, savePending, isLoading, isError, error, refetch } =
+    useTenantSettingsForm();
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-3xl">Inteligência artificial</h1>
+        <QueryErrorState
+          message="Não foi possível carregar as configurações."
+          error={error}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
 
   if (isLoading || !form || !settings) {
     return (

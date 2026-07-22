@@ -77,7 +77,13 @@ export function useTenantSettingsForm() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<TenantSettings | null>(null);
 
-  const { data: settings, isLoading } = useQuery({
+  const {
+    data: settings,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: tenantSettingsQueryKey(tenantId),
     queryFn: () => api.getSettings(token!),
     enabled: !!token && !!tenantId,
@@ -115,5 +121,8 @@ export function useTenantSettingsForm() {
     save,
     savePending: saveMutation.isPending,
     isLoading,
+    isError,
+    error,
+    refetch,
   };
 }

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, ApiClientError } from "@/lib/api";
 import type { PatientAiPrompt } from "@/types/api";
 
 type PromptAudience = PatientAiPrompt["audience"];
@@ -313,7 +313,11 @@ export function SettingsAiPromptsSection({ scope = "tenant" }: Props) {
     mutationFn: ({ id, text }: { id: string; text: string | null }) =>
       api.adminUpdatePatientAiPrompt(token!, id, text),
     onSuccess: () => {
+      toast.success("Prompt salvo");
       queryClient.invalidateQueries({ queryKey: ["patient-ai-prompts", scope] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Erro ao salvar prompt");
     },
   });
 

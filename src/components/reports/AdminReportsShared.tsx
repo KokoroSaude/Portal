@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { MORISKY_LEVEL_LABELS, MORISKY_TRIGGER_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { matchesGridSearch } from "@/lib/gridSearch";
-import { formatPercent, maskPhone } from "@/lib/utils";
+import { formatDate, formatDateTime, formatPercent, maskPhone } from "@/lib/utils";
 import type { AdminMoriskyPatientRank } from "@/types/api";
 
 export {
@@ -110,7 +110,7 @@ export function TraceabilityTable({
             {filtered.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="whitespace-nowrap text-xs">
-                    {new Date(row.when).toLocaleString("pt-BR")}
+                    {formatDateTime(row.when)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{row.type}</Badge>
@@ -382,7 +382,7 @@ export function AdminMoriskyPatientRankingTable({
                 {r.checkinAdherenceRate != null ? formatPercent(r.checkinAdherenceRate) : "—"}
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
-                {new Date(r.completedAt).toLocaleDateString("pt-BR")}
+                {formatDate(r.completedAt)}
               </TableCell>
             </TableRow>
           ))}

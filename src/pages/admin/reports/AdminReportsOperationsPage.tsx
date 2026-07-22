@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminReportTenants } from "@/contexts/AdminReportTenantContext";
 import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
 import { api } from "@/lib/api";
-import { formatPercent } from "@/lib/utils";
+import { formatDateTime, formatPercent } from "@/lib/utils";
 
 const OPERATIONS_TABS = ["operacao", "volume", "satisfacao"] as const;
 type OperationsTab = (typeof OPERATIONS_TABS)[number];
@@ -284,7 +284,7 @@ export function AdminReportsOperationsPage() {
                         {satisfaction.data.recentResponses.map((row) => (
                           <TableRow key={row.id}>
                             <TableCell className="whitespace-nowrap text-sm">
-                              {new Date(row.createdAt).toLocaleString("pt-BR")}
+                              {formatDateTime(row.createdAt)}
                             </TableCell>
                             <TableCell className="text-sm">{row.tenantName ?? "—"}</TableCell>
                             <TableCell className="text-sm">{row.patientName ?? "—"}</TableCell>

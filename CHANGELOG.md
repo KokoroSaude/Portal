@@ -6,6 +6,23 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-07-22
+
+### Added
+
+- **Página 404:** endereços inexistentes agora exibem uma página dedicada (com atalho para o início) em vez de redirecionar silenciosamente
+- **Módulo não habilitado:** rotas de módulos desativados mostram um card explicativo orientando falar com o administrador, em vez de redirecionar sem aviso
+- **Estados de erro:** relatórios (Adesão, Operação, Populacional, Engajamento/coorte/comparativo) e telas de Configurações passam a exibir mensagem de erro com botão "Tentar novamente" quando o carregamento falha
+
+### Changed
+
+- **Acessibilidade:** botões só-ícone (editar/remover medicamento, remover responsável, remover da fila, enviar no Conversation Lab, copiar chave 2FA) ganharam `aria-label`
+- **Datas:** formatação centralizada em `formatDate`/`formatDateTime` (Conhecimento, Escalas, FHIR, relatórios admin e organizações excluídas)
+
+### Fixed
+
+- **Prompts de IA:** salvar um prompt agora dá feedback via toast (sucesso/erro), antes a ação era silenciosa
+
 ## [1.8.0] - 2026-07-21
 
 ### Added

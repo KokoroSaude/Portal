@@ -194,12 +194,18 @@ export function PatientCareDelegatesSection({
                   {canWrite && (
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(delegate)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Editar responsável"
+                          onClick={() => openEdit(delegate)}
+                        >
                           <Pencil className="size-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          aria-label="Remover responsável"
                           onClick={() => deleteMutation.mutate(delegate.id)}
                           disabled={deleteMutation.isPending}
                         >

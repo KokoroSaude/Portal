@@ -275,7 +275,12 @@ export function MedicationsPage() {
                   )}
                 </div>
                 {editingId !== med.id && (
-                  <Button variant="ghost" size="icon" onClick={() => startEdit(med)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Editar medicamento"
+                    onClick={() => startEdit(med)}
+                  >
                     <Pencil className="size-4" />
                   </Button>
                 )}

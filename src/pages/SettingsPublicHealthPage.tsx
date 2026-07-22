@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -23,10 +24,24 @@ import type { PublicHealthUnit } from "@/types/api";
 
 export function SettingsPublicHealthPage() {
   const { isAdmin } = useAuth();
-  const { form, update, save, savePending, isLoading } = useTenantSettingsForm();
+  const { form, update, save, savePending, isLoading, isError, error, refetch } =
+    useTenantSettingsForm();
   const canManageUnits =
     !!form &&
     (hasModule("PharmacyPickup", form) || hasModule("PopulationHealth", form));
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-3xl">Unidades de saúde (CNES)</h1>
+        <QueryErrorState
+          message="Não foi possível carregar as configurações."
+          error={error}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
 
   if (isLoading || !form) {
     return (

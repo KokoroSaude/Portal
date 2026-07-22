@@ -556,6 +556,7 @@ export function AdminConversationLabPage() {
               <Button
                 size="icon"
                 className="h-10 w-10 shrink-0 rounded-full bg-emerald-600 hover:bg-emerald-700"
+                aria-label="Enviar mensagem"
                 disabled={!canSend}
                 onClick={() => submitText(message)}
               >

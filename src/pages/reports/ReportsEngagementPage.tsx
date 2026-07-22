@@ -9,11 +9,12 @@ import {
   NudgeEngagementTable,
   RankingTable,
 } from "@/components/reports/ReportsShared";
+import { QueryErrorState } from "@/components/QueryErrorState";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReportApiRange, useReportRange } from "@/contexts/ReportRangeContext";
-import { api, ApiClientError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { FEATURE_KEYS } from "@/lib/constants";
 import { resolveReportTab } from "@/lib/reportNavigation";
 
@@ -86,8 +87,12 @@ export function ReportsEngagementPage() {
 
       {activeTab === "engagement" && hasFeature(FEATURE_KEYS.reportsAdvanced) && (
         <>
-          {engagement.isError && engagement.error instanceof ApiClientError ? (
-            <p className="text-destructive">{engagement.error.message}</p>
+          {engagement.isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar o relatório de engajamento."
+              error={engagement.error}
+              onRetry={() => engagement.refetch()}
+            />
           ) : engagement.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : engagement.data ? (
@@ -118,8 +123,12 @@ export function ReportsEngagementPage() {
 
       {activeTab === "nudge" && hasFeature(FEATURE_KEYS.reportsAdvanced) && (
         <>
-          {nudgeEngagement.isError && nudgeEngagement.error instanceof ApiClientError ? (
-            <p className="text-destructive">{nudgeEngagement.error.message}</p>
+          {nudgeEngagement.isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar o engajamento de nudges."
+              error={nudgeEngagement.error}
+              onRetry={() => nudgeEngagement.refetch()}
+            />
           ) : nudgeEngagement.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : nudgeEngagement.data ? (
@@ -146,6 +155,12 @@ export function ReportsEngagementPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             {funnel.isLoading ? (
               <Skeleton className="h-80" />
+            ) : funnel.isError ? (
+              <QueryErrorState
+                message="Não foi possível carregar o funil de pacientes."
+                error={funnel.error}
+                onRetry={() => funnel.refetch()}
+              />
             ) : (
               <PatientFunnelChart segments={funnel.data?.segments ?? []} />
             )}
@@ -169,6 +184,12 @@ export function ReportsEngagementPage() {
         <>
           {comparison.isLoading ? (
             <Skeleton className="h-40" />
+          ) : comparison.isError ? (
+            <QueryErrorState
+              message="Não foi possível carregar a comparação de períodos."
+              error={comparison.error}
+              onRetry={() => comparison.refetch()}
+            />
           ) : comparison.data ? (
             <div className="space-y-4">
               {token && (
