@@ -1,5 +1,4 @@
 export const DOCS_URL = "https://docs.kokorosaude.com.br";
-export const DOCS_PLATFORM_URL = "https://docs.kokorosaude.com.br/plataforma/";
 
 export function isAllowedReturnTo(url: string): boolean {
   try {
