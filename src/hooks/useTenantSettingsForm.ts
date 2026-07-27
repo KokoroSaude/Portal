@@ -68,6 +68,9 @@ function normalizeSettings(settings: TenantSettings): TenantSettings {
     humanLatencyMaxSeconds: settings.humanLatencyMaxSeconds ?? 8,
     selfServicePauseEnabled: settings.selfServicePauseEnabled ?? true,
     weeklyDigestEnabled: settings.weeklyDigestEnabled ?? true,
+    medicationRefillFollowupEnabled: settings.medicationRefillFollowupEnabled ?? false,
+    medicationRefillFollowupHoursBeforeDose:
+      settings.medicationRefillFollowupHoursBeforeDose ?? 2,
   };
 }
 

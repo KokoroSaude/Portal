@@ -97,6 +97,39 @@ export function SettingsOperationTab({ form, locales, update }: Props) {
             />
           </SettingsField>
         </div>
+
+        <div className="mt-6 space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+          <SettingsSwitchField
+            id="medicationRefillFollowupEnabled"
+            label="Lembrete de reposição (pós-estoque)"
+            hint="Quando o paciente diz que acabou o remédio no check-in, oferece um toque mais tarde para ver se já conseguiu repor. Máx. 1 oferta por medicamento por dia (fuso BR)."
+            checked={form.medicationRefillFollowupEnabled ?? false}
+            onCheckedChange={(checked) => update("medicationRefillFollowupEnabled", checked)}
+          />
+          {(form.medicationRefillFollowupEnabled ?? false) && (
+            <div className="max-w-xs">
+              <SettingsField
+                htmlFor="medicationRefillFollowupHoursBeforeDose"
+                label="Fallback: horas antes da próxima dose"
+                hint="Se o paciente aceitar sem escolher horário (ou não responder), o lembrete vai neste antecipo da próxima dose — sempre dentro da janela de envio (ex.: dose 08h e 2h → não dispara às 06h)."
+              >
+                <Input
+                  id="medicationRefillFollowupHoursBeforeDose"
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={form.medicationRefillFollowupHoursBeforeDose ?? 2}
+                  onChange={(e) =>
+                    update(
+                      "medicationRefillFollowupHoursBeforeDose",
+                      Math.min(12, Math.max(1, Number(e.target.value) || 2)),
+                    )
+                  }
+                />
+              </SettingsField>
+            </div>
+          )}
+        </div>
       </TabsContent>
 
       <TabsContent value="comunicacao" className="mt-0 space-y-4">

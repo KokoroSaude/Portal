@@ -68,6 +68,8 @@ type RawTenantSettings = TenantSettings & {
   HumanLatencyMaxSeconds?: number;
   SelfServicePauseEnabled?: boolean;
   WeeklyDigestEnabled?: boolean;
+  MedicationRefillFollowupEnabled?: boolean;
+  MedicationRefillFollowupHoursBeforeDose?: number;
 };
 
 function normalizeAiFeatures(raw?: RawAiFeatures | null): AiPlatformFeatures | undefined {
@@ -179,6 +181,12 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
     humanLatencyMaxSeconds: raw.humanLatencyMaxSeconds ?? raw.HumanLatencyMaxSeconds ?? 8,
     selfServicePauseEnabled: raw.selfServicePauseEnabled ?? raw.SelfServicePauseEnabled ?? true,
     weeklyDigestEnabled: raw.weeklyDigestEnabled ?? raw.WeeklyDigestEnabled ?? true,
+    medicationRefillFollowupEnabled:
+      raw.medicationRefillFollowupEnabled ?? raw.MedicationRefillFollowupEnabled ?? false,
+    medicationRefillFollowupHoursBeforeDose:
+      raw.medicationRefillFollowupHoursBeforeDose
+      ?? raw.MedicationRefillFollowupHoursBeforeDose
+      ?? 2,
     aiFeatures,
   };
 }

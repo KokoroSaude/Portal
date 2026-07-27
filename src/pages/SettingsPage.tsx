@@ -215,7 +215,9 @@ export function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Operação</CardTitle>
-              <CardDescription>Janela de envio, follow-ups, tom de voz e acesso ao WhatsApp.</CardDescription>
+              <CardDescription>
+                Janela de envio, follow-ups, reposição pós-estoque, tom de voz e acesso ao WhatsApp.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <SettingsOperationTab form={form} locales={locales} update={update} />

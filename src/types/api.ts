@@ -872,6 +872,10 @@ export interface TenantSettings {
   weeklyDigestEnabled?: boolean;
   reminderSnoozeEnabled?: boolean;
   reminderSnoozeHours?: number;
+  /** Após check-in Unavailable: oferece lembrete de reposição (default OFF). */
+  medicationRefillFollowupEnabled?: boolean;
+  /** Horas antes da próxima dose para o fallback do refill (1–12, default 2). */
+  medicationRefillFollowupHoursBeforeDose?: number;
   reminderMaxSnoozesPerDose?: number;
   snoozeFatigueWeeklyThreshold?: number;
   hibernationEnabled?: boolean;
