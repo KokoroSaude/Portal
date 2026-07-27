@@ -100,6 +100,13 @@ export function SettingsOperationTab({ form, locales, update }: Props) {
 
         <div className="mt-6 space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
           <SettingsSwitchField
+            id="timingBanditEnabled"
+            label="Horário inteligente (Timing Bandit)"
+            hint="Aprende o melhor momento de engajar com Thompson Sampling: ajusta levemente o disparo dos lembretes em torno do horário prescrito e o slot de CSAT/escalas. Desligado = horário fixo do CarePlan e distribuição estável."
+            checked={form.timingBanditEnabled ?? false}
+            onCheckedChange={(checked) => update("timingBanditEnabled", checked)}
+          />
+          <SettingsSwitchField
             id="medicationRefillFollowupEnabled"
             label="Lembrete de reposição (pós-estoque)"
             hint="Quando o paciente diz que acabou o remédio no check-in, oferece um toque mais tarde para ver se já conseguiu repor. Máx. 1 oferta por medicamento por dia (fuso BR)."

@@ -216,7 +216,7 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle>Operação</CardTitle>
               <CardDescription>
-                Janela de envio, follow-ups, reposição pós-estoque, tom de voz e acesso ao WhatsApp.
+                Janela de envio, follow-ups, horário inteligente, reposição pós-estoque, tom de voz e acesso ao WhatsApp.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

@@ -70,6 +70,7 @@ type RawTenantSettings = TenantSettings & {
   WeeklyDigestEnabled?: boolean;
   MedicationRefillFollowupEnabled?: boolean;
   MedicationRefillFollowupHoursBeforeDose?: number;
+  TimingBanditEnabled?: boolean;
 };
 
 function normalizeAiFeatures(raw?: RawAiFeatures | null): AiPlatformFeatures | undefined {
@@ -187,6 +188,8 @@ export function normalizeTenantSettings(raw: RawTenantSettings): TenantSettings 
       raw.medicationRefillFollowupHoursBeforeDose
       ?? raw.MedicationRefillFollowupHoursBeforeDose
       ?? 2,
+    timingBanditEnabled:
+      raw.timingBanditEnabled ?? raw.TimingBanditEnabled ?? false,
     aiFeatures,
   };
 }

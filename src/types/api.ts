@@ -876,6 +876,11 @@ export interface TenantSettings {
   medicationRefillFollowupEnabled?: boolean;
   /** Horas antes da próxima dose para o fallback do refill (1–12, default 2). */
   medicationRefillFollowupHoursBeforeDose?: number;
+  /**
+   * Thompson Sampling de timing: aprende offset dos lembretes e horário de escalas/CSAT
+   * (default OFF — horário prescrito permanece a âncora).
+   */
+  timingBanditEnabled?: boolean;
   reminderMaxSnoozesPerDose?: number;
   snoozeFatigueWeeklyThreshold?: number;
   hibernationEnabled?: boolean;

@@ -71,6 +71,7 @@ function normalizeSettings(settings: TenantSettings): TenantSettings {
     medicationRefillFollowupEnabled: settings.medicationRefillFollowupEnabled ?? false,
     medicationRefillFollowupHoursBeforeDose:
       settings.medicationRefillFollowupHoursBeforeDose ?? 2,
+    timingBanditEnabled: settings.timingBanditEnabled ?? false,
   };
 }
 
