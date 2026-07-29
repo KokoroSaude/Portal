@@ -900,6 +900,8 @@ export interface TenantSettings {
   indicationCardCooldownDays?: number;
   caregiverEscalationEnabled?: boolean;
   caregiverMissThreshold?: number;
+  /** Dias entre resumos ao cuidador. null/0 = só sob demanda no WhatsApp. */
+  caregiverProgressPeriodicDays?: number | null;
   selectiveSkipEnabled?: boolean;
   bctPackNotesJson?: string | null;
 }
@@ -941,6 +943,7 @@ export interface PatientCaregiver {
   relationship: string;
   notifyOnMiss: boolean;
   notifyOnHighRiskAbandonment: boolean;
+  notifyOnProgress?: boolean;
   consentCapturedAt: string;
   consentChannel: string;
   revokedAt: string | null;
@@ -954,6 +957,7 @@ export interface UpsertPatientCaregiverPayload {
   relationship: string;
   notifyOnMiss?: boolean;
   notifyOnHighRiskAbandonment?: boolean;
+  notifyOnProgress?: boolean;
 }
 
 export interface PatientSelectiveSkipSignal {

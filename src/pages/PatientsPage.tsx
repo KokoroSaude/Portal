@@ -209,6 +209,7 @@ export function PatientsPage() {
             relationship: form.caregiverRelationship,
             notifyOnMiss: true,
             notifyOnHighRiskAbandonment: true,
+            notifyOnProgress: true,
           });
         } catch (err) {
           toast.warning(

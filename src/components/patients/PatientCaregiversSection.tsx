@@ -41,6 +41,7 @@ const EMPTY: UpsertPatientCaregiverPayload = {
   relationship: "Cuidador",
   notifyOnMiss: true,
   notifyOnHighRiskAbandonment: true,
+  notifyOnProgress: true,
 };
 
 type Props = {
@@ -87,7 +88,7 @@ export function PatientCaregiversSection({ patientId, token, canWrite }: Props) 
         <div>
           <CardTitle className="text-base">Cuidadores (adesão)</CardTitle>
           <CardDescription>
-            Opt-in do paciente + alertas após misses ou risco alto. Sem check-in pelo cuidador no MVP.
+            Opt-in do paciente. Alertas de miss, risco alto e progresso (WhatsApp: *progresso* ou resumo periódico).
           </CardDescription>
         </div>
         {canWrite && (
@@ -206,6 +207,13 @@ export function PatientCaregiversSection({ patientId, token, canWrite }: Props) 
                 }
               />
               Avisar em risco alto de abandono
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={form.notifyOnProgress ?? true}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, notifyOnProgress: Boolean(v) }))}
+              />
+              Resumo de progresso (sob demanda e periódico)
             </label>
           </div>
           <DialogFooter>

@@ -71,6 +71,24 @@ export function SettingsOperationTab({ form, locales, update }: Props) {
           </SettingsField>
 
           <SettingsField
+            htmlFor="caregiverProgressDays"
+            label="Progresso ao cuidador (dias)"
+            hint="Intervalo do resumo periódico ao cuidador. 0 = só sob demanda (WhatsApp: progresso / adesão). Default 7."
+          >
+            <Input
+              id="caregiverProgressDays"
+              type="number"
+              min={0}
+              max={90}
+              value={form.caregiverProgressPeriodicDays ?? 0}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                update("caregiverProgressPeriodicDays", n <= 0 ? null : n);
+              }}
+            />
+          </SettingsField>
+
+          <SettingsField
             htmlFor="reengagement"
             label="Tentativas de reengajamento"
             hint="Quantas vezes a Kokoro tenta reativar pacientes inativos antes de parar os envios automáticos."
