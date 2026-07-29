@@ -46,6 +46,7 @@ export function PatientMoriskyPage() {
       description="Histórico de avaliações de adesão medicamentosa (Morisky) do paciente."
       locked={!moriskyEnabled}
       lockedTitle="MMAS-8 não disponível"
+      backHref={id ? `/pacientes/${id}?tab=escalas` : undefined}
     >
       <PatientMoriskyTab
         assessments={moriskyHistory?.assessments}

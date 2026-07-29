@@ -35,7 +35,7 @@ export function PatientBehavioralProfilePage() {
     return (
       <>
         <Link
-          to={id ? `/pacientes/${id}` : "/pacientes"}
+          to={id ? `/pacientes/${id}?tab=insights` : "/pacientes"}
           className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -75,7 +75,7 @@ export function PatientBehavioralProfilePage() {
   return (
     <div className="space-y-6">
       <Link
-        to={`/pacientes/${id}`}
+        to={`/pacientes/${id}?tab=insights`}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

@@ -13,7 +13,6 @@ import {
   Star,
   Trash2,
   Trophy,
-  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toastPatientStatusUpdated } from "@/lib/patientStatusNotifications";
@@ -28,6 +27,7 @@ import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
+import { PatientCareDelegatesSection } from "@/components/patients/PatientCareDelegatesSection";
 import { PatientCaregiversSection } from "@/components/patients/PatientCaregiversSection";
 import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ import type { ClinicalPriorityTier } from "@/types/api";
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const smartLaunch = searchParams.get("smart") === "1";
   const navigate = useNavigate();
   const { token, canWrite, hasFeature, isPlatform, isAdmin } = useAuth();
@@ -284,13 +284,30 @@ export function PatientDetailPage() {
   const showEngagementTriggers =
     canWrite && patient.status === "Active" && (remindersEnabled || milestonesEnabled);
 
-  const showMoreSection =
-    id &&
-    (aiEnabled ||
-      behavioralEnabled ||
-      moriskyFeatureEnabled ||
-      tpbFeatureEnabled ||
-      caregiverNetworkEnabled);
+  const showEscalasTab = moriskyFeatureEnabled || tpbFeatureEnabled;
+  const showInsightsTab = aiEnabled || behavioralEnabled;
+
+  const allowedTabs = [
+    "resumo",
+    "plano",
+    "timeline",
+    ...(caregiverNetworkEnabled ? (["cuidadores"] as const) : []),
+    ...(showEscalasTab ? (["escalas"] as const) : []),
+    ...(showInsightsTab ? (["insights"] as const) : []),
+  ] as const;
+  type PatientTab = (typeof allowedTabs)[number];
+
+  const rawTab = searchParams.get("tab") ?? "resumo";
+  const activeTab: PatientTab = (allowedTabs as readonly string[]).includes(rawTab)
+    ? (rawTab as PatientTab)
+    : "resumo";
+
+  const setActiveTab = (tab: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === "resumo") next.delete("tab");
+    else next.set("tab", tab);
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="space-y-6">
@@ -599,187 +616,190 @@ export function PatientDetailPage() {
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Medicamento</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{patient.medication ?? "—"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Último check-in</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{formatDateTime(patient.lastCheckinAt)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Cadastro</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{formatDate(patient.createdAt)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <PatientSchedulingPanel
-        scheduling={scheduling}
-        isLoading={schedulingLoading}
-        patientId={patient.id}
-        patientStatus={patient.status}
-        canWrite={canWrite}
-        showEngagementTriggers={showEngagementTriggers}
-        milestoneDays={milestoneDays}
-        onMilestoneDaysChange={setMilestoneDays}
-        onTriggerTestReminder={
-          remindersEnabled ? () => triggerReminderMutation.mutate() : undefined
-        }
-        onTriggerMilestone={
-          milestonesEnabled ? () => triggerMilestoneMutation.mutate() : undefined
-        }
-        isTriggeringReminder={triggerReminderMutation.isPending}
-        isTriggeringMilestone={triggerMilestoneMutation.isPending}
-        onPause={canPause ? () => setPauseOpen(true) : undefined}
-        onResume={
-          canResume || canReactivateFromOptOut ? () => resumeMutation.mutate() : undefined
-        }
-        isPausing={pauseMutation.isPending}
-        isResuming={resumeMutation.isPending}
-      />
-
-      {patient.status === "Active" && isAdmin ? (
-        <SettingsPeriodicSurveysStatusPanel
-          patientId={patient.id}
-          limit={1}
-          compact
-        />
-      ) : null}
-
-      {achievements && achievements.items.some((a) => a.unlocked) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="size-4 text-amber-600" />
-              Conquistas
-            </CardTitle>
-            <CardDescription>Marcos de adesão desbloqueados no WhatsApp</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {achievements.items
-                .filter((a) => a.unlocked)
-                .map((a) => (
-                  <li
-                    key={a.key}
-                    className="rounded-lg border bg-muted/30 px-3 py-2 text-sm"
-                  >
-                    <p className="font-medium">{a.displayName}</p>
-                    <p className="text-xs text-muted-foreground">{a.description}</p>
-                    {a.unlockedAt && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDateTime(a.unlockedAt)}
-                      </p>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      {showMoreSection && (
-        <div className="space-y-3">
-          <div>
-            <h2 className="font-serif text-xl">Mais sobre este paciente</h2>
-            <p className="text-sm text-muted-foreground">
-              Avaliações, IA e rede de cuidado em páginas dedicadas.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {aiEnabled && (
-              <PatientFeatureLinkCard
-                icon={Sparkles}
-                title="Assistente IA"
-                description="Resumo clínico, sugestões de acompanhamento e insights personalizados."
-                to={`/pacientes/${id}/assistente-ia`}
-                actionLabel="Abrir assistente IA"
-              />
-            )}
-            {behavioralEnabled && (
-              <PatientFeatureLinkCard
-                icon={Brain}
-                title="Perfil comportamental"
-                description="Avaliação estratégica, barreiras de adesão e questionário no portal."
-                to={`/pacientes/${id}/avaliacao-estrategica`}
-                actionLabel="Abrir avaliação estratégica"
-              />
-            )}
-            {moriskyFeatureEnabled && (
-              <PatientFeatureLinkCard
-                icon={ClipboardList}
-                title="MMAS-8"
-                description="Histórico de adesão medicamentosa e disparo manual da escala."
-                to={`/pacientes/${id}/mmas-8`}
-                actionLabel="Abrir MMAS-8"
-                badge={
-                  (moriskyHistory?.assessments.length ?? 0) > 0
-                    ? moriskyHistory!.assessments.length
-                    : undefined
-                }
-              />
-            )}
-            {tpbFeatureEnabled && (
-              <PatientFeatureLinkCard
-                icon={ClipboardList}
-                title="TCP"
-                description="Teoria do Comportamento Planejado, risco e intervenções."
-                to={`/pacientes/${id}/tcp`}
-                actionLabel="Abrir TCP"
-                badge={
-                  (tpbHistory?.assessments.length ?? 0) > 0
-                    ? tpbHistory!.assessments.length
-                    : undefined
-                }
-              />
-            )}
-            {caregiverNetworkEnabled && (
-              <PatientFeatureLinkCard
-                icon={Users}
-                title="Rede de cuidado"
-                description={
-                  govMode
-                    ? "Cuidadores de adesão e delegados autorizados a retirar medicamentos."
-                    : "Cadastre familiar/cuidador para receber alerta quando houver miss ou silêncio."
-                }
-                to={`/pacientes/${id}/rede-cuidado`}
-                actionLabel="Abrir rede de cuidado"
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {token && id && caregiverNetworkEnabled && !govMode && (
-        <PatientCaregiversSection patientId={id} token={token} canWrite={canWrite} />
-      )}
-
-      <Tabs defaultValue="timeline">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start">
+          <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="plano">Plano</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="careplan">Plano de cuidado</TabsTrigger>
+          {caregiverNetworkEnabled && <TabsTrigger value="cuidadores">Cuidadores</TabsTrigger>}
+          {showEscalasTab && <TabsTrigger value="escalas">Escalas</TabsTrigger>}
+          {showInsightsTab && <TabsTrigger value="insights">Insights</TabsTrigger>}
         </TabsList>
+
+        <TabsContent value="resumo" className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Medicamento</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="font-medium">{patient.medication ?? "—"}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Último check-in</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="font-medium">{formatDateTime(patient.lastCheckinAt)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Cadastro</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="font-medium">{formatDate(patient.createdAt)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <PatientSchedulingPanel
+            scheduling={scheduling}
+            isLoading={schedulingLoading}
+            patientId={patient.id}
+            patientStatus={patient.status}
+            canWrite={canWrite}
+            showEngagementTriggers={showEngagementTriggers}
+            milestoneDays={milestoneDays}
+            onMilestoneDaysChange={setMilestoneDays}
+            onTriggerTestReminder={
+              remindersEnabled ? () => triggerReminderMutation.mutate() : undefined
+            }
+            onTriggerMilestone={
+              milestonesEnabled ? () => triggerMilestoneMutation.mutate() : undefined
+            }
+            isTriggeringReminder={triggerReminderMutation.isPending}
+            isTriggeringMilestone={triggerMilestoneMutation.isPending}
+            onPause={canPause ? () => setPauseOpen(true) : undefined}
+            onResume={
+              canResume || canReactivateFromOptOut ? () => resumeMutation.mutate() : undefined
+            }
+            isPausing={pauseMutation.isPending}
+            isResuming={resumeMutation.isPending}
+          />
+
+          {patient.status === "Active" && isAdmin ? (
+            <SettingsPeriodicSurveysStatusPanel patientId={patient.id} limit={1} compact />
+          ) : null}
+
+          {achievements && achievements.items.some((a) => a.unlocked) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Trophy className="size-4 text-amber-600" />
+                  Conquistas
+                </CardTitle>
+                <CardDescription>Marcos de adesão desbloqueados no WhatsApp</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {achievements.items
+                    .filter((a) => a.unlocked)
+                    .map((a) => (
+                      <li
+                        key={a.key}
+                        className="rounded-lg border bg-muted/30 px-3 py-2 text-sm"
+                      >
+                        <p className="font-medium">{a.displayName}</p>
+                        <p className="text-xs text-muted-foreground">{a.description}</p>
+                        {a.unlockedAt && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatDateTime(a.unlockedAt)}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="plano">
+          {token && id && <PatientCarePlansTab patientId={id} token={token} canWrite={canWrite} />}
+        </TabsContent>
 
         <TabsContent value="timeline">
           {token && id && <PatientTimelineCard token={token} patientId={id} />}
         </TabsContent>
 
-        <TabsContent value="careplan">
-          {token && id && <PatientCarePlansTab patientId={id} token={token} canWrite={canWrite} />}
-        </TabsContent>
+        {caregiverNetworkEnabled && (
+          <TabsContent value="cuidadores" className="space-y-6">
+            {token && id && (
+              <PatientCaregiversSection patientId={id} token={token} canWrite={canWrite} />
+            )}
+            {token && id && govMode && (
+              <PatientCareDelegatesSection patientId={id} token={token} canWrite={canWrite} />
+            )}
+          </TabsContent>
+        )}
+
+        {showEscalasTab && (
+          <TabsContent value="escalas" className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Avaliações de adesão e comportamento planejado.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {moriskyFeatureEnabled && (
+                <PatientFeatureLinkCard
+                  icon={ClipboardList}
+                  title="MMAS-8"
+                  description="Histórico de adesão medicamentosa e disparo manual da escala."
+                  to={`/pacientes/${id}/mmas-8`}
+                  actionLabel="Abrir MMAS-8"
+                  badge={
+                    (moriskyHistory?.assessments.length ?? 0) > 0
+                      ? moriskyHistory!.assessments.length
+                      : undefined
+                  }
+                />
+              )}
+              {tpbFeatureEnabled && (
+                <PatientFeatureLinkCard
+                  icon={ClipboardList}
+                  title="TCP"
+                  description="Teoria do Comportamento Planejado, risco e intervenções."
+                  to={`/pacientes/${id}/tcp`}
+                  actionLabel="Abrir TCP"
+                  badge={
+                    (tpbHistory?.assessments.length ?? 0) > 0
+                      ? tpbHistory!.assessments.length
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        {showInsightsTab && (
+          <TabsContent value="insights" className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Assistente e perfil comportamental deste paciente.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {aiEnabled && (
+                <PatientFeatureLinkCard
+                  icon={Sparkles}
+                  title="Assistente IA"
+                  description="Resumo clínico, sugestões de acompanhamento e insights personalizados."
+                  to={`/pacientes/${id}/assistente-ia`}
+                  actionLabel="Abrir assistente IA"
+                />
+              )}
+              {behavioralEnabled && (
+                <PatientFeatureLinkCard
+                  icon={Brain}
+                  title="Perfil comportamental"
+                  description="Avaliação estratégica, barreiras de adesão e questionário no portal."
+                  to={`/pacientes/${id}/avaliacao-estrategica`}
+                  actionLabel="Abrir avaliação estratégica"
+                />
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

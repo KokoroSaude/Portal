@@ -63,6 +63,7 @@ export function PatientTpbPage() {
       description="Histórico da Teoria do Comportamento Planejado, risco e intervenções do paciente."
       locked={!tpbEnabled}
       lockedTitle="TCP não disponível"
+      backHref={id ? `/pacientes/${id}?tab=escalas` : undefined}
     >
       <PatientTpbTab
         assessments={tpbHistory?.assessments}

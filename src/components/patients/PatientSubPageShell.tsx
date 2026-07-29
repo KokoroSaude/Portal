@@ -14,6 +14,8 @@ type PatientSubPageShellProps = {
   locked?: boolean;
   lockedTitle?: string;
   lockedDescription?: string;
+  /** Deep-link de volta à ficha (ex.: `/pacientes/:id?tab=escalas`). */
+  backHref?: string;
   children: ReactNode;
 };
 
@@ -27,13 +29,18 @@ export function PatientSubPageShell({
   locked,
   lockedTitle = "Recurso não disponível",
   lockedDescription = "Este recurso não está incluído no seu plano atual.",
+  backHref,
   children,
 }: PatientSubPageShellProps) {
+  const patientHome = patientId
+    ? backHref ?? `/pacientes/${patientId}`
+    : "/pacientes";
+
   if (locked) {
     return (
       <>
         <Link
-          to={patientId ? `/pacientes/${patientId}` : "/pacientes"}
+          to={patientHome}
           className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -67,7 +74,7 @@ export function PatientSubPageShell({
   return (
     <div className="space-y-6">
       <Link
-        to={`/pacientes/${patientId}`}
+        to={patientHome}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

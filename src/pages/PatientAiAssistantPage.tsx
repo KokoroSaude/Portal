@@ -61,6 +61,7 @@ export function PatientAiAssistantPage() {
       description="Resumo clínico, sugestões de acompanhamento e insights personalizados do paciente."
       locked={!aiEnabled}
       lockedTitle="Assistente IA não disponível"
+      backHref={id ? `/pacientes/${id}?tab=insights` : undefined}
     >
       {token && id && isAdmin && (
         <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">

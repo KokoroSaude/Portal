@@ -27,6 +27,7 @@ export function PatientCareNetworkPage() {
       title="Rede de cuidado"
       description="Cuidadores de adesão (retail) e delegados de retirada (gov)."
       locked={false}
+      backHref={id ? `/pacientes/${id}?tab=cuidadores` : undefined}
     >
       {token && id && (
         <div className="space-y-6">
