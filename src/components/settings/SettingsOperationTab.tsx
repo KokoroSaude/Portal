@@ -57,15 +57,16 @@ export function SettingsOperationTab({ form, locales, update }: Props) {
 
           <SettingsField
             htmlFor="followup"
-            label="Follow-up após (horas)"
-            hint="Tempo de espera após um lembrete de check-in antes de enviar um follow-up, se o paciente não respondeu."
+            label="Follow-up após (minutos)"
+            hint="Tempo de espera após um lembrete de check-in antes de enviar follow-up (e alerta ao cuidador, se ligado), se o paciente não respondeu. Ex.: 120 = 2h."
           >
             <Input
               id="followup"
               type="number"
               min={1}
-              value={form.followupAfterHours}
-              onChange={(e) => update("followupAfterHours", Number(e.target.value))}
+              max={1440}
+              value={form.followupAfterMinutes}
+              onChange={(e) => update("followupAfterMinutes", Number(e.target.value))}
             />
           </SettingsField>
 

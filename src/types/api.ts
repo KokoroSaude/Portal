@@ -781,7 +781,7 @@ export interface AiPlatformFeatures {
 export interface TenantSettings {
   sendWindowStart: string;
   sendWindowEnd: string;
-  followupAfterHours: number;
+  followupAfterMinutes: number;
   maxReengagementAttempts: number;
   inactiveDaysBeforeReengagement: number;
   voiceTone: string | number;
