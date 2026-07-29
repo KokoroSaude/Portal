@@ -196,7 +196,7 @@ export function PatientCaregiversSection({ patientId, token, canWrite }: Props) 
                 checked={form.notifyOnMiss ?? true}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, notifyOnMiss: Boolean(v) }))}
               />
-              Avisar em misses consecutivos
+              Avisar em cada miss / silêncio
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

@@ -43,7 +43,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useGridSearch } from "@/hooks/useGridSearch";
 import { api, ApiClientError } from "@/lib/api";
-import { FEATURE_KEYS, PATIENT_STATUS_LABELS } from "@/lib/constants";
+import { FEATURE_KEYS, DELEGATE_RELATIONSHIP_LABELS, PATIENT_STATUS_LABELS } from "@/lib/constants";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { formatDateTime, maskPhone } from "@/lib/utils";
 import { maskCpf, stripCpf } from "@/lib/cpf";
@@ -76,9 +76,16 @@ export function PatientsPage() {
     preferredMessageChannel: "Text" as "Text" | "Audio",
     carePlanMedicationIds: [] as string[],
     senderId: "",
+    caregiverEnabled: false,
+    caregiverName: "",
+    caregiverPhone: "",
+    caregiverRelationship: "Cuidador",
   });
 
   const { settings: tenantSettings, govMode } = useTenantSettings();
+  const caregiverEnabled =
+    hasFeature(FEATURE_KEYS.engagementCaregiver) ||
+    (tenantSettings?.caregiverEscalationEnabled ?? false);
 
   const { data: medicationsCatalog } = useQuery({
     queryKey: ["medications-catalog"],
@@ -174,8 +181,8 @@ export function PatientsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      api.createPatient(token!, {
+    mutationFn: async () => {
+      const result = await api.createPatient(token!, {
         phone: form.phone,
         name: form.name.trim() || undefined,
         cpf: stripCpf(form.cpf) || undefined,
@@ -186,7 +193,34 @@ export function PatientsPage() {
             ? form.carePlanMedicationIds
             : undefined,
         senderId: form.senderId || undefined,
-      }),
+      });
+
+      const wantCaregiver =
+        caregiverEnabled &&
+        form.caregiverEnabled &&
+        form.caregiverName.trim() &&
+        form.caregiverPhone.trim();
+
+      if (wantCaregiver) {
+        try {
+          await api.upsertPatientCaregiver(token!, result.id, {
+            name: form.caregiverName.trim(),
+            phone: form.caregiverPhone.trim(),
+            relationship: form.caregiverRelationship,
+            notifyOnMiss: true,
+            notifyOnHighRiskAbandonment: true,
+          });
+        } catch (err) {
+          toast.warning(
+            err instanceof ApiClientError
+              ? `Paciente salvo, mas o cuidador não: ${err.message}`
+              : "Paciente salvo, mas o cuidador não pôde ser cadastrado.",
+          );
+        }
+      }
+
+      return result;
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
       setCreateOpen(false);
@@ -198,6 +232,10 @@ export function PatientsPage() {
         preferredMessageChannel: "Text",
         carePlanMedicationIds: [],
         senderId: "",
+        caregiverEnabled: false,
+        caregiverName: "",
+        caregiverPhone: "",
+        caregiverRelationship: "Cuidador",
       });
 
       if (!result.created) {
@@ -253,7 +291,10 @@ export function PatientsPage() {
     (!govMode ||
       (form.name.trim() &&
         stripCpf(form.cpf).length === 11 &&
-        form.carePlanMedicationIds.length > 0));
+        form.carePlanMedicationIds.length > 0)) &&
+    (!caregiverEnabled ||
+      !form.caregiverEnabled ||
+      (form.caregiverName.trim().length > 0 && form.caregiverPhone.trim().length > 0));
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
   const pageIds = data?.items.map((p) => p.id) ?? [];
@@ -380,7 +421,7 @@ export function PatientsPage() {
                 Novo paciente
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar paciente</DialogTitle>
                 <DialogDescription>
@@ -519,6 +560,68 @@ export function PatientsPage() {
                     <p className="text-xs text-muted-foreground">
                       Pacientes em áudio recebem respostas faladas no WhatsApp.
                     </p>
+                  </div>
+                )}
+                {caregiverEnabled && (
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Cuidador / família</p>
+                        <p className="text-xs text-muted-foreground">
+                          Recebe alerta no WhatsApp quando houver miss ou silêncio após o follow-up.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={form.caregiverEnabled}
+                        onCheckedChange={(v) => setForm((f) => ({ ...f, caregiverEnabled: v }))}
+                      />
+                    </div>
+                    {form.caregiverEnabled && (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="caregiver-name">Nome do cuidador</Label>
+                          <Input
+                            id="caregiver-name"
+                            value={form.caregiverName}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, caregiverName: e.target.value }))
+                            }
+                            placeholder="Ex.: Filha Maria"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="caregiver-phone">WhatsApp do cuidador (E.164)</Label>
+                          <Input
+                            id="caregiver-phone"
+                            value={form.caregiverPhone}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, caregiverPhone: e.target.value }))
+                            }
+                            placeholder="+5511988887777"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Relação</Label>
+                          <Select
+                            value={form.caregiverRelationship}
+                            onValueChange={(v) =>
+                              setForm((f) => ({ ...f, caregiverRelationship: v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(DELEGATE_RELATIONSHIP_LABELS).map(([k, label]) => (
+                                <SelectItem key={k} value={k}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

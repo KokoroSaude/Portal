@@ -28,6 +28,7 @@ import { PatientStatusBadge } from "@/components/PatientStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { PatientAiAvailabilityBadge } from "@/components/patients/PatientAiAvailabilityBadge";
 import { PatientCarePlansTab } from "@/components/patients/PatientCarePlansTab";
+import { PatientCaregiversSection } from "@/components/patients/PatientCaregiversSection";
 import { PatientFeatureLinkCard } from "@/components/patients/PatientFeatureLinkCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -276,6 +277,10 @@ export function PatientDetailPage() {
   const canReactivateFromOptOut = patient.status === "OptedOut";
   const remindersEnabled = hasFeature(FEATURE_KEYS.engagementReminders);
   const milestonesEnabled = hasFeature(FEATURE_KEYS.engagementMilestones);
+  const caregiverNetworkEnabled =
+    govMode ||
+    hasFeature(FEATURE_KEYS.engagementCaregiver) ||
+    (tenantSettings?.caregiverEscalationEnabled ?? false);
   const showEngagementTriggers =
     canWrite && patient.status === "Active" && (remindersEnabled || milestonesEnabled);
 
@@ -285,7 +290,7 @@ export function PatientDetailPage() {
       behavioralEnabled ||
       moriskyFeatureEnabled ||
       tpbFeatureEnabled ||
-      govMode);
+      caregiverNetworkEnabled);
 
   return (
     <div className="space-y-6">
@@ -741,17 +746,25 @@ export function PatientDetailPage() {
                 }
               />
             )}
-            {govMode && (
+            {caregiverNetworkEnabled && (
               <PatientFeatureLinkCard
                 icon={Users}
                 title="Rede de cuidado"
-                description="Delegados autorizados a retirar medicamentos e receber notificações."
+                description={
+                  govMode
+                    ? "Cuidadores de adesão e delegados autorizados a retirar medicamentos."
+                    : "Cadastre familiar/cuidador para receber alerta quando houver miss ou silêncio."
+                }
                 to={`/pacientes/${id}/rede-cuidado`}
                 actionLabel="Abrir rede de cuidado"
               />
             )}
           </div>
         </div>
+      )}
+
+      {token && id && caregiverNetworkEnabled && !govMode && (
+        <PatientCaregiversSection patientId={id} token={token} canWrite={canWrite} />
       )}
 
       <Tabs defaultValue="timeline">
